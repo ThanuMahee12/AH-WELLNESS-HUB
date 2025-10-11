@@ -95,7 +95,7 @@ All documentation is in the [docs](./docs/) folder:
 | [Version Guide](./docs/VERSION_GUIDE.md) | Version management and releases |
 | [Implementation Summary](./docs/IMPLEMENTATION_SUMMARY.md) | Technical implementation details |
 | [Remaining Updates](./docs/REMAINING_UPDATES.md) | Pending updates and improvements |
-| [Claude.md](./docs/CLAUDE.md) | Project structure and conventions |
+| [Claude.md](./CLAUDE.md) | Project structure and conventions |
 
 ## 🏗️ Project Structure
 
