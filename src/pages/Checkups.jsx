@@ -1,0 +1,280 @@
+import { useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge } from 'react-bootstrap'
+import { FaPlus, FaEdit, FaTrash, FaFilePdf, FaClipboardCheck } from 'react-icons/fa'
+import { addCheckup, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
+import { generateCheckupPDF } from '../utils/pdfGenerator'
+
+function Checkups() {
+  const dispatch = useDispatch()
+  const checkups = useSelector(state => state.checkups.checkups)
+  const patients = useSelector(state => state.patients.patients)
+  const tests = useSelector(state => state.tests.tests)
+  const [showModal, setShowModal] = useState(false)
+  const [editingCheckup, setEditingCheckup] = useState(null)
+  const [formData, setFormData] = useState({
+    patientId: '',
+    tests: [],
+    notes: ''
+  })
+
+  const handleClose = () => {
+    setShowModal(false)
+    setEditingCheckup(null)
+    setFormData({ patientId: '', tests: [], notes: '' })
+  }
+
+  const handleShow = (checkup = null) => {
+    if (checkup) {
+      setEditingCheckup(checkup)
+      setFormData({
+        patientId: checkup.patientId,
+        tests: checkup.tests,
+        notes: checkup.notes
+      })
+    }
+    setShowModal(true)
+  }
+
+  const handleTestToggle = (testId) => {
+    setFormData(prev => ({
+      ...prev,
+      tests: prev.tests.includes(testId)
+        ? prev.tests.filter(id => id !== testId)
+        : [...prev.tests, testId]
+    }))
+  }
+
+  const calculateTotal = () => {
+    return formData.tests.reduce((sum, testId) => {
+      const test = tests.find(t => t.id === testId)
+      return sum + (test?.price || 0)
+    }, 0)
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    if (formData.tests.length === 0) {
+      alert('Please select at least one test')
+      return
+    }
+
+    const checkupData = {
+      ...formData,
+      patientId: parseInt(formData.patientId),
+      total: calculateTotal()
+    }
+
+    if (editingCheckup) {
+      dispatch(updateCheckup({ ...checkupData, id: editingCheckup.id, timestamp: editingCheckup.timestamp }))
+    } else {
+      dispatch(addCheckup(checkupData))
+    }
+    handleClose()
+  }
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this checkup?')) {
+      dispatch(deleteCheckup(id))
+    }
+  }
+
+  const handleGeneratePDF = (checkup) => {
+    const patient = patients.find(p => p.id === checkup.patientId)
+    if (patient) {
+      generateCheckupPDF(checkup, patient, tests)
+    }
+  }
+
+  const getPatientName = (patientId) => {
+    const patient = patients.find(p => p.id === patientId)
+    return patient ? patient.name : 'Unknown'
+  }
+
+  return (
+    <Container fluid className="p-3 p-md-4">
+      <Row className="mb-4">
+        <Col>
+          <div className="d-flex justify-content-between align-items-center flex-wrap">
+            <h2><FaClipboardCheck className="me-2 text-primary" />Checkups / Billing</h2>
+            <Button
+              variant="primary"
+              onClick={() => handleShow()}
+              className="mt-2 mt-md-0"
+              disabled={patients.length === 0}
+            >
+              <FaPlus className="me-2" />New Checkup
+            </Button>
+          </div>
+        </Col>
+      </Row>
+
+      {patients.length === 0 && (
+        <Row className="mb-3">
+          <Col>
+            <Card className="border-warning">
+              <Card.Body className="text-warning">
+                Please add patients first before creating checkups
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      <Row>
+        <Col>
+          <Card>
+            <Card.Body className="p-0">
+              <div className="table-responsive">
+                <Table striped hover className="mb-0">
+                  <thead className="bg-primary text-white">
+                    <tr>
+                      <th>Bill ID</th>
+                      <th>Patient</th>
+                      <th>Tests Count</th>
+                      <th>Total (₹)</th>
+                      <th>Date/Time</th>
+                      <th>Notes</th>
+                      <th className="text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {checkups.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center py-4 text-muted">
+                          No checkups recorded yet
+                        </td>
+                      </tr>
+                    ) : (
+                      checkups.map(checkup => (
+                        <tr key={checkup.id}>
+                          <td><Badge bg="info">#{checkup.id}</Badge></td>
+                          <td><strong>{getPatientName(checkup.patientId)}</strong></td>
+                          <td>{checkup.tests.length}</td>
+                          <td><strong>₹{checkup.total.toFixed(2)}</strong></td>
+                          <td>{new Date(checkup.timestamp).toLocaleString()}</td>
+                          <td className="text-truncate" style={{ maxWidth: '150px' }}>
+                            {checkup.notes || '-'}
+                          </td>
+                          <td className="text-center">
+                            <Button
+                              variant="success"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleGeneratePDF(checkup)}
+                            >
+                              <FaFilePdf />
+                            </Button>
+                            <Button
+                              variant="warning"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleShow(checkup)}
+                            >
+                              <FaEdit />
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(checkup.id)}
+                            >
+                              <FaTrash />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Modal show={showModal} onHide={handleClose} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>{editingCheckup ? 'Edit Checkup' : 'New Checkup / Bill'}</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleSubmit}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Select Patient *</Form.Label>
+              <Form.Select
+                value={formData.patientId}
+                onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                required
+              >
+                <option value="">Choose a patient...</option>
+                {patients.map(patient => (
+                  <option key={patient.id} value={patient.id}>
+                    {patient.name} - {patient.age}yr - {patient.mobile}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Select Tests * (Click to toggle)</Form.Label>
+              <Card>
+                <Card.Body>
+                  {tests.map(test => (
+                    <Form.Check
+                      key={test.id}
+                      type="checkbox"
+                      id={`test-${test.id}`}
+                      label={
+                        <div className="d-flex justify-content-between align-items-center w-100">
+                          <div>
+                            <strong>{test.name}</strong>
+                            <br />
+                            <small className="text-muted">{test.details}</small>
+                          </div>
+                          <Badge bg="primary">₹{test.price.toFixed(2)}</Badge>
+                        </div>
+                      }
+                      checked={formData.tests.includes(test.id)}
+                      onChange={() => handleTestToggle(test.id)}
+                      className="mb-2 p-2 border rounded"
+                    />
+                  ))}
+                  {tests.length === 0 && (
+                    <div className="text-muted">No tests available. Please add tests first.</div>
+                  )}
+                </Card.Body>
+              </Card>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Total Amount: <Badge bg="success" className="fs-6">₹{calculateTotal().toFixed(2)}</Badge>
+              </Form.Label>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Notes / Remarks</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Any special notes or remarks..."
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              {editingCheckup ? 'Update' : 'Create'} Checkup
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+    </Container>
+  )
+}
+
+export default Checkups

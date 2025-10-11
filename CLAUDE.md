@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Blood Lab Manager is a React-based web application for managing blood lab operations. The project is in early development stages, currently using Vite + React template as its foundation.
+Blood Lab Manager is a complete Point of Sale (POS) system for blood testing laboratories. It provides comprehensive management of patients, blood tests, checkups/billing, users, and generates professional PDF invoices. The application features role-based authentication with admin and user roles.
 
 ## Development Commands
 
-- **Start dev server**: `npm run dev` - Starts Vite dev server with HMR
+- **Start dev server**: `npm run dev` - Starts Vite dev server with HMR at http://localhost:5173
 - **Build**: `npm run build` - Production build to `dist/` directory
 - **Lint**: `npm run lint` - Run ESLint on all files
 - **Preview build**: `npm run preview` - Preview production build locally
@@ -17,26 +17,120 @@ Blood Lab Manager is a React-based web application for managing blood lab operat
 
 - **Framework**: React 19.1.1
 - **Build Tool**: Vite 7.1.7
+- **State Management**: Redux Toolkit (@reduxjs/toolkit 2.9.0)
+- **Routing**: React Router DOM 7.9.4
+- **UI Framework**: React Bootstrap 2.10.10 + Bootstrap 5.3.8
+- **Icons**: React Icons 5.5.0
+- **PDF Generation**: jsPDF 3.0.3 + jspdf-autotable 5.0.2
 - **Language**: JavaScript (JSX)
-- **Linting**: ESLint 9.x with React Hooks and React Refresh plugins
 
 ## Project Structure
 
-- `src/main.jsx` - Application entry point, mounts React to `#root` div
-- `src/App.jsx` - Main application component (currently template boilerplate)
+### Core Files
+- `src/main.jsx` - Entry point with Redux Provider, Router, and Bootstrap CSS
+- `src/App.jsx` - Main app with routing and protected routes
 - `index.html` - HTML shell
-- `vite.config.js` - Vite configuration with React plugin
-- `eslint.config.js` - ESLint flat config with React-specific rules
+
+### State Management (Redux)
+- `src/store/store.js` - Redux store configuration
+- `src/store/authSlice.js` - Authentication state (login/logout, user persistence)
+- `src/store/testsSlice.js` - Blood tests management
+- `src/store/patientsSlice.js` - Patients management
+- `src/store/checkupsSlice.js` - Checkups/billing management
+- `src/store/usersSlice.js` - Users management
+
+### Components
+- `src/components/Navbar.jsx` - Navigation bar with role-based menu items
+- `src/components/ProtectedRoute.jsx` - Route protection HOC with optional admin-only access
+
+### Pages
+- `src/pages/Home.jsx` - Landing page with features showcase
+- `src/pages/Login.jsx` - Authentication page
+- `src/pages/Dashboard.jsx` - Analytics dashboard with statistics
+- `src/pages/Patients.jsx` - Patient CRUD operations
+- `src/pages/Checkups.jsx` - Checkup/billing management with PDF generation
+- `src/pages/Tests.jsx` - Blood tests CRUD (Admin only)
+- `src/pages/Users.jsx` - User management CRUD (Admin only)
+
+### Utilities
+- `src/utils/pdfGenerator.js` - PDF bill generation using jsPDF
+
+## Application Features
+
+### Authentication
+- Role-based access control (Admin/User)
+- User persistence via localStorage
+- Protected routes with automatic redirect
+
+### Data Models
+
+**User**: `{ id, username, email, password, mobile, role }`
+**Patient**: `{ id, name, age, gender, mobile, address, email }`
+**Test**: `{ id, name, price, details, rules }`
+**Checkup**: `{ id, patientId, tests[], total, notes, timestamp }`
+
+### User Roles
+
+**Admin** - Full access:
+- Manage blood tests (CRUD)
+- Manage users (CRUD)
+- All user permissions
+
+**User** - Limited access:
+- Manage patients (CRUD)
+- Create/manage checkups
+- Generate PDF bills
+
+### Default Credentials
+- Admin: `admin@bloodlab.com` / `admin123`
+- User: `user@bloodlab.com` / `user123`
+
+## Design System
+
+### Theme
+- Primary color: Blue (#0d6efd - Bootstrap primary)
+- Fully responsive: Mobile-first design
+- Breakpoints: xs, sm, md, lg, xl (Bootstrap standard)
+
+### Responsive Design
+- Tables with horizontal scroll on mobile
+- Fluid containers with responsive padding
+- Collapsible navbar for mobile
+- Stack cards vertically on small screens
+- Responsive modal sizes
 
 ## Code Conventions
 
-- **Unused variables**: ESLint allows unused variables if they match pattern `^[A-Z_]` (constants/exports)
-- **ES Modules**: Project uses ESM (`"type": "module"` in package.json)
-- **JSX files**: Use `.jsx` extension for files containing JSX
+- **State Management**: Use Redux Toolkit slices with Immer for immutable updates
+- **Routing**: Protected routes wrap authenticated pages
+- **Forms**: Controlled components with local state
+- **Modals**: Single modal per page, toggled with show/hide state
+- **PDF Generation**: Use `generateCheckupPDF` utility function
+- **Icons**: Import from `react-icons/fa` (Font Awesome)
+- **Styling**: Bootstrap utility classes preferred over custom CSS
 
-## Known Issues
+## Key Workflows
 
-- `src/main.jsx:3` imports `./index.css` which was removed
-- `src/App.jsx:2-4` imports removed assets (`react.svg`, `vite.svg`, `App.css`)
+### Creating a Checkup
+1. Select patient from dropdown
+2. Select multiple tests (checkboxes)
+3. Total auto-calculates
+4. Add optional notes
+5. Save creates checkup with timestamp
+6. Generate PDF button creates downloadable invoice
 
-These imports need to be cleaned up before the application can run.
+### PDF Bill Format
+- Blue header with lab branding
+- Patient and bill information
+- Tests table with prices
+- Total with highlighted footer
+- Optional notes section
+- Contact information in footer
+
+## Development Notes
+
+- All state persists only in Redux (no backend)
+- Auth state persists in localStorage
+- IDs auto-increment per entity
+- Timestamps generated on checkup creation
+- PDF downloads directly to browser
