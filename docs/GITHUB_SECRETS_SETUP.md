@@ -18,21 +18,39 @@ You need to add these secrets to your GitHub repository:
 | `VITE_FIREBASE_APP_ID` | Your app ID | From your `.env` file |
 | `VITE_FIREBASE_MEASUREMENT_ID` | Your measurement ID | From your `.env` file |
 
-### Service Account (Already Added!)
+### Service Account Secret (REQUIRED!)
 
-Firebase CLI has already added:
-- ✅ `FIREBASE_SERVICE_ACCOUNT_BLOOD_LAB_MANAGER` - Already configured by Firebase CLI
+**IMPORTANT:** You also need to add the Firebase service account:
+- ⚠️ `FIREBASE_SERVICE_ACCOUNT_BLOOD_LAB_MANAGER` - Required for deployment (see instructions below)
 
 ## How to Add GitHub Secrets
 
-### Step 1: Go to Repository Settings
+### Step 1: Get Firebase Service Account Key
+
+**This is the MOST IMPORTANT secret!** Without it, deployment fails.
+
+1. Go to Firebase Console: https://console.firebase.google.com/project/blood-lab-manager/settings/serviceaccounts/adminsdk
+2. Click **Generate new private key**
+3. Click **Generate key** (downloads a JSON file)
+4. Open the JSON file in a text editor
+5. Copy the ENTIRE contents (from `{` to `}`)
+6. Keep this file secure - you'll paste it into GitHub in Step 3
+
+### Step 2: Go to Repository Settings
 
 1. Open your GitHub repository: https://github.com/ThanuMahee12/Blood-Lab-Manager
 2. Click **Settings** tab (at the top)
 3. In the left sidebar, click **Secrets and variables**
 4. Click **Actions**
 
-### Step 2: Add Each Secret
+### Step 3: Add the Service Account First
+
+1. Click **New repository secret** button
+2. Name: `FIREBASE_SERVICE_ACCOUNT_BLOOD_LAB_MANAGER`
+3. Secret: Paste the ENTIRE JSON file contents
+4. Click **Add secret**
+
+### Step 4: Add Firebase Config Secrets
 
 For each secret in the table above:
 
@@ -47,11 +65,11 @@ Name: VITE_FIREBASE_API_KEY
 Secret: AIzaSyC... (copy from your .env file)
 ```
 
-### Step 3: Verify All Secrets
+### Step 5: Verify All Secrets
 
 After adding all secrets, you should see 8 secrets total:
 
-- ✅ FIREBASE_SERVICE_ACCOUNT_BLOOD_LAB_MANAGER (already added by Firebase CLI)
+- ⬜ FIREBASE_SERVICE_ACCOUNT_BLOOD_LAB_MANAGER (the JSON service account)
 - ⬜ VITE_FIREBASE_API_KEY
 - ⬜ VITE_FIREBASE_AUTH_DOMAIN
 - ⬜ VITE_FIREBASE_PROJECT_ID
@@ -119,12 +137,23 @@ The deployment will:
 2. Verify all values in GitHub Secrets match your `.env`
 3. Make sure values were copied correctly
 
+### "Input required and not supplied: firebaseServiceAccount" Error
+
+**Problem**: Missing service account secret
+
+**Solution**:
+1. Go to Firebase Console: https://console.firebase.google.com/project/blood-lab-manager/settings/serviceaccounts/adminsdk
+2. Generate new private key
+3. Add entire JSON contents as `FIREBASE_SERVICE_ACCOUNT_BLOOD_LAB_MANAGER` secret
+4. Re-run the workflow
+
 ### "Permission denied" Errors
 
 **Problem**: Service account permissions
 
 **Solution**:
-- Firebase CLI should have set this up correctly
+- Regenerate the service account key from Firebase Console
+- Ensure you copied the ENTIRE JSON file contents
 - If issues persist, check Firebase Console → IAM & Admin
 - Ensure service account has "Firebase Hosting Admin" role
 
