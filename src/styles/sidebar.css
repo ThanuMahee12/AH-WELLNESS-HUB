@@ -4,12 +4,13 @@
   top: 60px;
   bottom: 0;
   width: 250px;
-  background: #1a1a1a;
+  background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: #fff;
   padding: 1.5rem 0;
   transition: all 0.3s ease;
   z-index: 1000;
   overflow-y: auto;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-header {
@@ -17,19 +18,21 @@
   align-items: center;
   justify-content: center;
   padding: 0 1.5rem 1.5rem;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 1.5rem;
 }
 
 .sidebar-logo {
   font-size: 2rem;
-  color: #3b82f6;
+  color: #ecf0f1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 .sidebar-title {
   margin: 0 0 0 1rem;
   font-size: 1.25rem;
   font-weight: 600;
+  color: #ecf0f1;
 }
 
 .sidebar-nav {
@@ -42,19 +45,44 @@
   padding: 0.875rem 1rem;
   margin-bottom: 0.5rem;
   border-radius: 8px;
-  color: #9ca3af;
+  color: #bdc3c7;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: #95a5a6;
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
 }
 
 .sidebar-link:hover {
-  background: #2a2a2a;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ecf0f1;
+  transform: translateX(3px);
+}
+
+.sidebar-link:hover::before {
+  transform: scaleY(1);
 }
 
 .sidebar-link.active {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-link.active::before {
+  transform: scaleY(1);
+  background: #ecf0f1;
 }
 
 .sidebar-icon {
@@ -73,13 +101,20 @@
   top: 70px;
   left: 1rem;
   z-index: 1001;
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
   border: none;
-  color: #fff;
+  color: #ecf0f1;
   font-size: 1.5rem;
   padding: 0.5rem;
   border-radius: 8px;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-overlay {
@@ -120,10 +155,14 @@
 }
 
 .sidebar::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-  background: #3b82f6;
+  background: #95a5a6;
   border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #7f8c8d;
 }

@@ -86,7 +86,7 @@ function Dashboard() {
   const testDistribution = getTestDistribution()
   const monthlyRevenue = getMonthlyRevenue()
 
-  const COLORS = ['#0d6efd', '#6c757d', '#198754', '#ffc107', '#dc3545']
+  const COLORS = ['#7f8c8d', '#95a5a6', '#198754', '#e67e22', '#e74c3c']
 
   const StatCard = ({ icon: Icon, title, value, color, bgColor, subtitle }) => (
     <Card className="h-100 shadow-sm">
@@ -117,8 +117,8 @@ function Dashboard() {
             icon={FaUserInjured}
             title="Total Patients"
             value={patients.length}
-            color="text-primary"
-            bgColor="bg-primary bg-opacity-10"
+            color="text-dark"
+            bgColor="bg-secondary bg-opacity-10"
           />
         </Col>
         <Col xs={12} sm={6} lg={3}>
@@ -168,7 +168,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header className="bg-primary text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
               <h5 className="mb-0"><FaChartLine className="me-2" />Checkups & Revenue Trend</h5>
             </Card.Header>
             <Card.Body>
@@ -190,7 +190,7 @@ function Dashboard() {
                       yAxisId="left"
                       type="monotone"
                       dataKey="checkups"
-                      stroke="#0d6efd"
+                      stroke="#7f8c8d"
                       strokeWidth={2}
                       name="Checkups"
                     />
@@ -198,7 +198,7 @@ function Dashboard() {
                       yAxisId="right"
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#198754"
+                      stroke="#27ae60"
                       strokeWidth={2}
                       name="Revenue (₹)"
                     />
@@ -211,7 +211,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
-            <Card.Header className="bg-primary text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
               <h5 className="mb-0"><FaFlask className="me-2" />Popular Tests</h5>
             </Card.Header>
             <Card.Body>
@@ -249,7 +249,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header className="bg-primary text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
               <h5 className="mb-0"><FaRupeeSign className="me-2" />Monthly Revenue</h5>
             </Card.Header>
             <Card.Body>
@@ -266,7 +266,7 @@ function Dashboard() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="revenue" fill="#0d6efd" name="Revenue (₹)" />
+                    <Bar dataKey="revenue" fill="#7f8c8d" name="Revenue (₹)" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -276,7 +276,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
-            <Card.Header className="bg-primary text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
               <h5 className="mb-0"><FaCalendarAlt className="me-2" />Quick Stats</h5>
             </Card.Header>
             <Card.Body>
@@ -284,7 +284,7 @@ function Dashboard() {
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <span className="text-muted">Checkups Today</span>
-                    <h4 className="mb-0 text-primary">
+                    <h4 className="mb-0 text-dark">
                       {checkups.filter(c =>
                         new Date(c.timestamp).toDateString() === new Date().toDateString()
                       ).length}
@@ -322,7 +322,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4">
         <Col xs={12}>
           <Card className="shadow-sm">
-            <Card.Header className="bg-primary text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
               <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups</h5>
             </Card.Header>
             <Card.Body>
@@ -339,7 +339,7 @@ function Dashboard() {
                       <div key={checkup.id} className="list-group-item px-0">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
-                            <strong className="text-primary">#{checkup.id}</strong> - <strong>{patient?.name || 'Unknown'}</strong>
+                            <strong className="text-dark">#{checkup.id}</strong> - <strong>{patient?.name || 'Unknown'}</strong>
                             <br />
                             <small className="text-muted">
                               <FaCalendarAlt className="me-1" />

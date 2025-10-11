@@ -79,8 +79,8 @@ function Users() {
       <Row className="mb-4">
         <Col>
           <div className="d-flex justify-content-between align-items-center flex-wrap">
-            <h2><FaUsers className="me-2 text-primary" />Users Management</h2>
-            <Button variant="primary" onClick={() => handleShow()} className="mt-2 mt-md-0">
+            <h2><FaUsers className="me-2 text-secondary" />Users Management</h2>
+            <Button variant="secondary" onClick={() => handleShow()} className="mt-2 mt-md-0">
               <FaPlus className="me-2" />Add New User
             </Button>
           </div>
@@ -107,7 +107,7 @@ function Users() {
               ) : (
                 <div className="table-responsive">
                   <Table striped hover className="mb-0">
-                    <thead className="bg-primary text-white">
+                    <thead style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
                       <tr>
                         <th>Username</th>
                         <th>Email</th>
@@ -228,7 +228,7 @@ function Users() {
             <Button variant="secondary" onClick={handleClose}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="secondary" type="submit">
               {editingUser ? 'Update' : 'Add'} User
             </Button>
           </Modal.Footer>

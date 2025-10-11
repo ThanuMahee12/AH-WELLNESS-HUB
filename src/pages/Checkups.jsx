@@ -113,9 +113,9 @@ function Checkups() {
       <Row className="mb-4">
         <Col>
           <div className="d-flex justify-content-between align-items-center flex-wrap">
-            <h2><FaClipboardCheck className="me-2 text-primary" />Checkups / Billing</h2>
+            <h2><FaClipboardCheck className="me-2 text-secondary" />Checkups / Billing</h2>
             <Button
-              variant="primary"
+              variant="secondary"
               onClick={() => handleShow()}
               className="mt-2 mt-md-0"
               disabled={patients.length === 0 || loading}
@@ -152,7 +152,7 @@ function Checkups() {
             <Card.Body className="p-0">
               <div className="table-responsive">
                 <Table striped hover className="mb-0">
-                  <thead className="bg-primary text-white">
+                  <thead style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
                     <tr>
                       <th>Bill ID</th>
                       <th>Patient</th>
@@ -258,7 +258,7 @@ function Checkups() {
                             <br />
                             <small className="text-muted">{test.details}</small>
                           </div>
-                          <Badge bg="primary">₹{test.price.toFixed(2)}</Badge>
+                          <Badge bg="secondary">₹{test.price.toFixed(2)}</Badge>
                         </div>
                       }
                       checked={formData.tests.includes(test.id)}
@@ -294,7 +294,7 @@ function Checkups() {
             <Button variant="secondary" onClick={handleClose}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="secondary" type="submit">
               {editingCheckup ? 'Update' : 'Create'} Checkup
             </Button>
           </Modal.Footer>
