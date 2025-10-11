@@ -47,7 +47,7 @@ cd Blood-Lab-Manager
 npm install
 ```
 
-3. **Set up Firebase** (Detailed guide: [FIREBASE_SETUP.md](./FIREBASE_SETUP.md))
+3. **Set up Firebase** (Detailed guide: [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md))
    - Create Firebase project
    - Enable Authentication (Email/Password)
    - Enable Firestore Database
@@ -65,10 +65,11 @@ VITE_FIREBASE_PROJECT_ID=your-project-id
 VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 VITE_FIREBASE_APP_ID=your-app-id
+VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
 ```
 
 5. **Create initial admin user**
-   - Follow instructions in [FIREBASE_SETUP.md](./FIREBASE_SETUP.md#step-7-create-initial-admin-user)
+   - Follow instructions in [docs/FIRST_USER_SETUP.md](./docs/FIRST_USER_SETUP.md)
 
 6. **Run development server**
 ```bash
@@ -82,13 +83,19 @@ http://localhost:5173
 
 ## 📚 Documentation
 
+All documentation is in the [docs](./docs/) folder:
+
 | Document | Description |
 |----------|-------------|
-| [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) | Complete Firebase setup guide |
-| [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) | Deployment overview and guide |
-| [GITHUB_ACTIONS_SETUP.md](./GITHUB_ACTIONS_SETUP.md) | CI/CD auto-deployment setup |
-| [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) | Technical implementation details |
-| [CLAUDE.md](./CLAUDE.md) | Project structure and conventions |
+| [Firebase Setup](./docs/FIREBASE_SETUP.md) | Complete Firebase setup guide |
+| [Deployment Guide](./docs/DEPLOYMENT_GUIDE.md) | Deployment overview and guide |
+| [GitHub Actions Setup](./docs/GITHUB_ACTIONS_SETUP.md) | CI/CD auto-deployment setup |
+| [GitHub Secrets Setup](./docs/GITHUB_SECRETS_SETUP.md) | **⚠️ Required: Set up GitHub Secrets** |
+| [First User Setup](./docs/FIRST_USER_SETUP.md) | Create your initial admin user |
+| [Version Guide](./docs/VERSION_GUIDE.md) | Version management and releases |
+| [Implementation Summary](./docs/IMPLEMENTATION_SUMMARY.md) | Technical implementation details |
+| [Remaining Updates](./docs/REMAINING_UPDATES.md) | Pending updates and improvements |
+| [Claude.md](./docs/CLAUDE.md) | Project structure and conventions |
 
 ## 🏗️ Project Structure
 
@@ -195,7 +202,7 @@ firebase deploy --only hosting
 ```
 
 ### Automatic Deployment (GitHub Actions)
-1. Set up GitHub Secrets (see [GITHUB_ACTIONS_SETUP.md](./GITHUB_ACTIONS_SETUP.md))
+1. **⚠️ IMPORTANT:** Set up GitHub Secrets first (see [docs/GITHUB_SECRETS_SETUP.md](./docs/GITHUB_SECRETS_SETUP.md))
 2. Push to `main` branch
 3. Automatically builds and deploys!
 
@@ -327,7 +334,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Create user profile in Firestore
 - Document ID must match Auth UID
 
-See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) for more troubleshooting help.
+See [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md) for more troubleshooting help.
+
+### ⚠️ Authentication Issue: Dashboard Opens Directly
+
+**Problem:** Live app bypasses login page and opens dashboard directly
+**Cause:** GitHub Secrets not configured
+
+**Solution:**
+1. Go to: https://github.com/ThanuMahee12/Blood-Lab-Manager/settings/secrets/actions
+2. Add all 7 Firebase secrets (see [docs/GITHUB_SECRETS_SETUP.md](./docs/GITHUB_SECRETS_SETUP.md))
+3. Re-run failed GitHub Actions workflow
+4. Wait 2-3 minutes for redeployment
+
+**Quick Fix:** Add these secrets to GitHub:
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID`
 
 ## 📞 Support
 
