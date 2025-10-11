@@ -1,80 +1,106 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap'
-import { FaUser, FaLock } from 'react-icons/fa'
-import { login } from '../store/authSlice'
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap'
+import { FaUser, FaLock, FaFlask } from 'react-icons/fa'
+import { loginUser } from '../store/authSlice'
+import '../styles/Login.css'
 
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const users = useSelector(state => state.users.users)
+  const { loading, error } = useSelector(state => state.auth)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const user = users.find(u => u.email === email && u.password === password)
 
-    if (user) {
-      const { password: _, ...userWithoutPassword } = user
-      dispatch(login(userWithoutPassword))
+    const result = await dispatch(loginUser({ email, password }))
+
+    if (result.type === 'auth/login/fulfilled') {
       navigate('/dashboard')
-    } else {
-      setError('Invalid email or password')
     }
   }
 
   return (
-    <Container className="mt-5">
-      <Row className="justify-content-center">
-        <Col xs={12} sm={10} md={8} lg={6} xl={5}>
-          <Card className="shadow">
-            <Card.Header className="bg-primary text-white text-center py-3">
-              <h3>Blood Lab Manager</h3>
-              <p className="mb-0">Point of Sale System</p>
-            </Card.Header>
-            <Card.Body className="p-4">
-              {error && <Alert variant="danger">{error}</Alert>}
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label><FaUser className="me-2" />Email</Form.Label>
-                  <Form.Control
-                    type="email"
-                    placeholder="Enter email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </Form.Group>
+    <div className="login-wrapper">
+      <Container>
+        <Row className="justify-content-center align-items-center min-vh-100">
+          <Col xs={12} sm={10} md={8} lg={5} xl={4}>
+            <Card className="login-card shadow-lg border-0">
+              <Card.Header className="login-header text-center py-3 border-0">
+                <div className="login-icon-wrapper mb-2">
+                  <FaFlask className="login-icon" />
+                </div>
+                <h2 className="mb-1 fw-bold">Blood Lab Manager</h2>
+                <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>Point of Sale System</p>
+              </Card.Header>
+              <Card.Body className="p-4">
+                {error && (
+                  <Alert variant="danger" className="mb-3">
+                    <strong>Error!</strong> {error}
+                  </Alert>
+                )}
+                <Form onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      <FaUser className="me-2" />Email Address
+                    </Form.Label>
+                    <Form.Control
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="login-input"
+                    />
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label><FaLock className="me-2" />Password</Form.Label>
-                  <Form.Control
-                    type="password"
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      <FaLock className="me-2" />Password
+                    </Form.Label>
+                    <Form.Control
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="login-input"
+                    />
+                  </Form.Group>
 
-                <Button variant="primary" type="submit" className="w-100">
-                  Login
-                </Button>
-              </Form>
-
-              <div className="mt-3 text-center text-muted">
-                <small>Demo Credentials:</small><br />
-                <small>Admin: admin@bloodlab.com / admin123</small><br />
-                <small>User: user@bloodlab.com / user123</small>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+                  <Button
+                    type="submit"
+                    className="w-100 login-button mt-3"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                          className="me-2"
+                        />
+                        Logging in...
+                      </>
+                    ) : (
+                      'Sign In'
+                    )}
+                  </Button>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+    </div>
   )
 }
 

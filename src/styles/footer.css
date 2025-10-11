@@ -1,0 +1,69 @@
+.app-footer {
+  background: #1a1a1a;
+  color: #9ca3af;
+  margin-top: auto;
+  border-top: 1px solid #2a2a2a;
+}
+
+.footer-title {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.footer-text {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 0.5rem;
+}
+
+.footer-links a {
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: #3b82f6;
+}
+
+.footer-social {
+  margin-top: 1rem;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #2a2a2a;
+  color: #9ca3af;
+  border-radius: 8px;
+  margin-right: 0.5rem;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.social-link:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.footer-copyright {
+  font-size: 0.85rem;
+  margin: 0;
+  color: #6b7280;
+}

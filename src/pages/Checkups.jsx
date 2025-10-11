@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge } from 'react-bootstrap'
 import { FaPlus, FaEdit, FaTrash, FaFilePdf, FaClipboardCheck } from 'react-icons/fa'
-import { addCheckup, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
+import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
+import { fetchPatients } from '../store/patientsSlice'
+import { fetchTests } from '../store/testsSlice'
 import { generateCheckupPDF } from '../utils/pdfGenerator'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import ErrorAlert from '../components/common/ErrorAlert'
 
 function Checkups() {
   const dispatch = useDispatch()
-  const checkups = useSelector(state => state.checkups.checkups)
-  const patients = useSelector(state => state.patients.patients)
-  const tests = useSelector(state => state.tests.tests)
+  const { checkups, loading: checkupsLoading, error: checkupsError } = useSelector(state => state.checkups)
+  const { patients, loading: patientsLoading } = useSelector(state => state.patients)
+  const { tests, loading: testsLoading } = useSelector(state => state.tests)
   const [showModal, setShowModal] = useState(false)
   const [editingCheckup, setEditingCheckup] = useState(null)
   const [formData, setFormData] = useState({
@@ -17,6 +21,14 @@ function Checkups() {
     tests: [],
     notes: ''
   })
+
+  const loading = checkupsLoading || patientsLoading || testsLoading
+
+  useEffect(() => {
+    dispatch(fetchCheckups())
+    dispatch(fetchPatients())
+    dispatch(fetchTests())
+  }, [dispatch])
 
   const handleClose = () => {
     setShowModal(false)
@@ -52,7 +64,7 @@ function Checkups() {
     }, 0)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (formData.tests.length === 0) {
@@ -62,22 +74,26 @@ function Checkups() {
 
     const checkupData = {
       ...formData,
-      patientId: parseInt(formData.patientId),
+      patientId: formData.patientId,
       total: calculateTotal()
     }
 
     if (editingCheckup) {
-      dispatch(updateCheckup({ ...checkupData, id: editingCheckup.id, timestamp: editingCheckup.timestamp }))
+      await dispatch(updateCheckup({ id: editingCheckup.id, ...checkupData, timestamp: editingCheckup.timestamp }))
     } else {
-      dispatch(addCheckup(checkupData))
+      await dispatch(addCheckup(checkupData))
     }
     handleClose()
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this checkup?')) {
-      dispatch(deleteCheckup(id))
+      await dispatch(deleteCheckup(id))
     }
+  }
+
+  if (loading && checkups.length === 0) {
+    return <LoadingSpinner text="Loading checkups data..." />
   }
 
   const handleGeneratePDF = (checkup) => {
@@ -102,7 +118,7 @@ function Checkups() {
               variant="primary"
               onClick={() => handleShow()}
               className="mt-2 mt-md-0"
-              disabled={patients.length === 0}
+              disabled={patients.length === 0 || loading}
             >
               <FaPlus className="me-2" />New Checkup
             </Button>
@@ -110,7 +126,15 @@ function Checkups() {
         </Col>
       </Row>
 
-      {patients.length === 0 && (
+      {checkupsError && (
+        <Row className="mb-3">
+          <Col>
+            <ErrorAlert error={checkupsError} />
+          </Col>
+        </Row>
+      )}
+
+      {patients.length === 0 && !patientsLoading && (
         <Row className="mb-3">
           <Col>
             <Card className="border-warning">
@@ -163,6 +187,7 @@ function Checkups() {
                               size="sm"
                               className="me-2"
                               onClick={() => handleGeneratePDF(checkup)}
+                              disabled={loading}
                             >
                               <FaFilePdf />
                             </Button>
@@ -171,6 +196,7 @@ function Checkups() {
                               size="sm"
                               className="me-2"
                               onClick={() => handleShow(checkup)}
+                              disabled={loading}
                             >
                               <FaEdit />
                             </Button>
@@ -178,6 +204,7 @@ function Checkups() {
                               variant="danger"
                               size="sm"
                               onClick={() => handleDelete(checkup.id)}
+                              disabled={loading}
                             >
                               <FaTrash />
                             </Button>

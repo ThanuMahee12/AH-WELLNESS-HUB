@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Modal, Form } from 'react-bootstrap'
 import { FaPlus, FaEdit, FaTrash, FaUserInjured } from 'react-icons/fa'
-import { addPatient, updatePatient, deletePatient } from '../store/patientsSlice'
+import { fetchPatients, addPatient, updatePatient, deletePatient } from '../store/patientsSlice'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import ErrorAlert from '../components/common/ErrorAlert'
 
 function Patients() {
   const dispatch = useDispatch()
-  const patients = useSelector(state => state.patients.patients)
+  const { patients, loading, error } = useSelector(state => state.patients)
   const [showModal, setShowModal] = useState(false)
   const [editingPatient, setEditingPatient] = useState(null)
   const [formData, setFormData] = useState({
@@ -17,6 +19,10 @@ function Patients() {
     address: '',
     email: ''
   })
+
+  useEffect(() => {
+    dispatch(fetchPatients())
+  }, [dispatch])
 
   const handleClose = () => {
     setShowModal(false)
@@ -32,7 +38,7 @@ function Patients() {
     setShowModal(true)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const patientData = {
       ...formData,
@@ -40,17 +46,21 @@ function Patients() {
     }
 
     if (editingPatient) {
-      dispatch(updatePatient({ ...patientData, id: editingPatient.id }))
+      await dispatch(updatePatient({ id: editingPatient.id, ...patientData }))
     } else {
-      dispatch(addPatient(patientData))
+      await dispatch(addPatient(patientData))
     }
     handleClose()
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this patient?')) {
-      dispatch(deletePatient(id))
+      await dispatch(deletePatient(id))
     }
+  }
+
+  if (loading && patients.length === 0) {
+    return <LoadingSpinner text="Loading patients..." />
   }
 
   return (
@@ -65,6 +75,14 @@ function Patients() {
           </div>
         </Col>
       </Row>
+
+      {error && (
+        <Row className="mb-3">
+          <Col>
+            <ErrorAlert error={error} />
+          </Col>
+        </Row>
+      )}
 
       <Row>
         <Col>
@@ -107,6 +125,7 @@ function Patients() {
                               size="sm"
                               className="me-2"
                               onClick={() => handleShow(patient)}
+                              disabled={loading}
                             >
                               <FaEdit />
                             </Button>
@@ -114,6 +133,7 @@ function Patients() {
                               variant="danger"
                               size="sm"
                               onClick={() => handleDelete(patient.id)}
+                              disabled={loading}
                             >
                               <FaTrash />
                             </Button>

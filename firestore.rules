@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Users collection - users can only read/write their own profile
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Patients collection - all authenticated users can manage
+    match /patients/{patientId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Tests collection - all authenticated users can manage
+    match /tests/{testId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Checkups collection - all authenticated users can manage
+    match /checkups/{checkupId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge } from 'react-bootstrap'
+import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge, Alert } from 'react-bootstrap'
 import { FaPlus, FaEdit, FaTrash, FaUsers } from 'react-icons/fa'
-import { addUser, updateUser, deleteUser } from '../store/usersSlice'
+import { fetchUsers, updateUser, deleteUser } from '../store/usersSlice'
+import { registerUser } from '../store/authSlice'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import ErrorAlert from '../components/common/ErrorAlert'
 
 function Users() {
   const dispatch = useDispatch()
-  const users = useSelector(state => state.users.users)
+  const { users, loading, error } = useSelector(state => state.users)
   const [showModal, setShowModal] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [formData, setFormData] = useState({
@@ -16,36 +19,59 @@ function Users() {
     mobile: '',
     role: 'user'
   })
+  const [formError, setFormError] = useState('')
+
+  useEffect(() => {
+    dispatch(fetchUsers())
+  }, [dispatch])
 
   const handleClose = () => {
     setShowModal(false)
     setEditingUser(null)
     setFormData({ username: '', email: '', password: '', mobile: '', role: 'user' })
+    setFormError('')
   }
 
   const handleShow = (user = null) => {
     if (user) {
       setEditingUser(user)
-      setFormData(user)
+      setFormData({ ...user, password: '' })
     }
     setShowModal(true)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setFormError('')
 
     if (editingUser) {
-      dispatch(updateUser({ ...formData, id: editingUser.id }))
+      // Update existing user profile
+      const result = await dispatch(updateUser({ id: editingUser.id, ...formData }))
+      if (result.type.includes('fulfilled')) {
+        handleClose()
+      } else {
+        setFormError(result.payload || 'Failed to update user')
+      }
     } else {
-      dispatch(addUser(formData))
+      // Create new user with Firebase Auth + Firestore
+      const result = await dispatch(registerUser(formData))
+      if (result.type.includes('fulfilled')) {
+        handleClose()
+        dispatch(fetchUsers()) // Refresh user list
+      } else {
+        setFormError(result.payload || 'Failed to create user')
+      }
     }
-    handleClose()
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
-      dispatch(deleteUser(id))
+      await dispatch(deleteUser(id))
     }
+  }
+
+  if (loading && users.length === 0) {
+    return <LoadingSpinner text="Loading users..." />
   }
 
   return (
@@ -61,56 +87,71 @@ function Users() {
         </Col>
       </Row>
 
+      {error && (
+        <Row className="mb-3">
+          <Col>
+            <ErrorAlert error={error} />
+          </Col>
+        </Row>
+      )}
+
       <Row>
         <Col>
           <Card>
             <Card.Body className="p-0">
-              <div className="table-responsive">
-                <Table striped hover className="mb-0">
-                  <thead className="bg-primary text-white">
-                    <tr>
-                      <th>ID</th>
-                      <th>Username</th>
-                      <th>Email</th>
-                      <th>Mobile</th>
-                      <th>Role</th>
-                      <th className="text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(user => (
-                      <tr key={user.id}>
-                        <td>{user.id}</td>
-                        <td><strong>{user.username}</strong></td>
-                        <td>{user.email}</td>
-                        <td>{user.mobile}</td>
-                        <td>
-                          <Badge bg={user.role === 'admin' ? 'warning' : 'info'}>
-                            {user.role}
-                          </Badge>
-                        </td>
-                        <td className="text-center">
-                          <Button
-                            variant="warning"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleShow(user)}
-                          >
-                            <FaEdit />
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleDelete(user.id)}
-                          >
-                            <FaTrash />
-                          </Button>
-                        </td>
+              {users.length === 0 ? (
+                <div className="text-center p-5">
+                  <FaUsers size={50} className="text-muted mb-3" />
+                  <p className="text-muted">No users found. Add your first user to get started.</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <Table striped hover className="mb-0">
+                    <thead className="bg-primary text-white">
+                      <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Mobile</th>
+                        <th>Role</th>
+                        <th className="text-center">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {users.map(user => (
+                        <tr key={user.id || user.uid}>
+                          <td><strong>{user.username}</strong></td>
+                          <td>{user.email}</td>
+                          <td>{user.mobile}</td>
+                          <td>
+                            <Badge bg={user.role === 'admin' ? 'warning' : 'info'}>
+                              {user.role}
+                            </Badge>
+                          </td>
+                          <td className="text-center">
+                            <Button
+                              variant="warning"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleShow(user)}
+                              disabled={loading}
+                            >
+                              <FaEdit />
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(user.id || user.uid)}
+                              disabled={loading}
+                            >
+                              <FaTrash />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
@@ -122,6 +163,7 @@ function Users() {
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
+            {formError && <Alert variant="danger">{formError}</Alert>}
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">

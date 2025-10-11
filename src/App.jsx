@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { loadUser } from './store/authSlice'
+import { setUser } from './store/authSlice'
+import { authService } from './services/authService'
 import Navbar from './components/Navbar'
+import Sidebar from './components/Sidebar'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -14,63 +16,79 @@ import Users from './pages/Users'
 
 function App() {
   const dispatch = useDispatch()
+  const location = useLocation()
   const { isAuthenticated } = useSelector(state => state.auth)
 
+  // Pages that shouldn't show sidebar
+  const noSidebarPages = ['/', '/login']
+  const showSidebar = isAuthenticated && !noSidebarPages.includes(location.pathname)
+
   useEffect(() => {
-    dispatch(loadUser())
+    // Listen to Firebase auth state changes
+    const unsubscribe = authService.onAuthStateChange((user) => {
+      dispatch(setUser(user))
+    })
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe()
   }, [dispatch])
 
   return (
-    <>
+    <div className="d-flex flex-column min-vh-100">
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route
-          path="/login"
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/patients"
-          element={
-            <ProtectedRoute>
-              <Patients />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/checkups"
-          element={
-            <ProtectedRoute>
-              <Checkups />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tests"
-          element={
-            <ProtectedRoute adminOnly>
-              <Tests />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/users"
-          element={
-            <ProtectedRoute adminOnly>
-              <Users />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </>
+      <div className="d-flex flex-grow-1" style={{ marginTop: '60px' }}>
+        {showSidebar && <Sidebar />}
+        <div className={`flex-grow-1 ${showSidebar ? 'ms-0 ms-lg-0' : ''}`} style={{ marginLeft: showSidebar ? '0' : '0', paddingLeft: showSidebar ? '250px' : '0' }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/login"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients"
+              element={
+                <ProtectedRoute>
+                  <Patients />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkups"
+              element={
+                <ProtectedRoute>
+                  <Checkups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tests"
+              element={
+                <ProtectedRoute>
+                  <Tests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute adminOnly={true}>
+                  <Users />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </div>
+      </div>
+    </div>
   )
 }
 

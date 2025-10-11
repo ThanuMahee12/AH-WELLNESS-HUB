@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Modal, Form } from 'react-bootstrap'
 import { FaPlus, FaEdit, FaTrash, FaFlask } from 'react-icons/fa'
-import { addTest, updateTest, deleteTest } from '../store/testsSlice'
+import { fetchTests, addTest, updateTest, deleteTest } from '../store/testsSlice'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import ErrorAlert from '../components/common/ErrorAlert'
 
 function Tests() {
   const dispatch = useDispatch()
-  const tests = useSelector(state => state.tests.tests)
+  const { tests, loading, error } = useSelector(state => state.tests)
   const [showModal, setShowModal] = useState(false)
   const [editingTest, setEditingTest] = useState(null)
   const [formData, setFormData] = useState({
@@ -15,6 +17,10 @@ function Tests() {
     details: '',
     rules: ''
   })
+
+  useEffect(() => {
+    dispatch(fetchTests())
+  }, [dispatch])
 
   const handleClose = () => {
     setShowModal(false)
@@ -30,7 +36,7 @@ function Tests() {
     setShowModal(true)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const testData = {
       ...formData,
@@ -38,17 +44,21 @@ function Tests() {
     }
 
     if (editingTest) {
-      dispatch(updateTest({ ...testData, id: editingTest.id }))
+      await dispatch(updateTest({ id: editingTest.id, ...testData }))
     } else {
-      dispatch(addTest(testData))
+      await dispatch(addTest(testData))
     }
     handleClose()
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this test?')) {
-      dispatch(deleteTest(id))
+      await dispatch(deleteTest(id))
     }
+  }
+
+  if (loading && tests.length === 0) {
+    return <LoadingSpinner text="Loading tests..." />
   }
 
   return (
@@ -63,6 +73,14 @@ function Tests() {
           </div>
         </Col>
       </Row>
+
+      {error && (
+        <Row className="mb-3">
+          <Col>
+            <ErrorAlert error={error} />
+          </Col>
+        </Row>
+      )}
 
       <Row>
         <Col>
@@ -94,6 +112,7 @@ function Tests() {
                             size="sm"
                             className="me-2"
                             onClick={() => handleShow(test)}
+                            disabled={loading}
                           >
                             <FaEdit />
                           </Button>
@@ -101,6 +120,7 @@ function Tests() {
                             variant="danger"
                             size="sm"
                             onClick={() => handleDelete(test.id)}
+                            disabled={loading}
                           >
                             <FaTrash />
                           </Button>
