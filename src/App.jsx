@@ -34,11 +34,20 @@ function App() {
   }, [dispatch])
 
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <div className="d-flex flex-column min-vh-100" style={{ overflow: 'hidden', width: '100%' }}>
       <Navbar />
-      <div className="d-flex flex-grow-1" style={{ marginTop: '60px' }}>
+      <div className="d-flex flex-grow-1" style={{ marginTop: '60px', overflow: 'hidden', width: '100%' }}>
         {showSidebar && <Sidebar />}
-        <div className={`flex-grow-1 ${showSidebar ? 'ms-0 ms-lg-0' : ''}`} style={{ marginLeft: showSidebar ? '0' : '0', paddingLeft: showSidebar ? '250px' : '0' }}>
+        <div
+          className="flex-grow-1"
+          style={{
+            marginLeft: 0,
+            paddingLeft: showSidebar ? '250px' : '0',
+            width: '100%',
+            maxWidth: '100vw',
+            overflow: 'auto'
+          }}
+        >
           <Routes>
             <Route path="/" element={<Home />} />
             <Route
