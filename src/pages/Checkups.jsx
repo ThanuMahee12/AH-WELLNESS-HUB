@@ -151,8 +151,8 @@ function Checkups() {
           <Card>
             <Card.Body className="p-0">
               <div className="table-responsive">
-                <Table striped hover className="mb-0">
-                  <thead style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+                <Table striped hover className="mb-0 table-mobile-responsive">
+                  <thead>
                     <tr>
                       <th>Bill ID</th>
                       <th>Patient</th>
@@ -173,41 +173,39 @@ function Checkups() {
                     ) : (
                       checkups.map(checkup => (
                         <tr key={checkup.id}>
-                          <td><Badge bg="info">#{checkup.id}</Badge></td>
-                          <td><strong>{getPatientName(checkup.patientId)}</strong></td>
-                          <td>{checkup.tests.length}</td>
-                          <td><strong>₹{checkup.total.toFixed(2)}</strong></td>
-                          <td>{new Date(checkup.timestamp).toLocaleString()}</td>
-                          <td className="text-truncate" style={{ maxWidth: '150px' }}>
-                            {checkup.notes || '-'}
-                          </td>
-                          <td className="text-center">
-                            <Button
-                              variant="success"
-                              size="sm"
-                              className="me-2"
-                              onClick={() => handleGeneratePDF(checkup)}
-                              disabled={loading}
-                            >
-                              <FaFilePdf />
-                            </Button>
-                            <Button
-                              variant="warning"
-                              size="sm"
-                              className="me-2"
-                              onClick={() => handleShow(checkup)}
-                              disabled={loading}
-                            >
-                              <FaEdit />
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDelete(checkup.id)}
-                              disabled={loading}
-                            >
-                              <FaTrash />
-                            </Button>
+                          <td data-label="Bill ID"><Badge bg="info">#{checkup.id}</Badge></td>
+                          <td data-label="Patient"><strong>{getPatientName(checkup.patientId)}</strong></td>
+                          <td data-label="Tests Count">{checkup.tests.length}</td>
+                          <td data-label="Total"><strong>₹{checkup.total.toFixed(2)}</strong></td>
+                          <td data-label="Date/Time">{new Date(checkup.timestamp).toLocaleString()}</td>
+                          <td data-label="Notes">{checkup.notes || '-'}</td>
+                          <td data-label="Actions">
+                            <div className="d-flex gap-2 justify-content-center flex-wrap">
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => handleGeneratePDF(checkup)}
+                                disabled={loading}
+                              >
+                                <FaFilePdf />
+                              </Button>
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={() => handleShow(checkup)}
+                                disabled={loading}
+                              >
+                                <FaEdit />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(checkup.id)}
+                                disabled={loading}
+                              >
+                                <FaTrash />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))

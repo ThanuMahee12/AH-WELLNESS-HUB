@@ -89,8 +89,8 @@ function Patients() {
           <Card>
             <Card.Body className="p-0">
               <div className="table-responsive">
-                <Table striped hover className="mb-0">
-                  <thead style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+                <Table striped hover className="mb-0 table-mobile-responsive">
+                  <thead>
                     <tr>
                       <th>ID</th>
                       <th>Name</th>
@@ -112,31 +112,32 @@ function Patients() {
                     ) : (
                       patients.map(patient => (
                         <tr key={patient.id}>
-                          <td>{patient.id}</td>
-                          <td><strong>{patient.name}</strong></td>
-                          <td>{patient.age}</td>
-                          <td>{patient.gender}</td>
-                          <td>{patient.mobile}</td>
-                          <td>{patient.email || '-'}</td>
-                          <td className="text-truncate" style={{ maxWidth: '150px' }}>{patient.address}</td>
-                          <td className="text-center">
-                            <Button
-                              variant="warning"
-                              size="sm"
-                              className="me-2"
-                              onClick={() => handleShow(patient)}
-                              disabled={loading}
-                            >
-                              <FaEdit />
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDelete(patient.id)}
-                              disabled={loading}
-                            >
-                              <FaTrash />
-                            </Button>
+                          <td data-label="ID">{patient.id}</td>
+                          <td data-label="Name"><strong>{patient.name}</strong></td>
+                          <td data-label="Age">{patient.age}</td>
+                          <td data-label="Gender">{patient.gender}</td>
+                          <td data-label="Mobile">{patient.mobile}</td>
+                          <td data-label="Email">{patient.email || '-'}</td>
+                          <td data-label="Address">{patient.address}</td>
+                          <td data-label="Actions">
+                            <div className="d-flex gap-2 justify-content-center">
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={() => handleShow(patient)}
+                                disabled={loading}
+                              >
+                                <FaEdit />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(patient.id)}
+                                disabled={loading}
+                              >
+                                <FaTrash />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))

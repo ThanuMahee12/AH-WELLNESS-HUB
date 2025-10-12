@@ -168,7 +168,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
               <h5 className="mb-0"><FaChartLine className="me-2" />Checkups & Revenue Trend</h5>
             </Card.Header>
             <Card.Body>
@@ -211,7 +211,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
               <h5 className="mb-0"><FaFlask className="me-2" />Popular Tests</h5>
             </Card.Header>
             <Card.Body>
@@ -249,7 +249,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
               <h5 className="mb-0"><FaRupeeSign className="me-2" />Monthly Revenue</h5>
             </Card.Header>
             <Card.Body>
@@ -276,7 +276,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
               <h5 className="mb-0"><FaCalendarAlt className="me-2" />Quick Stats</h5>
             </Card.Header>
             <Card.Body>
@@ -322,7 +322,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4">
         <Col xs={12}>
           <Card className="shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
               <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups</h5>
             </Card.Header>
             <Card.Body>
@@ -337,16 +337,17 @@ function Dashboard() {
                     const patient = patients.find(p => p.id === checkup.patientId)
                     return (
                       <div key={checkup.id} className="list-group-item px-0">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <strong className="text-dark">#{checkup.id}</strong> - <strong>{patient?.name || 'Unknown'}</strong>
-                            <br />
+                        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                          <div className="flex-grow-1">
+                            <div>
+                              <strong className="text-dark">#{checkup.id}</strong> - <strong>{patient?.name || 'Unknown'}</strong>
+                            </div>
                             <small className="text-muted">
                               <FaCalendarAlt className="me-1" />
                               {new Date(checkup.timestamp).toLocaleString()}
                             </small>
                           </div>
-                          <div className="text-end">
+                          <div className="text-start text-sm-end">
                             <div className="text-success fw-bold fs-5">₹{checkup.total.toFixed(2)}</div>
                             <small className="text-muted">{checkup.tests?.length || 0} tests</small>
                           </div>

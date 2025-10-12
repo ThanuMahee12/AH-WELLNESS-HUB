@@ -106,8 +106,8 @@ function Users() {
                 </div>
               ) : (
                 <div className="table-responsive">
-                  <Table striped hover className="mb-0">
-                    <thead style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' }} className="text-white">
+                  <Table striped hover className="mb-0 table-mobile-responsive">
+                    <thead>
                       <tr>
                         <th>Username</th>
                         <th>Email</th>
@@ -119,32 +119,33 @@ function Users() {
                     <tbody>
                       {users.map(user => (
                         <tr key={user.id || user.uid}>
-                          <td><strong>{user.username}</strong></td>
-                          <td>{user.email}</td>
-                          <td>{user.mobile}</td>
-                          <td>
+                          <td data-label="Username"><strong>{user.username}</strong></td>
+                          <td data-label="Email">{user.email}</td>
+                          <td data-label="Mobile">{user.mobile}</td>
+                          <td data-label="Role">
                             <Badge bg={user.role === 'admin' ? 'warning' : 'info'}>
                               {user.role}
                             </Badge>
                           </td>
-                          <td className="text-center">
-                            <Button
-                              variant="warning"
-                              size="sm"
-                              className="me-2"
-                              onClick={() => handleShow(user)}
-                              disabled={loading}
-                            >
-                              <FaEdit />
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDelete(user.id || user.uid)}
-                              disabled={loading}
-                            >
-                              <FaTrash />
-                            </Button>
+                          <td data-label="Actions">
+                            <div className="d-flex gap-2 justify-content-center">
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={() => handleShow(user)}
+                                disabled={loading}
+                              >
+                                <FaEdit />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(user.id || user.uid)}
+                                disabled={loading}
+                              >
+                                <FaTrash />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}

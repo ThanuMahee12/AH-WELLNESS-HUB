@@ -16,7 +16,7 @@ import '../styles/sidebar.css'
 function Sidebar() {
   const location = useLocation()
   const { user } = useSelector(state => state.auth)
-  const [collapsed, setCollapsed] = useState(false)
+  const [showMobile, setShowMobile] = useState(false)
 
   const menuItems = [
     { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
@@ -39,16 +39,17 @@ function Sidebar() {
       {/* Mobile Toggle Button */}
       <button
         className="sidebar-toggle d-lg-none"
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={() => setShowMobile(!showMobile)}
+        aria-label="Toggle menu"
       >
-        {collapsed ? <FaTimes /> : <FaBars />}
+        {showMobile ? <FaTimes /> : <FaBars />}
       </button>
 
       {/* Sidebar */}
-      <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <div className={`sidebar ${showMobile ? 'show' : ''}`}>
         <div className="sidebar-header">
           <FaFlask className="sidebar-logo" />
-          {!collapsed && <h4 className="sidebar-title">Blood Lab</h4>}
+          <h4 className="sidebar-title">Blood Lab</h4>
         </div>
 
         <Nav className="flex-column sidebar-nav">
@@ -62,9 +63,10 @@ function Sidebar() {
                 as={Link}
                 to={item.path}
                 className={`sidebar-link ${isActive ? 'active' : ''}`}
+                onClick={() => setShowMobile(false)}
               >
                 <Icon className="sidebar-icon" />
-                {!collapsed && <span>{item.label}</span>}
+                <span>{item.label}</span>
               </Nav.Link>
             )
           })}
@@ -72,10 +74,10 @@ function Sidebar() {
       </div>
 
       {/* Mobile Overlay */}
-      {collapsed && (
+      {showMobile && (
         <div
           className="sidebar-overlay d-lg-none"
-          onClick={() => setCollapsed(false)}
+          onClick={() => setShowMobile(false)}
         />
       )}
     </>

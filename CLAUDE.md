@@ -88,16 +88,23 @@ Blood Lab Manager is a complete Point of Sale (POS) system for blood testing lab
 ## Design System
 
 ### Theme
-- Primary color: Blue (#0d6efd - Bootstrap primary)
+- Color scheme: Black/Grey/White theme
+  - Primary backgrounds: Black (#000000) to Dark Grey (#1a1a1a, #2d2d2d)
+  - Accents: Grey (#666, #888)
+  - Text: White (#fff) on dark, Dark on light
 - Fully responsive: Mobile-first design
 - Breakpoints: xs, sm, md, lg, xl (Bootstrap standard)
 
 ### Responsive Design
-- Tables with horizontal scroll on mobile
+- **Sidebar**: Toggle sidebar that slides from right on mobile/tablet (hamburger menu)
+- **Tables**: Mobile-responsive with card layout
+  - On mobile: Tables transform to card layout with data-label attributes
+  - Each row becomes a card showing label-value pairs
+  - Action buttons stack appropriately
+- **Forms**: Responsive modal forms that adapt to screen size
 - Fluid containers with responsive padding
-- Collapsible navbar for mobile
 - Stack cards vertically on small screens
-- Responsive modal sizes
+- Responsive charts and widgets
 
 ## Code Conventions
 
@@ -108,6 +115,14 @@ Blood Lab Manager is a complete Point of Sale (POS) system for blood testing lab
 - **PDF Generation**: Use `generateCheckupPDF` utility function
 - **Icons**: Import from `react-icons/fa` (Font Awesome)
 - **Styling**: Bootstrap utility classes preferred over custom CSS
+- **Responsive Tables**: Use `table-mobile-responsive` class with `data-label` attributes on `<td>` elements
+- **Color Scheme**: Use black/grey/white theme consistently across components
+
+## Git Commit Guidelines
+
+- **DO NOT** include Claude Code signature in commit messages
+- Keep commit messages concise and descriptive
+- Format: `type: description` (e.g., `feat: add responsive tables`, `fix: resolve mobile layout issues`)
 
 ## Key Workflows
 
