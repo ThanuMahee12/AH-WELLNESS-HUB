@@ -10,9 +10,9 @@ import { CRUDTable, CRUDModal } from '../components/crud'
 // Custom Gender Icon Selector Component
 const GenderIconSelector = ({ value, onChange, name, disabled }) => {
   const genderOptions = [
-    { value: 'Male', icon: FaMale, color: 'primary', label: 'Male' },
-    { value: 'Female', icon: FaFemale, color: 'danger', label: 'Female' },
-    { value: 'Other', icon: FaUser, color: 'secondary', label: 'Other' }
+    { value: 'Male', icon: FaMale, color: 'primary' },
+    { value: 'Female', icon: FaFemale, color: 'danger' },
+    { value: 'Other', icon: FaUser, color: 'secondary' }
   ]
 
   return (
@@ -20,7 +20,7 @@ const GenderIconSelector = ({ value, onChange, name, disabled }) => {
       <Form.Label>
         Gender <span className="text-danger ms-1">*</span>
       </Form.Label>
-      <div className="d-flex gap-3">
+      <div className="d-flex gap-2">
         {genderOptions.map((option) => {
           const Icon = option.icon
           const isSelected = value === option.value
@@ -30,29 +30,19 @@ const GenderIconSelector = ({ value, onChange, name, disabled }) => {
               onClick={() => !disabled && onChange({ target: { name, value: option.value } })}
               style={{
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                padding: '15px 25px',
+                padding: '8px',
                 border: `2px solid ${isSelected ? `var(--bs-${option.color})` : '#dee2e6'}`,
-                borderRadius: '8px',
+                borderRadius: '6px',
                 backgroundColor: isSelected ? `var(--bs-${option.color})` : 'white',
                 color: isSelected ? 'white' : `var(--bs-${option.color})`,
-                transition: 'all 0.2s',
-                textAlign: 'center',
-                flex: 1,
+                transition: 'all 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 opacity: disabled ? 0.6 : 1
               }}
-              onMouseEnter={(e) => {
-                if (!disabled && !isSelected) {
-                  e.currentTarget.style.backgroundColor = '#f8f9fa'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected) {
-                  e.currentTarget.style.backgroundColor = 'white'
-                }
-              }}
             >
-              <Icon size={32} className="mb-2" />
-              <div style={{ fontSize: '14px', fontWeight: '500' }}>{option.label}</div>
+              <Icon size={24} />
             </div>
           )
         })}
