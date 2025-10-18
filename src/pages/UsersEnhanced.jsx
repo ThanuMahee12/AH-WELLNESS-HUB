@@ -175,6 +175,8 @@ function UsersEnhanced() {
         // Use uid as the document ID (Firebase Auth UID)
         const userId = editingItem.uid || editingItem.id
 
+        console.log('Editing user:', { editingItem, userId, updateData })
+
         if (!userId) {
           const errorMsg = 'User ID not found'
           setFormError(errorMsg)
@@ -183,6 +185,7 @@ function UsersEnhanced() {
         }
 
         const result = await dispatch(updateUser({ id: userId, ...updateData }))
+        console.log('Update result:', result)
         if (result.type.includes('fulfilled')) {
           success('User updated successfully!')
           return true
