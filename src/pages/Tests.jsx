@@ -10,16 +10,15 @@ import { CRUDTable, CRUDModal } from '../components/crud'
 // Form field configuration
 const TEST_FIELDS = [
   { name: 'name', label: 'Test Name', type: 'text', required: true, colSize: 6 },
-  { name: 'price', label: 'Price (₹)', type: 'number', required: true, colSize: 6, props: { step: '0.01' } },
+  { name: 'price', label: 'Price (Rs.)', type: 'number', required: true, colSize: 6, props: { step: '0.01' } },
   { name: 'details', label: 'Test Details', type: 'textarea', required: false, colSize: 12, rows: 3 },
   { name: 'rules', label: 'Test Rules/Instructions', type: 'textarea', required: false, colSize: 12, rows: 3 },
 ];
 
 // Table column configuration
 const TABLE_COLUMNS = [
-  { key: 'id', label: 'ID' },
   { key: 'name', label: 'Test Name', render: (value) => <strong>{value}</strong> },
-  { key: 'price', label: 'Price (₹)', render: (value) => `₹${parseFloat(value).toFixed(2)}` },
+  { key: 'price', label: 'Price (Rs.)', render: (value) => `Rs. ${parseFloat(value).toFixed(2)}` },
   { key: 'details', label: 'Details' },
   { key: 'rules', label: 'Rules' },
 ];

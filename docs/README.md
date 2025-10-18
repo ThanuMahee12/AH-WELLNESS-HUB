@@ -47,7 +47,7 @@ cd Blood-Lab-Manager
 npm install
 ```
 
-3. **Set up Firebase** (Detailed guide: [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md))
+3. **Set up Firebase** (Detailed guide: [FIREBASE_SETUP.md](./FIREBASE_SETUP.md))
    - Create Firebase project
    - Enable Authentication (Email/Password)
    - Enable Firestore Database
@@ -384,6 +384,32 @@ See [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md) for more troubleshooting 
 ## 🌟 Star History
 
 If you find this project useful, please consider giving it a star! ⭐
+
+---
+
+## 📚 Documentation
+
+Comprehensive guides and documentation are available in the `docs/` folder:
+
+### Setup & Configuration
+- **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)** - Complete Firebase project setup guide
+- **[FIRST_USER_SETUP.md](./FIRST_USER_SETUP.md)** - Creating your first admin user
+- **[SUPERADMIN_SETUP.md](./SUPERADMIN_SETUP.md)** - Upgrade account to SuperAdmin
+- **[GITHUB_SECRETS_SETUP.md](./GITHUB_SECRETS_SETUP.md)** - Configure GitHub Actions secrets
+- **[GITHUB_ACTIONS_SETUP.md](./GITHUB_ACTIONS_SETUP.md)** - Setup automatic deployment
+
+### Features & Implementation
+- **[RBAC_IMPLEMENTATION.md](./RBAC_IMPLEMENTATION.md)** - Role-Based Access Control system
+  - 4 user roles: User, Editor, Maintainer, SuperAdmin
+  - Permission matrix and approval workflows
+  - Auto serial number generation for checkups
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Production deployment guide
+- **[VERSION_GUIDE.md](./VERSION_GUIDE.md)** - Version history and updates
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Feature implementation summary
+- **[REMAINING_UPDATES.md](./REMAINING_UPDATES.md)** - Planned features and updates
+
+### Development
+- **[CLAUDE.md](./CLAUDE.md)** - Development guidelines and project structure for AI assistants
 
 ---
 

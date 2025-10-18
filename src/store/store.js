@@ -4,6 +4,8 @@ import testsReducer from './testsSlice'
 import patientsReducer from './patientsSlice'
 import checkupsReducer from './checkupsSlice'
 import usersReducer from './usersSlice'
+import editRequestsReducer from './editRequestsSlice'
+import userChangeRequestsReducer from './userChangeRequestsSlice'
 
 const store = configureStore({
   reducer: {
@@ -12,6 +14,8 @@ const store = configureStore({
     patients: patientsReducer,
     checkups: checkupsReducer,
     users: usersReducer,
+    editRequests: editRequestsReducer,
+    userChangeRequests: userChangeRequestsReducer,
   },
 })
 

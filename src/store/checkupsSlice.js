@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
+import { generateCheckupSerialNumber } from '../utils/serialNumberGenerator'
 
 const COLLECTION = 'checkups'
 
@@ -29,14 +30,20 @@ export const fetchCheckups = createAsyncThunk(
 
 export const addCheckup = createAsyncThunk(
   'checkups/add',
-  async (checkupData, { rejectWithValue }) => {
-    const dataWithTimestamp = {
+  async (checkupData, { rejectWithValue, getState }) => {
+    // Generate unique serial number
+    const serialNumber = generateCheckupSerialNumber()
+
+    const dataWithMetadata = {
       ...checkupData,
-      timestamp: new Date().toISOString()
+      serialNumber, // Add 12-digit serial number
+      timestamp: new Date().toISOString(),
+      createdBy: getState().auth.user?.id || 'system',
+      createdByName: getState().auth.user?.username || 'System',
     }
-    const result = await firestoreService.create(COLLECTION, dataWithTimestamp)
+    const result = await firestoreService.create(COLLECTION, dataWithMetadata)
     if (result.success) {
-      return { id: result.id, ...dataWithTimestamp }
+      return { id: result.id, ...dataWithMetadata }
     } else {
       return rejectWithValue(result.error)
     }

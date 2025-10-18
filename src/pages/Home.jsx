@@ -33,17 +33,6 @@ function Home() {
     }
   }
 
-  const floatingVariants = {
-    animate: {
-      y: [0, -15, 0],
-      transition: {
-        duration: 4,
-        repeat: Infinity,
-        ease: 'easeInOut'
-      }
-    }
-  }
-
   const rotateVariants = {
     animate: {
       rotateY: [0, 360],
@@ -171,7 +160,7 @@ function Home() {
                     padding: '0 0.5rem'
                   }}
                 >
-                  AH WELLNESS HUB & ASIRI LABORATORIES
+                  AH WELLNESS HUB & ASIRI LABORATORIES
                 </motion.h1>
               </motion.div>
 
@@ -179,7 +168,6 @@ function Home() {
                 <p style={{
                   fontSize: 'clamp(0.95rem, 3.5vw, 1.6rem)',
                   color: '#0E7490',
-                  marginBottom: 'clamp(2rem, 5vw, 3rem)',
                   fontWeight: '500',
                   maxWidth: '90%',
                   margin: '0 auto',

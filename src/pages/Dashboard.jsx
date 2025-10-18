@@ -92,19 +92,22 @@ function Dashboard() {
 
   const COLORS = ['#0891B2', '#06B6D4', '#22D3EE', '#F59E0B', '#14B8A6']
 
-  const StatCard = ({ icon: Icon, title, value, color, bgColor, subtitle }) => (
-    <Card className="h-100 shadow-sm">
-      <Card.Body className="d-flex align-items-center">
-        <div className={`rounded-circle p-3 ${bgColor} me-3`}>
-          <Icon className={`fs-2 ${color}`} />
+  const StatCard = ({ icon, title, value, color, bgColor }) => {
+    const IconComponent = icon;
+    return (
+      <Card className="h-100 shadow-sm">
+        <Card.Body className="d-flex align-items-center">
+          <div className={`rounded-circle p-3 ${bgColor} me-3`}>
+            <IconComponent className={`fs-2 ${color}`} />
         </div>
         <div>
           <h6 className="text-muted mb-1">{title}</h6>
           <h3 className="mb-0">{value}</h3>
-        </div>
-      </Card.Body>
-    </Card>
-  )
+          </div>
+        </Card.Body>
+      </Card>
+    );
+  };
 
   return (
     <Container fluid className="p-3 p-md-4">
@@ -147,7 +150,7 @@ function Dashboard() {
           <StatCard
             icon={FaChartLine}
             title="Total Revenue"
-            value={`₹${totalRevenue.toFixed(2)}`}
+            value={`Rs. ${totalRevenue.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             color="text-warning"
             bgColor="bg-warning bg-opacity-10"
           />
@@ -204,7 +207,7 @@ function Dashboard() {
                       dataKey="revenue"
                       stroke="#14B8A6"
                       strokeWidth={2}
-                      name="Revenue (₹)"
+                      name="Revenue (Rs.)"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -270,7 +273,7 @@ function Dashboard() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="revenue" fill="#0891B2" name="Revenue (₹)" />
+                    <Bar dataKey="revenue" fill="#0891B2" name="Revenue (Rs.)" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -300,10 +303,10 @@ function Dashboard() {
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <span className="text-muted">Revenue Today</span>
                     <h4 className="mb-0 text-success">
-                      ₹{checkups
+                      Rs. {checkups
                         .filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString())
                         .reduce((sum, c) => sum + c.total, 0)
-                        .toFixed(2)}
+                        .toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </h4>
                   </div>
                   <hr />
@@ -312,7 +315,7 @@ function Dashboard() {
                   <div className="d-flex justify-content-between align-items-center">
                     <span className="text-muted">Avg. Bill Amount</span>
                     <h4 className="mb-0 text-info">
-                      ₹{checkups.length > 0 ? (totalRevenue / checkups.length).toFixed(2) : '0.00'}
+                      Rs. {checkups.length > 0 ? (totalRevenue / checkups.length).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                     </h4>
                   </div>
                 </div>
@@ -322,12 +325,86 @@ function Dashboard() {
         </Col>
       </Row>
 
+      {/* Today's Checkups Section */}
+      <Row className="g-3 g-md-4 mb-4">
+        <Col xs={12}>
+          <Card className="shadow-sm border-0">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0"><FaCalendarAlt className="me-2" />Today's Checkups</h5>
+                <span className="badge bg-light text-dark">
+                  {checkups.filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString()).length} checkups
+                </span>
+              </div>
+            </Card.Header>
+            <Card.Body>
+              {checkups.filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString()).length === 0 ? (
+                <div className="text-center p-5">
+                  <FaClipboardCheck size={50} className="text-muted mb-3" />
+                  <p className="text-muted">No checkups today</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle">
+                    <thead className="table-light">
+                      <tr>
+                        <th>ID</th>
+                        <th>Patient</th>
+                        <th>Time</th>
+                        <th>Tests</th>
+                        <th className="text-end">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {checkups
+                        .filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString())
+                        .reverse()
+                        .map(checkup => {
+                          const patient = patients.find(p => p.id === checkup.patientId)
+                          return (
+                            <tr key={checkup.id}>
+                              <td><span className="badge bg-primary">#{checkup.id}</span></td>
+                              <td><strong>{patient?.name || 'Unknown'}</strong></td>
+                              <td>
+                                <small className="text-muted">
+                                  {new Date(checkup.timestamp).toLocaleTimeString('en-LK', { hour: '2-digit', minute: '2-digit' })}
+                                </small>
+                              </td>
+                              <td><span className="badge bg-info">{checkup.tests?.length || 0} tests</span></td>
+                              <td className="text-end">
+                                <strong className="text-success">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                    </tbody>
+                    <tfoot className="table-light">
+                      <tr>
+                        <td colSpan="4" className="text-end"><strong>Total Revenue Today:</strong></td>
+                        <td className="text-end">
+                          <strong className="text-success fs-5">
+                            Rs. {checkups
+                              .filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString())
+                              .reduce((sum, c) => sum + c.total, 0)
+                              .toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </strong>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
       {/* Recent Checkups Section */}
       <Row className="g-3 g-md-4">
         <Col xs={12}>
-          <Card className="shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups</h5>
+          <Card className="shadow-sm border-0">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)' }} className="text-white">
+              <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 5)</h5>
             </Card.Header>
             <Card.Body>
               {checkups.length === 0 ? (
@@ -339,20 +416,23 @@ function Dashboard() {
                 <div className="list-group list-group-flush">
                   {checkups.slice(-5).reverse().map(checkup => {
                     const patient = patients.find(p => p.id === checkup.patientId)
+                    const isToday = new Date(checkup.timestamp).toDateString() === new Date().toDateString()
                     return (
-                      <div key={checkup.id} className="list-group-item px-0">
+                      <div key={checkup.id} className={`list-group-item px-0 ${isToday ? 'bg-light' : ''}`}>
                         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
                           <div className="flex-grow-1">
                             <div>
-                              <strong className="text-dark">#{checkup.id}</strong> - <strong>{patient?.name || 'Unknown'}</strong>
+                              <span className="badge bg-primary me-2">#{checkup.id}</span>
+                              <strong>{patient?.name || 'Unknown'}</strong>
+                              {isToday && <span className="badge bg-success ms-2">Today</span>}
                             </div>
                             <small className="text-muted">
                               <FaCalendarAlt className="me-1" />
-                              {new Date(checkup.timestamp).toLocaleString()}
+                              {new Date(checkup.timestamp).toLocaleString('en-LK')}
                             </small>
                           </div>
                           <div className="text-start text-sm-end">
-                            <div className="text-success fw-bold fs-5">₹{checkup.total.toFixed(2)}</div>
+                            <div className="text-success fw-bold fs-5">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             <small className="text-muted">{checkup.tests?.length || 0} tests</small>
                           </div>
                         </div>

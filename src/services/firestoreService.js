@@ -44,9 +44,17 @@ export const firestoreService = {
   // Update document
   update: async (collectionName, id, data) => {
     try {
+      // Remove any undefined or null values and non-plain objects
+      const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null && typeof value !== 'function') {
+          acc[key] = value
+        }
+        return acc
+      }, {})
+
       const docRef = doc(db, collectionName, id)
       await updateDoc(docRef, {
-        ...data,
+        ...cleanData,
         updatedAt: new Date().toISOString()
       })
       return { success: true }

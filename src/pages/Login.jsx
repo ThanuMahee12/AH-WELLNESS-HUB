@@ -1,27 +1,32 @@
-import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap'
 import { FaUser, FaLock, FaFlask } from 'react-icons/fa'
 import { loginUser } from '../store/authSlice'
+import { useForm } from '../hooks'
 import '../styles/Login.css'
 
 function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { loading, error } = useSelector(state => state.auth)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    const result = await dispatch(loginUser({ email, password }))
+  // Handle login submission
+  const handleLoginSubmit = async (formData) => {
+    const result = await dispatch(loginUser(formData))
 
     if (result.type === 'auth/login/fulfilled') {
       navigate('/dashboard')
+    } else {
+      throw new Error(result.payload || 'Login failed')
     }
   }
+
+  // Use form hook for login
+  const { formData, handleChange, handleSubmit, isSubmitting } = useForm(
+    { email: '', password: '' },
+    handleLoginSubmit
+  )
 
   return (
     <div className="login-wrapper">
@@ -49,11 +54,12 @@ function Login() {
                     </Form.Label>
                     <Form.Control
                       type="email"
+                      name="email"
                       placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={formData.email}
+                      onChange={handleChange}
                       required
-                      disabled={loading}
+                      disabled={loading || isSubmitting}
                       className="login-input"
                     />
                   </Form.Group>
@@ -64,11 +70,12 @@ function Login() {
                     </Form.Label>
                     <Form.Control
                       type="password"
+                      name="password"
                       placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={formData.password}
+                      onChange={handleChange}
                       required
-                      disabled={loading}
+                      disabled={loading || isSubmitting}
                       className="login-input"
                     />
                   </Form.Group>
@@ -76,9 +83,9 @@ function Login() {
                   <Button
                     type="submit"
                     className="w-100 login-button mt-3"
-                    disabled={loading}
+                    disabled={loading || isSubmitting}
                   >
-                    {loading ? (
+                    {loading || isSubmitting ? (
                       <>
                         <Spinner
                           as="span"

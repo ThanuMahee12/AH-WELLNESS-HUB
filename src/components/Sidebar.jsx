@@ -23,13 +23,13 @@ function Sidebar() {
     { path: '/patients', icon: FaUserInjured, label: 'Patients' },
     { path: '/checkups', icon: FaClipboardCheck, label: 'Checkups' },
     { path: '/tests', icon: FaFlask, label: 'Tests' },
-    { path: '/users', icon: FaUsers, label: 'Users', adminOnly: true },
+    { path: '/users', icon: FaUsers, label: 'Users', roles: ['superadmin', 'maintainer', 'admin'] },
   ]
 
   // Filter menu items based on user role
   const visibleMenuItems = menuItems.filter(item => {
-    if (item.adminOnly) {
-      return user?.role === 'admin'
+    if (item.roles) {
+      return item.roles.includes(user?.role)
     }
     return true
   })
