@@ -160,7 +160,7 @@ function Checkups() {
                       <th>Bill ID</th>
                       <th>Patient</th>
                       <th>Tests Count</th>
-                      <th>Total (₹)</th>
+                      <th>Total (Rs.)</th>
                       <th>Date/Time</th>
                       <th>Notes</th>
                       <th className="text-center">Actions</th>
@@ -179,7 +179,7 @@ function Checkups() {
                           <td data-label="Bill ID"><Badge bg="info">#{checkup.id}</Badge></td>
                           <td data-label="Patient"><strong>{getPatientName(checkup.patientId)}</strong></td>
                           <td data-label="Tests Count">{checkup.tests.length}</td>
-                          <td data-label="Total"><strong>₹{checkup.total.toFixed(2)}</strong></td>
+                          <td data-label="Total"><strong>Rs. {checkup.total.toFixed(2)}</strong></td>
                           <td data-label="Date/Time">{new Date(checkup.timestamp).toLocaleString()}</td>
                           <td data-label="Notes">{checkup.notes || '-'}</td>
                           <td data-label="Actions">
@@ -259,7 +259,7 @@ function Checkups() {
                             <br />
                             <small className="text-muted">{test.details}</small>
                           </div>
-                          <Badge bg="secondary">₹{test.price.toFixed(2)}</Badge>
+                          <Badge bg="secondary">Rs. {test.price.toFixed(2)}</Badge>
                         </div>
                       }
                       checked={formData.tests.includes(test.id)}
@@ -276,7 +276,7 @@ function Checkups() {
 
             <Form.Group className="mb-3">
               <Form.Label>
-                Total Amount: <Badge bg="success" className="fs-6">₹{calculateTotal().toFixed(2)}</Badge>
+                Total Amount: <Badge bg="success" className="fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
               </Form.Label>
             </Form.Group>
 
