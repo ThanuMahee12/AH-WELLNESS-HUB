@@ -92,6 +92,29 @@ const FormField = React.memo(({
           />
         );
 
+      case 'radio':
+        return (
+          <div>
+            {options.map((option) => (
+              <Form.Check
+                key={typeof option === 'object' ? option.value : option}
+                type="radio"
+                name={name}
+                id={`${name}-${typeof option === 'object' ? option.value : option}`}
+                label={typeof option === 'object' ? option.label : option}
+                value={typeof option === 'object' ? option.value : option}
+                checked={value === (typeof option === 'object' ? option.value : option)}
+                onChange={onChange}
+                onBlur={onBlur}
+                disabled={disabled}
+                isInvalid={!!error}
+                inline
+                {...rest}
+              />
+            ))}
+          </div>
+        );
+
       default:
         return (
           <Form.Control
@@ -110,11 +133,17 @@ const FormField = React.memo(({
     }
   };
 
-  if (type === 'checkbox') {
+  if (type === 'checkbox' || type === 'radio') {
     return (
       <Form.Group className="mb-3">
+        {type === 'radio' && label && (
+          <Form.Label>
+            {label}
+            {required && <span className="text-danger ms-1">*</span>}
+          </Form.Label>
+        )}
         {renderInput()}
-        {error && <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>}
+        {error && <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>{error}</Form.Control.Feedback>}
       </Form.Group>
     );
   }

@@ -10,8 +10,8 @@ import { CRUDTable, CRUDModal } from '../components/crud'
 // Form field configuration
 const PATIENT_FIELDS = [
   { name: 'name', label: 'Patient Name', type: 'text', required: true, colSize: 6 },
-  { name: 'age', label: 'Age', type: 'number', required: true, colSize: 3 },
-  { name: 'gender', label: 'Gender', type: 'select', required: true, colSize: 3, options: ['Male', 'Female', 'Other'] },
+  { name: 'age', label: 'Age', type: 'number', required: true, colSize: 6 },
+  { name: 'gender', label: 'Gender', type: 'radio', required: true, colSize: 12, options: ['Male', 'Female', 'Other'] },
   { name: 'mobile', label: 'Mobile', type: 'tel', required: true, colSize: 6 },
   { name: 'email', label: 'Email', type: 'email', required: false, colSize: 6 },
   { name: 'address', label: 'Address', type: 'textarea', required: true, colSize: 12, rows: 2 },
