@@ -20,30 +20,22 @@ const GenderIconSelector = ({ value, onChange, name, disabled }) => {
       <Form.Label>
         Gender <span className="text-danger ms-1">*</span>
       </Form.Label>
-      <div className="d-flex gap-2">
+      <div className="d-flex gap-3">
         {genderOptions.map((option) => {
           const Icon = option.icon
           const isSelected = value === option.value
           return (
-            <div
+            <Icon
               key={option.value}
+              size={28}
               onClick={() => !disabled && onChange({ target: { name, value: option.value } })}
+              className={isSelected ? `text-${option.color}` : 'text-muted'}
               style={{
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                padding: '8px',
-                border: `2px solid ${isSelected ? `var(--bs-${option.color})` : '#dee2e6'}`,
-                borderRadius: '6px',
-                backgroundColor: isSelected ? `var(--bs-${option.color})` : 'white',
-                color: isSelected ? 'white' : `var(--bs-${option.color})`,
-                transition: 'all 0.15s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: disabled ? 0.6 : 1
+                opacity: disabled ? 0.6 : isSelected ? 1 : 0.4,
+                transition: 'opacity 0.2s'
               }}
-            >
-              <Icon size={24} />
-            </div>
+            />
           )
         })}
       </div>
