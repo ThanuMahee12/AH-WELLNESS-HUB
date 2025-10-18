@@ -21,14 +21,14 @@ const PATIENT_FIELDS = [
 const TABLE_COLUMNS = [
   {
     key: 'gender',
-    label: 'Gender',
+    label: '',
     render: (value) => {
       if (value === 'Male') {
-        return <FaMale className="text-primary" size={20} title="Male" />
+        return <FaMale className="text-primary" size={18} />
       } else if (value === 'Female') {
-        return <FaFemale className="text-danger" size={20} title="Female" />
+        return <FaFemale className="text-danger" size={18} />
       } else {
-        return <FaUser className="text-secondary" size={20} title="Other" />
+        return <FaUser className="text-secondary" size={18} />
       }
     }
   },
