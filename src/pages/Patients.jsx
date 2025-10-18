@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux'
 import { Container, Row, Col } from 'react-bootstrap'
-import { FaUserInjured } from 'react-icons/fa'
+import { FaUserInjured, FaMale, FaFemale, FaUser } from 'react-icons/fa'
 import { fetchPatients, addPatient, updatePatient, deletePatient, selectAllPatients } from '../store/patientsSlice'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
@@ -19,9 +19,21 @@ const PATIENT_FIELDS = [
 
 // Table column configuration
 const TABLE_COLUMNS = [
+  {
+    key: 'gender',
+    label: 'Gender',
+    render: (value) => {
+      if (value === 'Male') {
+        return <FaMale className="text-primary" size={20} title="Male" />
+      } else if (value === 'Female') {
+        return <FaFemale className="text-danger" size={20} title="Female" />
+      } else {
+        return <FaUser className="text-secondary" size={20} title="Other" />
+      }
+    }
+  },
   { key: 'name', label: 'Name', render: (value) => <strong>{value}</strong> },
   { key: 'age', label: 'Age' },
-  { key: 'gender', label: 'Gender' },
   { key: 'mobile', label: 'Mobile' },
   { key: 'email', label: 'Email', render: (value) => value || '-' },
   { key: 'address', label: 'Address' },
