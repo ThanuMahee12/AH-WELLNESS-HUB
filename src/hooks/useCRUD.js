@@ -51,10 +51,18 @@ export const useCRUD = ({
 
         let result;
         if (editingItem) {
+          // Skip update if no action provided (for special cases like Users page)
+          if (!updateAction) {
+            throw new Error('Update action not provided');
+          }
           result = await dispatch(
             updateAction({ id: editingItem.id, ...dataToSubmit })
           );
         } else {
+          // Skip add if no action provided (for special cases like Users page)
+          if (!addAction) {
+            throw new Error('Add action not provided');
+          }
           result = await dispatch(addAction(dataToSubmit));
         }
 
@@ -62,11 +70,7 @@ export const useCRUD = ({
           throw new Error(result.payload || 'Operation failed');
         }
 
-        // Success
-        modal.close();
-        form.reset();
-        setEditingItem(null);
-
+        // Success - close modal and reset
         if (onSuccess) {
           onSuccess(editingItem ? 'updated' : 'added', result.payload);
         }
@@ -81,7 +85,7 @@ export const useCRUD = ({
         setOperationLoading(false);
       }
     },
-    [editingItem, dispatch, updateAction, addAction, transformData, onSuccess, onError, modal]
+    [editingItem, dispatch, updateAction, addAction, transformData, onSuccess, onError]
   );
 
   const form = useForm(initialFormState, handleFormSubmit);
@@ -108,6 +112,11 @@ export const useCRUD = ({
     setEditingItem(null);
     setOperationLoading(false);
   }, [modal, form]);
+
+  // Handle successful form submission
+  const handleSubmitSuccess = useCallback(() => {
+    handleClose();
+  }, [handleClose]);
 
   // Delete with confirmation
   const handleDelete = useCallback(
@@ -162,6 +171,7 @@ export const useCRUD = ({
     handleOpen,
     handleClose,
     handleDelete,
+    handleSubmitSuccess,
 
     // Item state
     editingItem,
