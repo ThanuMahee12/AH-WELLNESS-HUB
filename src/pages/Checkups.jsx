@@ -256,45 +256,70 @@ function Checkups() {
                   .filter(test => formData.tests.includes(test.id))
                   .map(test => ({
                     value: test.id,
-                    label: test.name,
-                    price: test.price,
-                    details: test.details
+                    label: test.name
                   }))}
                 onChange={handleTestChange}
                 isDisabled={loading}
-                placeholder="Search and select tests..."
-                formatOptionLabel={(option) => (
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <div><strong>{option.label}</strong></div>
-                      {option.details && <small className="text-muted">{option.details}</small>}
+                placeholder="Search tests..."
+                formatOptionLabel={(option, { context }) => {
+                  if (context === 'value') {
+                    // In tags - show only name
+                    return option.label
+                  }
+                  // In dropdown - show details and price
+                  return (
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div style={{ fontSize: '14px' }}><strong>{option.label}</strong></div>
+                        {option.details && <small className="text-muted" style={{ fontSize: '12px' }}>{option.details}</small>}
+                      </div>
+                      <Badge bg="secondary" style={{ fontSize: '11px' }}>Rs. {option.price.toFixed(2)}</Badge>
                     </div>
-                    <Badge bg="secondary" className="ms-2">Rs. {option.price.toFixed(2)}</Badge>
-                  </div>
-                )}
+                  )
+                }}
                 styles={{
                   control: (base) => ({
                     ...base,
-                    minHeight: '45px'
+                    minHeight: '38px',
+                    fontSize: '14px'
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    padding: '2px 8px',
+                    gap: '3px'
                   }),
                   multiValue: (base) => ({
                     ...base,
                     backgroundColor: '#0dcaf0',
-                    borderRadius: '4px'
+                    borderRadius: '3px',
+                    margin: '2px'
                   }),
                   multiValueLabel: (base) => ({
                     ...base,
                     color: 'white',
-                    fontWeight: '500',
-                    paddingRight: '6px'
+                    fontSize: '13px',
+                    padding: '2px 8px'
                   }),
                   multiValueRemove: (base) => ({
                     ...base,
                     color: 'white',
+                    padding: '2px 4px',
                     ':hover': {
                       backgroundColor: '#0aa2c0',
                       color: 'white'
                     }
+                  }),
+                  option: (base) => ({
+                    ...base,
+                    padding: '8px 12px'
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    fontSize: '14px'
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    fontSize: '14px'
                   })
                 }}
               />
