@@ -32,12 +32,13 @@ const getUserFields = (currentUserRole) => [
     options: currentUserRole === 'superadmin'
       ? [
           { value: 'user', label: 'User' },
-          { value: 'admin', label: 'Admin' },
+          { value: 'editor', label: 'Editor' },
           { value: 'maintainer', label: 'Maintainer' },
         ]
       : [
           { value: 'user', label: 'User' },
-          { value: 'admin', label: 'Admin' },
+          { value: 'editor', label: 'Editor' },
+          { value: 'maintainer', label: 'Maintainer' },
         ]
   },
 ]
@@ -79,8 +80,9 @@ function UsersEnhanced() {
         const colors = {
           superadmin: 'danger',
           maintainer: 'primary',
-          admin: 'warning',
-          user: 'info'
+          editor: 'warning',
+          user: 'info',
+          admin: 'primary' // backward compatibility
         }
         return <Badge bg={colors[value] || 'secondary'}>{value}</Badge>
       }
