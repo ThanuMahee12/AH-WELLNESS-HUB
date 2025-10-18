@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Container, Row, Col, Button } from 'react-bootstrap'
-import { FaFlask, FaMicroscope, FaTint, FaVial, FaHeartbeat, FaUserMd, FaChartLine, FaFileInvoice } from 'react-icons/fa'
 import { motion } from 'framer-motion'
+import bloodLabLogo from '../assets/blood-lab-logo.png'
 
 function Home() {
   const navigate = useNavigate()
@@ -44,6 +44,17 @@ function Home() {
     }
   }
 
+  const rotateVariants = {
+    animate: {
+      rotateZ: [0, 360],
+      transition: {
+        duration: 20,
+        repeat: Infinity,
+        ease: 'linear'
+      }
+    }
+  }
+
   const scaleInVariants = {
     hidden: { scale: 0.8, opacity: 0 },
     visible: {
@@ -64,54 +75,6 @@ function Home() {
       overflow: 'hidden',
       width: '100%'
     }}>
-      {/* Animated background elements */}
-      <motion.div
-        variants={floatingVariants}
-        animate="animate"
-        style={{
-          position: 'absolute',
-          top: '10%',
-          left: '5%',
-          fontSize: 'clamp(3rem, 8vw, 5rem)',
-          color: 'rgba(8, 145, 178, 0.1)',
-          zIndex: 1
-        }}
-      >
-        <FaMicroscope />
-      </motion.div>
-
-      <motion.div
-        variants={floatingVariants}
-        animate="animate"
-        style={{
-          position: 'absolute',
-          top: '60%',
-          right: '10%',
-          fontSize: 'clamp(2.5rem, 6vw, 4rem)',
-          color: 'rgba(8, 145, 178, 0.1)',
-          zIndex: 1,
-          animationDelay: '1s'
-        }}
-      >
-        <FaFlask />
-      </motion.div>
-
-      <motion.div
-        variants={floatingVariants}
-        animate="animate"
-        style={{
-          position: 'absolute',
-          bottom: '20%',
-          left: '15%',
-          fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
-          color: 'rgba(8, 145, 178, 0.1)',
-          zIndex: 1,
-          animationDelay: '0.5s'
-        }}
-      >
-        <FaVial />
-      </motion.div>
-
       {/* Subtle gradient orbs */}
       <motion.div
         animate={{
@@ -127,10 +90,34 @@ function Home() {
           position: 'absolute',
           top: '20%',
           right: '20%',
-          width: '300px',
-          height: '300px',
+          width: '400px',
+          height: '400px',
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          zIndex: 0
+        }}
+      />
+
+      <motion.div
+        animate={{
+          scale: [1, 1.15, 1],
+          opacity: [0.08, 0.15, 0.08]
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 2
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '15%',
+          left: '15%',
+          width: '350px',
+          height: '350px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(8, 145, 178, 0.15) 0%, transparent 70%)',
           filter: 'blur(60px)',
           zIndex: 0
         }}
@@ -148,13 +135,23 @@ function Home() {
             <Col>
               <motion.div variants={scaleInVariants}>
                 <motion.div
-                  animate={{
-                    scale: [1, 1.05, 1],
-                    transition: { duration: 5, repeat: Infinity, ease: 'easeInOut' }
+                  variants={rotateVariants}
+                  animate="animate"
+                  style={{
+                    display: 'inline-block',
+                    marginBottom: '2rem',
+                    perspective: '1000px'
                   }}
-                  style={{ display: 'inline-block', marginBottom: '2rem' }}
                 >
-                  <FaTint style={{ fontSize: 'clamp(3.5rem, 10vw, 6rem)', color: '#0891B2' }} />
+                  <img
+                    src={bloodLabLogo}
+                    alt="Blood Lab Logo"
+                    style={{
+                      width: 'clamp(150px, 20vw, 250px)',
+                      height: 'auto',
+                      filter: 'drop-shadow(0 8px 24px rgba(8, 145, 178, 0.3))'
+                    }}
+                  />
                 </motion.div>
 
                 <motion.h1
@@ -162,7 +159,7 @@ function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, delay: 0.3 }}
                   style={{
-                    fontSize: 'clamp(2rem, 6vw, 4.5rem)',
+                    fontSize: 'clamp(2.5rem, 7vw, 5rem)',
                     fontWeight: '800',
                     color: '#0E7490',
                     marginBottom: '1.5rem',
@@ -176,13 +173,13 @@ function Home() {
 
               <motion.div variants={itemVariants}>
                 <p style={{
-                  fontSize: 'clamp(1rem, 2.5vw, 1.4rem)',
+                  fontSize: 'clamp(1.1rem, 3vw, 1.6rem)',
                   color: '#0E7490',
-                  marginBottom: '2.5rem',
+                  marginBottom: '3rem',
                   fontWeight: '500',
-                  maxWidth: '700px',
-                  margin: '0 auto 2.5rem',
-                  lineHeight: '1.6'
+                  maxWidth: '800px',
+                  margin: '0 auto 3rem',
+                  lineHeight: '1.7'
                 }}>
                   Professional Point of Sale System for Modern Blood Testing Laboratories
                 </p>
@@ -190,7 +187,7 @@ function Home() {
 
               <motion.div variants={itemVariants}>
                 <motion.div
-                  whileHover={{ scale: 1.05, boxShadow: '0 15px 40px rgba(6, 182, 212, 0.4)' }}
+                  whileHover={{ scale: 1.08, boxShadow: '0 20px 50px rgba(6, 182, 212, 0.45)' }}
                   whileTap={{ scale: 0.98 }}
                   style={{ display: 'inline-block' }}
                 >
@@ -198,14 +195,14 @@ function Home() {
                     size="lg"
                     onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
                     style={{
-                      padding: 'clamp(0.8rem, 2vw, 1rem) clamp(2rem, 5vw, 3rem)',
-                      fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+                      padding: 'clamp(1rem, 2.5vw, 1.3rem) clamp(2.5rem, 6vw, 4rem)',
+                      fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
                       fontWeight: '600',
                       borderRadius: '50px',
                       background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
                       color: '#ffffff',
                       border: 'none',
-                      boxShadow: '0 10px 30px rgba(6, 182, 212, 0.35)',
+                      boxShadow: '0 12px 35px rgba(6, 182, 212, 0.4)',
                       transition: 'all 0.3s cubic-bezier(0.6, 0.05, 0.01, 0.9)'
                     }}
                   >
@@ -215,100 +212,6 @@ function Home() {
               </motion.div>
             </Col>
           </Row>
-
-          {/* Feature Icons Grid */}
-          <motion.div variants={itemVariants}>
-            <Row className="g-3 g-md-4 mt-4 mt-md-5">
-              {[
-                { icon: FaMicroscope, label: 'Advanced Testing', color: '#0891B2' },
-                { icon: FaUserMd, label: 'Patient Care', color: '#0891B2' },
-                { icon: FaHeartbeat, label: 'Health Monitoring', color: '#0891B2' },
-                { icon: FaFileInvoice, label: 'Smart Billing', color: '#F59E0B' }
-              ].map((feature, index) => (
-                <Col xs={6} md={3} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.8 + index * 0.1 }}
-                    whileHover={{
-                      y: -10,
-                      scale: 1.03,
-                      boxShadow: '0 15px 40px rgba(6, 182, 212, 0.25)',
-                      transition: { duration: 0.3 }
-                    }}
-                    style={{
-                      background: 'rgba(255,255,255,0.75)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: '20px',
-                      padding: 'clamp(1.5rem, 3vw, 2rem) clamp(0.8rem, 2vw, 1rem)',
-                      textAlign: 'center',
-                      border: '1px solid rgba(6, 182, 212, 0.3)',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s cubic-bezier(0.6, 0.05, 0.01, 0.9)'
-                    }}
-                  >
-                    <feature.icon style={{
-                      fontSize: 'clamp(2rem, 5vw, 3rem)',
-                      color: feature.color,
-                      marginBottom: '1rem',
-                      filter: 'drop-shadow(0 4px 8px rgba(8, 145, 178, 0.3))'
-                    }} />
-                    <p style={{
-                      color: '#0E7490',
-                      fontWeight: '600',
-                      margin: 0,
-                      fontSize: 'clamp(0.85rem, 1.5vw, 1rem)'
-                    }}>{feature.label}</p>
-                  </motion.div>
-                </Col>
-              ))}
-            </Row>
-          </motion.div>
-
-          {/* Stats Section */}
-          <motion.div variants={itemVariants}>
-            <Row className="mt-4 mt-md-5 text-center g-3 g-md-4">
-              {[
-                { value: '100%', label: 'Accurate Results' },
-                { value: '24/7', label: 'System Availability' },
-                { value: 'Fast', label: 'Quick Processing' }
-              ].map((stat, index) => (
-                <Col xs={12} md={4} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6, delay: 1.2 + index * 0.1 }}
-                    whileHover={{
-                      scale: 1.05,
-                      boxShadow: '0 15px 40px rgba(6, 182, 212, 0.25)',
-                      transition: { duration: 0.3 }
-                    }}
-                    style={{
-                      background: 'rgba(255,255,255,0.75)',
-                      backdropFilter: 'blur(10px)',
-                      borderRadius: '15px',
-                      padding: 'clamp(1.2rem, 2vw, 1.5rem)',
-                      marginBottom: '1rem',
-                      border: '1px solid rgba(6, 182, 212, 0.3)'
-                    }}
-                  >
-                    <h3 style={{
-                      color: '#0891B2',
-                      fontSize: 'clamp(2rem, 4vw, 2.5rem)',
-                      fontWeight: '700',
-                      margin: 0,
-                      marginBottom: '0.5rem'
-                    }}>{stat.value}</h3>
-                    <p style={{
-                      color: '#0E7490',
-                      margin: 0,
-                      fontSize: 'clamp(0.9rem, 1.5vw, 1rem)'
-                    }}>{stat.label}</p>
-                  </motion.div>
-                </Col>
-              ))}
-            </Row>
-          </motion.div>
         </motion.div>
       </Container>
     </div>
