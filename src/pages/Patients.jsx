@@ -19,7 +19,6 @@ const PATIENT_FIELDS = [
 
 // Table column configuration
 const TABLE_COLUMNS = [
-  { key: 'id', label: 'ID' },
   { key: 'name', label: 'Name', render: (value) => <strong>{value}</strong> },
   { key: 'age', label: 'Age' },
   { key: 'gender', label: 'Gender' },

@@ -17,7 +17,6 @@ const TEST_FIELDS = [
 
 // Table column configuration
 const TABLE_COLUMNS = [
-  { key: 'id', label: 'ID' },
   { key: 'name', label: 'Test Name', render: (value) => <strong>{value}</strong> },
   { key: 'price', label: 'Price (Rs.)', render: (value) => `Rs. ${parseFloat(value).toFixed(2)}` },
   { key: 'details', label: 'Details' },
