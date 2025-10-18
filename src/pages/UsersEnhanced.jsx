@@ -138,26 +138,57 @@ function UsersEnhanced() {
   const handleUserSubmit = async (formData, editingItem) => {
     setFormError('')
 
-    // If maintainer, create a change request
+    // If maintainer, can edit directly but only certain fields (not email)
     if (isMaintainer) {
-      const requestData = {
-        type: editingItem ? 'update' : 'create',
-        userId: editingItem?.id || null,
-        requestedBy: currentUser.uid,
-        requestedByName: currentUser.username,
-        data: formData,
-        originalData: editingItem || null,
-      }
+      if (editingItem) {
+        // Maintainer can edit user details but not email
+        const updateData = {
+          username: formData.username,
+          mobile: formData.mobile,
+          role: formData.role
+          // Email excluded - maintainer cannot change email
+        }
 
-      const result = await dispatch(createUserChangeRequest(requestData))
-      if (result.type.includes('fulfilled')) {
-        success('Change request submitted for approval')
-        return true
+        const userId = editingItem.uid || editingItem.id
+
+        if (!userId) {
+          const errorMsg = 'User ID not found'
+          setFormError(errorMsg)
+          showError(errorMsg)
+          throw new Error(errorMsg)
+        }
+
+        const result = await dispatch(updateUser({ id: userId, ...updateData }))
+        if (result.type.includes('fulfilled')) {
+          success('User updated successfully!')
+          return true
+        } else {
+          const errorMsg = result.payload || 'Failed to update user'
+          setFormError(errorMsg)
+          showError(errorMsg)
+          throw new Error(errorMsg)
+        }
       } else {
-        const errorMsg = result.payload || 'Failed to create request'
-        setFormError(errorMsg)
-        showError(errorMsg)
-        throw new Error(errorMsg)
+        // For new users, create a request (requires superadmin approval)
+        const requestData = {
+          type: 'create',
+          userId: null,
+          requestedBy: currentUser.uid,
+          requestedByName: currentUser.username,
+          data: formData,
+          originalData: null,
+        }
+
+        const result = await dispatch(createUserChangeRequest(requestData))
+        if (result.type.includes('fulfilled')) {
+          success('New user request submitted for approval')
+          return true
+        } else {
+          const errorMsg = result.payload || 'Failed to create request'
+          setFormError(errorMsg)
+          showError(errorMsg)
+          throw new Error(errorMsg)
+        }
       }
     }
 
@@ -364,9 +395,15 @@ function UsersEnhanced() {
           <Modal.Body>
             {formError && <Alert variant="danger" className="mb-3">{formError}</Alert>}
 
-            {isMaintainer && (
+            {isMaintainer && !isEditing && (
               <Alert variant="info" className="mb-3">
-                This {isEditing ? 'edit' : 'new user'} will require superadmin approval before taking effect.
+                New user creation requires superadmin approval.
+              </Alert>
+            )}
+
+            {isMaintainer && isEditing && (
+              <Alert variant="warning" className="mb-3">
+                You can edit username, mobile, and role. Email cannot be changed by maintainers.
               </Alert>
             )}
 
@@ -399,11 +436,17 @@ function UsersEnhanced() {
                         onChange={handleChange}
                         required={field.required}
                         placeholder={field.placeholder}
+                        disabled={isEditing && field.name === 'email' && isMaintainer}
                       />
                     )}
-                    {isEditing && field.name === 'email' && (
+                    {isEditing && field.name === 'email' && isSuperAdmin && (
                       <Form.Text className="text-warning">
                         Note: Changing email here updates the display only. Login email remains the same.
+                      </Form.Text>
+                    )}
+                    {isEditing && field.name === 'email' && isMaintainer && (
+                      <Form.Text className="text-muted">
+                        Email cannot be changed by maintainers
                       </Form.Text>
                     )}
                     {formErrors[field.name] && (

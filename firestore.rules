@@ -30,8 +30,14 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      // Superadmin can write to any user, maintainer can read only, users can write to their own profile
-      allow write: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      // Superadmin can write to any user
+      // Maintainer can update users but not change email
+      // Users can write to their own profile
+      allow create: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+      allow update: if isSuperAdmin()
+        || (isMaintainer() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']))
+        || (isAuthenticated() && request.auth.uid == userId);
     }
 
     // Patients collection - all authenticated users can manage
