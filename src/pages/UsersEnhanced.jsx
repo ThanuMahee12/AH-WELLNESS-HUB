@@ -164,8 +164,13 @@ function UsersEnhanced() {
     // Superadmin can make direct changes
     if (isSuperAdmin) {
       if (editingItem) {
-        // Update existing user
-        const result = await dispatch(updateUser({ id: editingItem.id, ...formData }))
+        // Update existing user - only send updatable fields (not email)
+        const updateData = {
+          username: formData.username,
+          mobile: formData.mobile,
+          role: formData.role
+        }
+        const result = await dispatch(updateUser({ id: editingItem.id, ...updateData }))
         if (result.type.includes('fulfilled')) {
           success('User updated successfully!')
           return true
@@ -382,7 +387,13 @@ function UsersEnhanced() {
                         onChange={handleChange}
                         required={field.required}
                         placeholder={field.placeholder}
+                        disabled={isEditing && field.name === 'email'}
                       />
+                    )}
+                    {isEditing && field.name === 'email' && (
+                      <Form.Text className="text-muted">
+                        Email cannot be changed after user creation
+                      </Form.Text>
                     )}
                     {formErrors[field.name] && (
                       <Form.Text className="text-danger">
