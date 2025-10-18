@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux'
 import { Container, Row, Col } from 'react-bootstrap'
 import { FaUserInjured } from 'react-icons/fa'
-import { fetchPatients, addPatient, updatePatient, deletePatient } from '../store/patientsSlice'
+import { fetchPatients, addPatient, updatePatient, deletePatient, selectAllPatients } from '../store/patientsSlice'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
@@ -29,7 +29,8 @@ const TABLE_COLUMNS = [
 ];
 
 function Patients() {
-  const { patients, loading, error } = useSelector(state => state.patients);
+  const patients = useSelector(selectAllPatients);
+  const { loading, error } = useSelector(state => state.patients);
   const { success, error: showError } = useNotification();
 
   // Custom hook handles ALL CRUD operations, modal, and form state

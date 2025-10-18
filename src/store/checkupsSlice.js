@@ -1,13 +1,18 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
 
 const COLLECTION = 'checkups'
 
-const initialState = {
-  checkups: [],
+// Create entity adapter
+const checkupsAdapter = createEntityAdapter({
+  selectId: (checkup) => checkup.id,
+  sortComparer: (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+})
+
+const initialState = checkupsAdapter.getInitialState({
   loading: false,
   error: null,
-}
+})
 
 // Async thunks for Firestore operations
 export const fetchCheckups = createAsyncThunk(
@@ -78,7 +83,7 @@ const checkupsSlice = createSlice({
         state.error = null
       })
       .addCase(fetchCheckups.fulfilled, (state, action) => {
-        state.checkups = action.payload
+        checkupsAdapter.setAll(state, action.payload)
         state.loading = false
       })
       .addCase(fetchCheckups.rejected, (state, action) => {
@@ -91,7 +96,7 @@ const checkupsSlice = createSlice({
         state.error = null
       })
       .addCase(addCheckup.fulfilled, (state, action) => {
-        state.checkups.unshift(action.payload)
+        checkupsAdapter.addOne(state, action.payload)
         state.loading = false
       })
       .addCase(addCheckup.rejected, (state, action) => {
@@ -104,10 +109,10 @@ const checkupsSlice = createSlice({
         state.error = null
       })
       .addCase(updateCheckup.fulfilled, (state, action) => {
-        const index = state.checkups.findIndex(c => c.id === action.payload.id)
-        if (index !== -1) {
-          state.checkups[index] = action.payload
-        }
+        checkupsAdapter.updateOne(state, {
+          id: action.payload.id,
+          changes: action.payload
+        })
         state.loading = false
       })
       .addCase(updateCheckup.rejected, (state, action) => {
@@ -120,7 +125,7 @@ const checkupsSlice = createSlice({
         state.error = null
       })
       .addCase(deleteCheckup.fulfilled, (state, action) => {
-        state.checkups = state.checkups.filter(c => c.id !== action.payload)
+        checkupsAdapter.removeOne(state, action.payload)
         state.loading = false
       })
       .addCase(deleteCheckup.rejected, (state, action) => {
@@ -131,4 +136,12 @@ const checkupsSlice = createSlice({
 })
 
 export const { clearError } = checkupsSlice.actions
+
+// Export entity adapter selectors
+export const {
+  selectAll: selectAllCheckups,
+  selectById: selectCheckupById,
+  selectIds: selectCheckupIds,
+} = checkupsAdapter.getSelectors((state) => state.checkups)
+
 export default checkupsSlice.reducer

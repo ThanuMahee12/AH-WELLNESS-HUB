@@ -1,13 +1,18 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
 
 const COLLECTION = 'tests'
 
-const initialState = {
-  tests: [],
+// Create entity adapter
+const testsAdapter = createEntityAdapter({
+  selectId: (test) => test.id,
+  sortComparer: (a, b) => b.name.localeCompare(a.name)
+})
+
+const initialState = testsAdapter.getInitialState({
   loading: false,
   error: null,
-}
+})
 
 // Async thunks for Firestore operations
 export const fetchTests = createAsyncThunk(
@@ -74,7 +79,7 @@ const testsSlice = createSlice({
         state.error = null
       })
       .addCase(fetchTests.fulfilled, (state, action) => {
-        state.tests = action.payload
+        testsAdapter.setAll(state, action.payload)
         state.loading = false
       })
       .addCase(fetchTests.rejected, (state, action) => {
@@ -87,7 +92,7 @@ const testsSlice = createSlice({
         state.error = null
       })
       .addCase(addTest.fulfilled, (state, action) => {
-        state.tests.unshift(action.payload)
+        testsAdapter.addOne(state, action.payload)
         state.loading = false
       })
       .addCase(addTest.rejected, (state, action) => {
@@ -100,10 +105,10 @@ const testsSlice = createSlice({
         state.error = null
       })
       .addCase(updateTest.fulfilled, (state, action) => {
-        const index = state.tests.findIndex(t => t.id === action.payload.id)
-        if (index !== -1) {
-          state.tests[index] = action.payload
-        }
+        testsAdapter.updateOne(state, {
+          id: action.payload.id,
+          changes: action.payload
+        })
         state.loading = false
       })
       .addCase(updateTest.rejected, (state, action) => {
@@ -116,7 +121,7 @@ const testsSlice = createSlice({
         state.error = null
       })
       .addCase(deleteTest.fulfilled, (state, action) => {
-        state.tests = state.tests.filter(t => t.id !== action.payload)
+        testsAdapter.removeOne(state, action.payload)
         state.loading = false
       })
       .addCase(deleteTest.rejected, (state, action) => {
@@ -127,4 +132,12 @@ const testsSlice = createSlice({
 })
 
 export const { clearError } = testsSlice.actions
+
+// Export entity adapter selectors
+export const {
+  selectAll: selectAllTests,
+  selectById: selectTestById,
+  selectIds: selectTestIds,
+} = testsAdapter.getSelectors((state) => state.tests)
+
 export default testsSlice.reducer

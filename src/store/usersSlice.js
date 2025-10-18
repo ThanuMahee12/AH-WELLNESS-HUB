@@ -1,14 +1,19 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
 import { registerUser } from './authSlice'
 
 const COLLECTION = 'users'
 
-const initialState = {
-  users: [],
+// Create entity adapter
+const usersAdapter = createEntityAdapter({
+  selectId: (user) => user.id,
+  sortComparer: (a, b) => b.username.localeCompare(a.username)
+})
+
+const initialState = usersAdapter.getInitialState({
   loading: false,
   error: null,
-}
+})
 
 // Async thunks for Firestore operations
 export const fetchUsers = createAsyncThunk(
@@ -76,7 +81,7 @@ const usersSlice = createSlice({
         state.error = null
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
-        state.users = action.payload
+        usersAdapter.setAll(state, action.payload)
         state.loading = false
       })
       .addCase(fetchUsers.rejected, (state, action) => {
@@ -85,7 +90,7 @@ const usersSlice = createSlice({
       })
       // Add user to list (after registration)
       .addCase(addUserToList.fulfilled, (state, action) => {
-        state.users.unshift(action.payload)
+        usersAdapter.addOne(state, action.payload)
       })
       // Update user
       .addCase(updateUser.pending, (state) => {
@@ -93,10 +98,10 @@ const usersSlice = createSlice({
         state.error = null
       })
       .addCase(updateUser.fulfilled, (state, action) => {
-        const index = state.users.findIndex(u => u.id === action.payload.id)
-        if (index !== -1) {
-          state.users[index] = action.payload
-        }
+        usersAdapter.updateOne(state, {
+          id: action.payload.id,
+          changes: action.payload
+        })
         state.loading = false
       })
       .addCase(updateUser.rejected, (state, action) => {
@@ -109,7 +114,7 @@ const usersSlice = createSlice({
         state.error = null
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
-        state.users = state.users.filter(u => u.id !== action.payload)
+        usersAdapter.removeOne(state, action.payload)
         state.loading = false
       })
       .addCase(deleteUser.rejected, (state, action) => {
@@ -118,10 +123,18 @@ const usersSlice = createSlice({
       })
       // Listen to registerUser from authSlice
       .addCase(registerUser.fulfilled, (state, action) => {
-        state.users.unshift(action.payload)
+        usersAdapter.addOne(state, action.payload)
       })
   },
 })
 
 export const { clearError } = usersSlice.actions
+
+// Export entity adapter selectors
+export const {
+  selectAll: selectAllUsers,
+  selectById: selectUserById,
+  selectIds: selectUserIds,
+} = usersAdapter.getSelectors((state) => state.users)
+
 export default usersSlice.reducer

@@ -1,13 +1,18 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
 
 const COLLECTION = 'patients'
 
-const initialState = {
-  patients: [],
+// Create entity adapter
+const patientsAdapter = createEntityAdapter({
+  selectId: (patient) => patient.id,
+  sortComparer: (a, b) => b.name.localeCompare(a.name)
+})
+
+const initialState = patientsAdapter.getInitialState({
   loading: false,
   error: null,
-}
+})
 
 // Async thunks for Firestore operations
 export const fetchPatients = createAsyncThunk(
@@ -74,7 +79,7 @@ const patientsSlice = createSlice({
         state.error = null
       })
       .addCase(fetchPatients.fulfilled, (state, action) => {
-        state.patients = action.payload
+        patientsAdapter.setAll(state, action.payload)
         state.loading = false
       })
       .addCase(fetchPatients.rejected, (state, action) => {
@@ -87,7 +92,7 @@ const patientsSlice = createSlice({
         state.error = null
       })
       .addCase(addPatient.fulfilled, (state, action) => {
-        state.patients.unshift(action.payload)
+        patientsAdapter.addOne(state, action.payload)
         state.loading = false
       })
       .addCase(addPatient.rejected, (state, action) => {
@@ -100,10 +105,10 @@ const patientsSlice = createSlice({
         state.error = null
       })
       .addCase(updatePatient.fulfilled, (state, action) => {
-        const index = state.patients.findIndex(p => p.id === action.payload.id)
-        if (index !== -1) {
-          state.patients[index] = action.payload
-        }
+        patientsAdapter.updateOne(state, {
+          id: action.payload.id,
+          changes: action.payload
+        })
         state.loading = false
       })
       .addCase(updatePatient.rejected, (state, action) => {
@@ -116,7 +121,7 @@ const patientsSlice = createSlice({
         state.error = null
       })
       .addCase(deletePatient.fulfilled, (state, action) => {
-        state.patients = state.patients.filter(p => p.id !== action.payload)
+        patientsAdapter.removeOne(state, action.payload)
         state.loading = false
       })
       .addCase(deletePatient.rejected, (state, action) => {
@@ -127,4 +132,12 @@ const patientsSlice = createSlice({
 })
 
 export const { clearError } = patientsSlice.actions
+
+// Export entity adapter selectors
+export const {
+  selectAll: selectAllPatients,
+  selectById: selectPatientById,
+  selectIds: selectPatientIds,
+} = patientsAdapter.getSelectors((state) => state.patients)
+
 export default patientsSlice.reducer

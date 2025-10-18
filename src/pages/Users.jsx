@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Badge, Alert } from 'react-bootstrap'
 import { FaUsers } from 'react-icons/fa'
-import { fetchUsers, updateUser, deleteUser } from '../store/usersSlice'
+import { fetchUsers, updateUser, deleteUser, selectAllUsers } from '../store/usersSlice'
 import { registerUser } from '../store/authSlice'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
@@ -38,7 +38,8 @@ const TABLE_COLUMNS = [
 
 function Users() {
   const dispatch = useDispatch();
-  const { users, loading, error } = useSelector(state => state.users);
+  const users = useSelector(selectAllUsers);
+  const { loading, error } = useSelector(state => state.users);
   const { success, error: showError } = useNotification();
   const [formError, setFormError] = useState('');
 

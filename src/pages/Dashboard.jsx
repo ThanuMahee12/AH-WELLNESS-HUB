@@ -3,19 +3,23 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card } from 'react-bootstrap'
 import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign } from 'react-icons/fa'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { fetchPatients } from '../store/patientsSlice'
-import { fetchTests } from '../store/testsSlice'
-import { fetchCheckups } from '../store/checkupsSlice'
-import { fetchUsers } from '../store/usersSlice'
+import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
+import { fetchTests, selectAllTests } from '../store/testsSlice'
+import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
+import { fetchUsers, selectAllUsers } from '../store/usersSlice'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
 function Dashboard() {
   const dispatch = useDispatch()
   const { user } = useSelector(state => state.auth)
-  const { patients, loading: patientsLoading } = useSelector(state => state.patients)
-  const { tests, loading: testsLoading } = useSelector(state => state.tests)
-  const { checkups, loading: checkupsLoading } = useSelector(state => state.checkups)
-  const { users, loading: usersLoading } = useSelector(state => state.users)
+  const patients = useSelector(selectAllPatients)
+  const tests = useSelector(selectAllTests)
+  const checkups = useSelector(selectAllCheckups)
+  const users = useSelector(selectAllUsers)
+  const { loading: patientsLoading } = useSelector(state => state.patients)
+  const { loading: testsLoading } = useSelector(state => state.tests)
+  const { loading: checkupsLoading } = useSelector(state => state.checkups)
+  const { loading: usersLoading } = useSelector(state => state.users)
 
   useEffect(() => {
     dispatch(fetchPatients())

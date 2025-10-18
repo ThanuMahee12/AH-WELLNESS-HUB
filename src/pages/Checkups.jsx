@@ -2,18 +2,21 @@ import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge } from 'react-bootstrap'
 import { FaPlus, FaEdit, FaTrash, FaFilePdf, FaClipboardCheck } from 'react-icons/fa'
-import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
-import { fetchPatients } from '../store/patientsSlice'
-import { fetchTests } from '../store/testsSlice'
+import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
+import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
+import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { generateCheckupPDF } from '../utils/pdfGenerator'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorAlert from '../components/common/ErrorAlert'
 
 function Checkups() {
   const dispatch = useDispatch()
-  const { checkups, loading: checkupsLoading, error: checkupsError } = useSelector(state => state.checkups)
-  const { patients, loading: patientsLoading } = useSelector(state => state.patients)
-  const { tests, loading: testsLoading } = useSelector(state => state.tests)
+  const checkups = useSelector(selectAllCheckups)
+  const patients = useSelector(selectAllPatients)
+  const tests = useSelector(selectAllTests)
+  const { loading: checkupsLoading, error: checkupsError } = useSelector(state => state.checkups)
+  const { loading: patientsLoading } = useSelector(state => state.patients)
+  const { loading: testsLoading } = useSelector(state => state.tests)
   const [showModal, setShowModal] = useState(false)
   const [editingCheckup, setEditingCheckup] = useState(null)
   const [formData, setFormData] = useState({

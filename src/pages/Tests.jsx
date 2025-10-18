@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux'
 import { Container, Row, Col } from 'react-bootstrap'
 import { FaFlask } from 'react-icons/fa'
-import { fetchTests, addTest, updateTest, deleteTest } from '../store/testsSlice'
+import { fetchTests, addTest, updateTest, deleteTest, selectAllTests } from '../store/testsSlice'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
@@ -25,7 +25,8 @@ const TABLE_COLUMNS = [
 ];
 
 function Tests() {
-  const { tests, loading, error } = useSelector(state => state.tests);
+  const tests = useSelector(selectAllTests);
+  const { loading, error } = useSelector(state => state.tests);
   const { success, error: showError } = useNotification();
 
   // Custom hook handles ALL CRUD operations, modal, and form state
