@@ -164,13 +164,25 @@ function UsersEnhanced() {
     // Superadmin can make direct changes
     if (isSuperAdmin) {
       if (editingItem) {
-        // Update existing user - only send updatable fields (not email)
+        // Update existing user - Firestore fields only (email is stored but can be updated in Firestore)
         const updateData = {
           username: formData.username,
+          email: formData.email,
           mobile: formData.mobile,
           role: formData.role
         }
-        const result = await dispatch(updateUser({ id: editingItem.id, ...updateData }))
+
+        // Use uid as the document ID (Firebase Auth UID)
+        const userId = editingItem.uid || editingItem.id
+
+        if (!userId) {
+          const errorMsg = 'User ID not found'
+          setFormError(errorMsg)
+          showError(errorMsg)
+          throw new Error(errorMsg)
+        }
+
+        const result = await dispatch(updateUser({ id: userId, ...updateData }))
         if (result.type.includes('fulfilled')) {
           success('User updated successfully!')
           return true
@@ -387,12 +399,11 @@ function UsersEnhanced() {
                         onChange={handleChange}
                         required={field.required}
                         placeholder={field.placeholder}
-                        disabled={isEditing && field.name === 'email'}
                       />
                     )}
                     {isEditing && field.name === 'email' && (
-                      <Form.Text className="text-muted">
-                        Email cannot be changed after user creation
+                      <Form.Text className="text-warning">
+                        Note: Changing email here updates the display only. Login email remains the same.
                       </Form.Text>
                     )}
                     {formErrors[field.name] && (

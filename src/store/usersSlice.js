@@ -123,7 +123,12 @@ const usersSlice = createSlice({
       })
       // Listen to registerUser from authSlice
       .addCase(registerUser.fulfilled, (state, action) => {
-        usersAdapter.addOne(state, action.payload)
+        // Ensure the user has an id field for consistency
+        const user = {
+          id: action.payload.uid,
+          ...action.payload
+        }
+        usersAdapter.addOne(state, user)
       })
   },
 })
