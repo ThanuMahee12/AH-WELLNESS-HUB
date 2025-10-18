@@ -4,7 +4,7 @@ import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge } from 're
 import { FaPlus, FaEdit, FaTrash, FaFilePdf, FaClipboardCheck } from 'react-icons/fa'
 import Select from 'react-select'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
-import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
+import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { generateCheckupPDF } from '../utils/pdfGenerator'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -20,10 +20,20 @@ function Checkups() {
   const { loading: testsLoading } = useSelector(state => state.tests)
   const [showModal, setShowModal] = useState(false)
   const [editingCheckup, setEditingCheckup] = useState(null)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [showNewPatientForm, setShowNewPatientForm] = useState(false)
   const [formData, setFormData] = useState({
     patientId: '',
     tests: [],
     notes: ''
+  })
+  const [newPatientData, setNewPatientData] = useState({
+    name: '',
+    age: '',
+    gender: 'Male',
+    mobile: '',
+    email: '',
+    address: ''
   })
 
   const loading = checkupsLoading || patientsLoading || testsLoading
@@ -37,12 +47,16 @@ function Checkups() {
   const handleClose = () => {
     setShowModal(false)
     setEditingCheckup(null)
+    setCurrentStep(1)
+    setShowNewPatientForm(false)
     setFormData({ patientId: '', tests: [], notes: '' })
+    setNewPatientData({ name: '', age: '', gender: 'Male', mobile: '', email: '', address: '' })
   }
 
   const handleShow = (checkup = null) => {
     if (checkup) {
       setEditingCheckup(checkup)
+      setCurrentStep(2) // Skip to step 2 when editing
       setFormData({
         patientId: checkup.patientId,
         tests: checkup.tests,
@@ -50,6 +64,36 @@ function Checkups() {
       })
     }
     setShowModal(true)
+  }
+
+  const handlePatientSelect = (selectedOption) => {
+    if (selectedOption) {
+      setFormData(prev => ({ ...prev, patientId: selectedOption.value }))
+      setShowNewPatientForm(false)
+    }
+  }
+
+  const handleCreateNewPatient = async () => {
+    try {
+      const result = await dispatch(addPatient(newPatientData))
+      if (result.payload?.id) {
+        setFormData(prev => ({ ...prev, patientId: result.payload.id }))
+        setShowNewPatientForm(false)
+        setCurrentStep(2)
+      }
+    } catch (error) {
+      console.error('Error creating patient:', error)
+    }
+  }
+
+  const handleNextStep = () => {
+    if (currentStep === 1 && formData.patientId) {
+      setCurrentStep(2)
+    }
+  }
+
+  const handlePreviousStep = () => {
+    setCurrentStep(1)
   }
 
   const handleTestChange = (selectedOptions) => {
@@ -222,27 +266,167 @@ function Checkups() {
 
       <Modal show={showModal} onHide={handleClose} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>{editingCheckup ? 'Edit Checkup' : 'New Checkup / Bill'}</Modal.Title>
+          <Modal.Title>
+            {editingCheckup ? 'Edit Checkup' : 'New Checkup / Bill'}
+            {!editingCheckup && <span className="ms-2 text-muted" style={{ fontSize: '14px' }}>Step {currentStep} of 2</span>}
+          </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label>Select Patient *</Form.Label>
-              <Form.Select
-                value={formData.patientId}
-                onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                required
-              >
-                <option value="">Choose a patient...</option>
-                {patients.map(patient => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.name} - {patient.age}yr - {patient.mobile}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
+            {/* Step 1: Patient Selection/Creation */}
+            {currentStep === 1 && !editingCheckup && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>Select Patient *</Form.Label>
+                  <Select
+                    options={patients.map(patient => ({
+                      value: patient.id,
+                      label: `${patient.name} - ${patient.age}yr - ${patient.mobile}`,
+                      patient: patient
+                    }))}
+                    value={patients
+                      .filter(p => p.id === formData.patientId)
+                      .map(patient => ({
+                        value: patient.id,
+                        label: `${patient.name} - ${patient.age}yr - ${patient.mobile}`
+                      }))[0] || null}
+                    onChange={handlePatientSelect}
+                    placeholder="Search patient by name, mobile..."
+                    isClearable
+                    formatOptionLabel={(option) => (
+                      <div>
+                        <div><strong>{option.patient?.name || option.label.split(' - ')[0]}</strong></div>
+                        <small className="text-muted">
+                          {option.patient?.age}yr, {option.patient?.gender} - {option.patient?.mobile}
+                        </small>
+                      </div>
+                    )}
+                  />
+                </Form.Group>
 
-            <Form.Group className="mb-3">
+                <div className="text-center mb-3">
+                  <Button
+                    variant="link"
+                    onClick={() => setShowNewPatientForm(!showNewPatientForm)}
+                  >
+                    {showNewPatientForm ? 'Cancel' : '+ Add New Patient'}
+                  </Button>
+                </div>
+
+                {showNewPatientForm && (
+                  <Card className="mb-3">
+                    <Card.Header className="bg-light">
+                      <strong>New Patient Information</strong>
+                    </Card.Header>
+                    <Card.Body>
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Name *</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={newPatientData.name}
+                              onChange={(e) => setNewPatientData({ ...newPatientData, name: e.target.value })}
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={3}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Age *</Form.Label>
+                            <Form.Control
+                              type="number"
+                              value={newPatientData.age}
+                              onChange={(e) => setNewPatientData({ ...newPatientData, age: e.target.value })}
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={3}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Gender *</Form.Label>
+                            <Form.Select
+                              value={newPatientData.gender}
+                              onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}
+                            >
+                              <option>Male</option>
+                              <option>Female</option>
+                              <option>Other</option>
+                            </Form.Select>
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Mobile *</Form.Label>
+                            <Form.Control
+                              type="tel"
+                              value={newPatientData.mobile}
+                              onChange={(e) => setNewPatientData({ ...newPatientData, mobile: e.target.value })}
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Email</Form.Label>
+                            <Form.Control
+                              type="email"
+                              value={newPatientData.email}
+                              onChange={(e) => setNewPatientData({ ...newPatientData, email: e.target.value })}
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={12}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Address *</Form.Label>
+                            <Form.Control
+                              as="textarea"
+                              rows={2}
+                              value={newPatientData.address}
+                              onChange={(e) => setNewPatientData({ ...newPatientData, address: e.target.value })}
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      <Button variant="primary" onClick={handleCreateNewPatient} size="sm">
+                        Create Patient & Continue
+                      </Button>
+                    </Card.Body>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {/* Step 2: Test Selection */}
+            {(currentStep === 2 || editingCheckup) && (
+              <>
+                {currentStep === 2 && !editingCheckup && (
+                  <div className="alert alert-info mb-3">
+                    <strong>Patient:</strong> {patients.find(p => p.id === formData.patientId)?.name}
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="float-end"
+                      onClick={handlePreviousStep}
+                    >
+                      Change Patient
+                    </Button>
+                  </div>
+                )}
+
+                {editingCheckup && (
+                  <Form.Group className="mb-3">
+                    <Form.Label>Patient</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={patients.find(p => p.id === formData.patientId)?.name || 'Unknown'}
+                      disabled
+                    />
+                  </Form.Group>
+                )}
+
+                <Form.Group className="mb-3">
               <Form.Label>Select Tests *</Form.Label>
               <Select
                 isMulti
@@ -331,24 +515,46 @@ function Checkups() {
               </Form.Label>
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Notes / Remarks</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Any special notes or remarks..."
-              />
-            </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Notes / Remarks</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Any special notes or remarks..."
+                  />
+                </Form.Group>
+              </>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleClose}>
               Cancel
             </Button>
-            <Button variant="secondary" type="submit">
-              {editingCheckup ? 'Update' : 'Create'} Checkup
-            </Button>
+
+            {currentStep === 1 && !editingCheckup && (
+              <Button
+                variant="primary"
+                onClick={handleNextStep}
+                disabled={!formData.patientId}
+              >
+                Next: Select Tests
+              </Button>
+            )}
+
+            {(currentStep === 2 || editingCheckup) && (
+              <>
+                {currentStep === 2 && !editingCheckup && (
+                  <Button variant="outline-secondary" onClick={handlePreviousStep}>
+                    Back
+                  </Button>
+                )}
+                <Button variant="primary" type="submit">
+                  {editingCheckup ? 'Update' : 'Create'} Checkup
+                </Button>
+              </>
+            )}
           </Modal.Footer>
         </Form>
       </Modal>
