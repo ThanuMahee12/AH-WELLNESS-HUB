@@ -1,242 +1,185 @@
-import { useState, useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge, Alert } from 'react-bootstrap'
-import { FaPlus, FaEdit, FaTrash, FaUsers } from 'react-icons/fa'
+import { useSelector, useDispatch } from 'react-redux'
+import { Container, Row, Col, Badge, Alert } from 'react-bootstrap'
+import { FaUsers } from 'react-icons/fa'
 import { fetchUsers, updateUser, deleteUser } from '../store/usersSlice'
 import { registerUser } from '../store/authSlice'
-import LoadingSpinner from '../components/common/LoadingSpinner'
-import ErrorAlert from '../components/common/ErrorAlert'
+import { useCRUD } from '../hooks'
+import { useNotification } from '../context'
+import { PageHeader } from '../components/ui'
+import { CRUDTable, CRUDModal } from '../components/crud'
+import { useState } from 'react'
+
+// Form field configuration
+const USER_FIELDS = [
+  { name: 'username', label: 'Username', type: 'text', required: true, colSize: 6 },
+  { name: 'email', label: 'Email', type: 'email', required: true, colSize: 6 },
+  { name: 'mobile', label: 'Mobile', type: 'tel', required: true, colSize: 6 },
+  { name: 'role', label: 'Role', type: 'select', required: true, colSize: 6, options: [
+    { value: 'user', label: 'User' },
+    { value: 'admin', label: 'Admin' }
+  ]},
+];
+
+// Table column configuration
+const TABLE_COLUMNS = [
+  { key: 'username', label: 'Username', render: (value) => <strong>{value}</strong> },
+  { key: 'email', label: 'Email' },
+  { key: 'mobile', label: 'Mobile' },
+  {
+    key: 'role',
+    label: 'Role',
+    render: (value) => (
+      <Badge bg={value === 'admin' ? 'warning' : 'info'}>
+        {value}
+      </Badge>
+    )
+  },
+];
 
 function Users() {
-  const dispatch = useDispatch()
-  const { users, loading, error } = useSelector(state => state.users)
-  const [showModal, setShowModal] = useState(false)
-  const [editingUser, setEditingUser] = useState(null)
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    mobile: '',
-    role: 'user'
-  })
-  const [formError, setFormError] = useState('')
+  const dispatch = useDispatch();
+  const { users, loading, error } = useSelector(state => state.users);
+  const { success, error: showError } = useNotification();
+  const [formError, setFormError] = useState('');
 
-  useEffect(() => {
-    dispatch(fetchUsers())
-  }, [dispatch])
+  // Custom submit handler for Users (special case: uses registerUser for add)
+  const handleUserSubmit = async (formData, editingItem) => {
+    setFormError('');
 
-  const handleClose = () => {
-    setShowModal(false)
-    setEditingUser(null)
-    setFormData({ username: '', email: '', password: '', mobile: '', role: 'user' })
-    setFormError('')
-  }
-
-  const handleShow = (user = null) => {
-    if (user) {
-      setEditingUser(user)
-      setFormData({ ...user, password: '' })
-    }
-    setShowModal(true)
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setFormError('')
-
-    if (editingUser) {
-      // Update existing user profile
-      const result = await dispatch(updateUser({ id: editingUser.id, ...formData }))
+    if (editingItem) {
+      // Update existing user
+      const result = await dispatch(updateUser({ id: editingItem.id, ...formData }));
       if (result.type.includes('fulfilled')) {
-        handleClose()
+        success('User updated successfully!');
+        return true;
       } else {
-        setFormError(result.payload || 'Failed to update user')
+        const errorMsg = result.payload || 'Failed to update user';
+        setFormError(errorMsg);
+        showError(errorMsg);
+        throw new Error(errorMsg);
       }
     } else {
-      // Create new user with Firebase Auth + Firestore
-      const result = await dispatch(registerUser(formData))
+      // Create new user with Firebase Auth
+      const result = await dispatch(registerUser(formData));
       if (result.type.includes('fulfilled')) {
-        handleClose()
-        dispatch(fetchUsers()) // Refresh user list
+        dispatch(fetchUsers()); // Refresh user list
+        success('User created successfully!');
+        return true;
       } else {
-        setFormError(result.payload || 'Failed to create user')
+        const errorMsg = result.payload || 'Failed to create user';
+        setFormError(errorMsg);
+        showError(errorMsg);
+        throw new Error(errorMsg);
       }
     }
-  }
+  };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      await dispatch(deleteUser(id))
+  const {
+    showModal,
+    isEditing,
+    formData,
+    formErrors,
+    isSubmitting,
+    handleChange,
+    handleOpen,
+    handleClose,
+    handleDelete,
+    editingItem,
+  } = useCRUD({
+    fetchAction: fetchUsers,
+    addAction: null, // Handled manually
+    updateAction: null, // Handled manually
+    deleteAction: deleteUser,
+    initialFormState: {
+      username: '',
+      email: '',
+      password: '',
+      mobile: '',
+      role: 'user',
+    },
+    onSuccess: (action) => {
+      if (action === 'deleted') {
+        success('User deleted successfully!');
+      }
+    },
+    onError: (err) => {
+      showError(err.message || 'Operation failed');
+    },
+  });
+
+  // Custom submit handler that uses our special user logic
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await handleUserSubmit(formData, editingItem);
+      handleClose();
+      setFormError('');
+    } catch (error) {
+      // Error already handled in handleUserSubmit
     }
-  }
-
-  if (loading && users.length === 0) {
-    return <LoadingSpinner text="Loading users..." />
-  }
+  };
 
   return (
     <Container fluid className="p-3 p-md-4">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center flex-wrap">
-            <h2><FaUsers className="me-2 text-secondary" />Users Management</h2>
-            <Button variant="secondary" onClick={() => handleShow()} className="mt-2 mt-md-0">
-              <FaPlus className="me-2" />Add New User
-            </Button>
-          </div>
-        </Col>
-      </Row>
-
-      {error && (
-        <Row className="mb-3">
-          <Col>
-            <ErrorAlert error={error} />
-          </Col>
-        </Row>
-      )}
+      <PageHeader
+        icon={FaUsers}
+        title="Users Management"
+        onAddClick={() => handleOpen()}
+        addButtonText="Add New User"
+      />
 
       <Row>
         <Col>
-          <Card>
-            <Card.Body className="p-0">
-              {users.length === 0 ? (
-                <div className="text-center p-5">
-                  <FaUsers size={50} className="text-muted mb-3" />
-                  <p className="text-muted">No users found. Add your first user to get started.</p>
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <Table striped hover className="mb-0 table-mobile-responsive">
-                    <thead>
-                      <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Mobile</th>
-                        <th>Role</th>
-                        <th className="text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.map(user => (
-                        <tr key={user.id || user.uid}>
-                          <td data-label="Username"><strong>{user.username}</strong></td>
-                          <td data-label="Email">{user.email}</td>
-                          <td data-label="Mobile">{user.mobile}</td>
-                          <td data-label="Role">
-                            <Badge bg={user.role === 'admin' ? 'warning' : 'info'}>
-                              {user.role}
-                            </Badge>
-                          </td>
-                          <td data-label="Actions">
-                            <div className="d-flex gap-2 justify-content-center">
-                              <Button
-                                variant="warning"
-                                size="sm"
-                                onClick={() => handleShow(user)}
-                                disabled={loading}
-                              >
-                                <FaEdit />
-                              </Button>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDelete(user.id || user.uid)}
-                                disabled={loading}
-                              >
-                                <FaTrash />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
+          <CRUDTable
+            data={users}
+            columns={TABLE_COLUMNS}
+            onEdit={handleOpen}
+            onDelete={(id) => handleDelete(id, 'Are you sure you want to delete this user?')}
+            loading={loading}
+            error={error}
+            emptyMessage="No users found. Add your first user to get started."
+          />
         </Col>
       </Row>
 
-      <Modal show={showModal} onHide={handleClose} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>{editingUser ? 'Edit User' : 'Add New User'}</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSubmit}>
-          <Modal.Body>
-            {formError && <Alert variant="danger">{formError}</Alert>}
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Username *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Email *</Form.Label>
-                  <Form.Control
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Password *</Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required={!editingUser}
-                    placeholder={editingUser ? 'Leave blank to keep current' : ''}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Mobile *</Form.Label>
-                  <Form.Control
-                    type="tel"
-                    value={formData.mobile}
-                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Form.Group className="mb-3">
-              <Form.Label>Role *</Form.Label>
-              <Form.Select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </Form.Select>
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button variant="secondary" type="submit">
-              {editingUser ? 'Update' : 'Add'} User
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+      <CRUDModal
+        show={showModal}
+        title={isEditing ? 'Edit User' : 'Add New User'}
+        isEditing={isEditing}
+        fields={USER_FIELDS}
+        formData={formData}
+        formErrors={formErrors}
+        onFormChange={handleChange}
+        onSubmit={handleSubmit}
+        onClose={() => {
+          handleClose();
+          setFormError('');
+        }}
+        loading={isSubmitting}
+      >
+        {formError && <Alert variant="danger" className="mb-3">{formError}</Alert>}
+
+        {/* Password field needs custom handling */}
+        <div className="mb-3">
+          <label className="form-label">
+            Password {!isEditing && <span className="text-danger">*</span>}
+          </label>
+          <input
+            type="password"
+            className="form-control"
+            name="password"
+            value={formData.password || ''}
+            onChange={handleChange}
+            required={!isEditing}
+            placeholder={isEditing ? 'Leave blank to keep current password' : ''}
+          />
+          {isEditing && (
+            <small className="text-muted">Leave blank to keep current password</small>
+          )}
+        </div>
+      </CRUDModal>
     </Container>
-  )
+  );
 }
 
-export default Users
+export default Users;
