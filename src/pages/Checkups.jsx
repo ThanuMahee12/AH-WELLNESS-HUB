@@ -1,13 +1,110 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge } from 'react-bootstrap'
-import { FaPlus, FaEdit, FaTrash, FaFilePdf, FaClipboardCheck } from 'react-icons/fa'
+import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge, Dropdown } from 'react-bootstrap'
+import { FaPlus, FaEdit, FaTrash, FaFilePdf, FaClipboardCheck, FaTimes } from 'react-icons/fa'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { generateCheckupPDF } from '../utils/pdfGenerator'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorAlert from '../components/common/ErrorAlert'
+
+// Tag-based Test Selector Component
+const TestTagSelector = ({ tests, selectedTests, onToggle, disabled }) => {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  const availableTests = tests.filter(test => !selectedTests.includes(test.id))
+  const filteredTests = availableTests.filter(test =>
+    test.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleAddTest = (testId) => {
+    onToggle(testId)
+    setSearchTerm('')
+  }
+
+  const getTestById = (testId) => tests.find(t => t.id === testId)
+
+  return (
+    <Form.Group className="mb-3">
+      <Form.Label>Select Tests *</Form.Label>
+
+      {/* Selected Tests as Tags */}
+      <div className="mb-2 d-flex flex-wrap gap-2">
+        {selectedTests.map(testId => {
+          const test = getTestById(testId)
+          if (!test) return null
+          return (
+            <Badge
+              key={testId}
+              bg="info"
+              className="d-flex align-items-center gap-2 px-3 py-2"
+              style={{ fontSize: '14px', cursor: 'pointer' }}
+            >
+              <span>{test.name}</span>
+              <span className="text-white-50">Rs. {test.price.toFixed(2)}</span>
+              <FaTimes
+                size={14}
+                onClick={() => !disabled && onToggle(testId)}
+                style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
+              />
+            </Badge>
+          )
+        })}
+        {selectedTests.length === 0 && (
+          <span className="text-muted">No tests selected</span>
+        )}
+      </div>
+
+      {/* Add Test Dropdown */}
+      <div className="position-relative">
+        <Form.Control
+          type="text"
+          placeholder="Search and add tests..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          disabled={disabled}
+        />
+
+        {showDropdown && filteredTests.length > 0 && (
+          <Card
+            className="position-absolute w-100 mt-1 shadow-lg"
+            style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}
+          >
+            <Card.Body className="p-0">
+              {filteredTests.map(test => (
+                <div
+                  key={test.id}
+                  className="p-3 border-bottom"
+                  style={{ cursor: 'pointer' }}
+                  onMouseDown={() => handleAddTest(test.id)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                >
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>{test.name}</strong>
+                      <br />
+                      <small className="text-muted">{test.details}</small>
+                    </div>
+                    <Badge bg="secondary">Rs. {test.price.toFixed(2)}</Badge>
+                  </div>
+                </div>
+              ))}
+            </Card.Body>
+          </Card>
+        )}
+      </div>
+
+      {availableTests.length === 0 && selectedTests.length > 0 && (
+        <small className="text-muted">All available tests selected</small>
+      )}
+    </Form.Group>
+  )
+}
 
 function Checkups() {
   const dispatch = useDispatch()
@@ -243,36 +340,12 @@ function Checkups() {
               </Form.Select>
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Select Tests * (Click to toggle)</Form.Label>
-              <Card>
-                <Card.Body>
-                  {tests.map(test => (
-                    <Form.Check
-                      key={test.id}
-                      type="checkbox"
-                      id={`test-${test.id}`}
-                      label={
-                        <div className="d-flex justify-content-between align-items-center w-100">
-                          <div>
-                            <strong>{test.name}</strong>
-                            <br />
-                            <small className="text-muted">{test.details}</small>
-                          </div>
-                          <Badge bg="secondary">Rs. {test.price.toFixed(2)}</Badge>
-                        </div>
-                      }
-                      checked={formData.tests.includes(test.id)}
-                      onChange={() => handleTestToggle(test.id)}
-                      className="mb-2 p-2 border rounded"
-                    />
-                  ))}
-                  {tests.length === 0 && (
-                    <div className="text-muted">No tests available. Please add tests first.</div>
-                  )}
-                </Card.Body>
-              </Card>
-            </Form.Group>
+            <TestTagSelector
+              tests={tests}
+              selectedTests={formData.tests}
+              onToggle={handleTestToggle}
+              disabled={loading}
+            />
 
             <Form.Group className="mb-3">
               <Form.Label>
