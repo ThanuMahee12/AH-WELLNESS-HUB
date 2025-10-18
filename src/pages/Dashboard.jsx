@@ -92,19 +92,22 @@ function Dashboard() {
 
   const COLORS = ['#0891B2', '#06B6D4', '#22D3EE', '#F59E0B', '#14B8A6']
 
-  const StatCard = ({ icon: Icon, title, value, color, bgColor, subtitle }) => (
-    <Card className="h-100 shadow-sm">
-      <Card.Body className="d-flex align-items-center">
-        <div className={`rounded-circle p-3 ${bgColor} me-3`}>
-          <Icon className={`fs-2 ${color}`} />
+  const StatCard = ({ icon, title, value, color, bgColor }) => {
+    const IconComponent = icon;
+    return (
+      <Card className="h-100 shadow-sm">
+        <Card.Body className="d-flex align-items-center">
+          <div className={`rounded-circle p-3 ${bgColor} me-3`}>
+            <IconComponent className={`fs-2 ${color}`} />
         </div>
         <div>
           <h6 className="text-muted mb-1">{title}</h6>
           <h3 className="mb-0">{value}</h3>
-        </div>
-      </Card.Body>
-    </Card>
-  )
+          </div>
+        </Card.Body>
+      </Card>
+    );
+  };
 
   return (
     <Container fluid className="p-3 p-md-4">

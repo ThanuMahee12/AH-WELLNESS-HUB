@@ -1,8 +1,7 @@
 import { Button as BSButton } from 'react-bootstrap'
-import { motion } from 'framer-motion'
 
 /**
- * Reusable Button Component with motion animations
+ * Reusable Button Component
  * @param {Object} props
  * @param {'primary'|'secondary'|'success'|'danger'|'gradient'} props.variant - Button style variant
  * @param {'sm'|'md'|'lg'} props.size - Button size
@@ -11,7 +10,6 @@ import { motion } from 'framer-motion'
  * @param {boolean} props.fullWidth - Make button full width
  * @param {React.ReactNode} props.children - Button content
  * @param {Function} props.onClick - Click handler
- * @param {Object} props.motionProps - Framer motion props
  */
 const Button = ({
   variant = 'primary',
@@ -21,7 +19,6 @@ const Button = ({
   fullWidth = false,
   children,
   onClick,
-  motionProps = {},
   className = '',
   ...rest
 }) => {
@@ -73,19 +70,8 @@ const Button = ({
     }
   }
 
-  const defaultMotionProps = {
-    whileHover: { scale: 1.05 },
-    whileTap: { scale: 0.95 },
-    transition: { duration: 0.2 }
-  }
-
-  const combinedMotionProps = { ...defaultMotionProps, ...motionProps }
-
   return (
-    <motion.div
-      {...combinedMotionProps}
-      style={{ display: fullWidth ? 'block' : 'inline-block', width: fullWidth ? '100%' : 'auto' }}
-    >
+    <div style={{ display: fullWidth ? 'block' : 'inline-block', width: fullWidth ? '100%' : 'auto' }}>
       <BSButton
         onClick={onClick}
         disabled={disabled || loading}
@@ -104,7 +90,7 @@ const Button = ({
       >
         {loading ? 'Loading...' : children}
       </BSButton>
-    </motion.div>
+    </div>
   )
 }
 

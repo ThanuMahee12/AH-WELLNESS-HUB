@@ -17,6 +17,7 @@ const Patients = lazy(() => import('./pages/Patients'))
 const Checkups = lazy(() => import('./pages/Checkups'))
 const Tests = lazy(() => import('./pages/Tests'))
 const Users = lazy(() => import('./pages/Users'))
+const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 
 function App() {
   const dispatch = useDispatch()
@@ -101,6 +102,14 @@ function App() {
                   element={
                     <ProtectedRoute adminOnly={true}>
                       <Users />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin-setup"
+                  element={
+                    <ProtectedRoute>
+                      <AdminSetup />
                     </ProtectedRoute>
                   }
                 />

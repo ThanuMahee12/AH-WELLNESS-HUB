@@ -39,7 +39,7 @@ const TABLE_COLUMNS = [
 function Users() {
   const dispatch = useDispatch();
   const users = useSelector(selectAllUsers);
-  const { loading, error } = useSelector(state => state.users);
+  const { loading } = useSelector(state => state.users);
   const { success, error: showError } = useNotification();
   const [formError, setFormError] = useState('');
 
@@ -137,7 +137,6 @@ function Users() {
             onEdit={handleOpen}
             onDelete={(id) => handleDelete(id, 'Are you sure you want to delete this user?')}
             loading={loading}
-            error={error}
             emptyMessage="No users found. Add your first user to get started."
           />
         </Col>
