@@ -86,7 +86,7 @@ function Dashboard() {
   const testDistribution = getTestDistribution()
   const monthlyRevenue = getMonthlyRevenue()
 
-  const COLORS = ['#7f8c8d', '#95a5a6', '#198754', '#e67e22', '#e74c3c']
+  const COLORS = ['#0891B2', '#06B6D4', '#22D3EE', '#F59E0B', '#14B8A6']
 
   const StatCard = ({ icon: Icon, title, value, color, bgColor, subtitle }) => (
     <Card className="h-100 shadow-sm">
@@ -168,7 +168,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
               <h5 className="mb-0"><FaChartLine className="me-2" />Checkups & Revenue Trend</h5>
             </Card.Header>
             <Card.Body>
@@ -190,7 +190,7 @@ function Dashboard() {
                       yAxisId="left"
                       type="monotone"
                       dataKey="checkups"
-                      stroke="#7f8c8d"
+                      stroke="#0891B2"
                       strokeWidth={2}
                       name="Checkups"
                     />
@@ -198,7 +198,7 @@ function Dashboard() {
                       yAxisId="right"
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#27ae60"
+                      stroke="#14B8A6"
                       strokeWidth={2}
                       name="Revenue (₹)"
                     />
@@ -211,7 +211,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
               <h5 className="mb-0"><FaFlask className="me-2" />Popular Tests</h5>
             </Card.Header>
             <Card.Body>
@@ -249,7 +249,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
               <h5 className="mb-0"><FaRupeeSign className="me-2" />Monthly Revenue</h5>
             </Card.Header>
             <Card.Body>
@@ -266,7 +266,7 @@ function Dashboard() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="revenue" fill="#7f8c8d" name="Revenue (₹)" />
+                    <Bar dataKey="revenue" fill="#0891B2" name="Revenue (₹)" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -276,7 +276,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
               <h5 className="mb-0"><FaCalendarAlt className="me-2" />Quick Stats</h5>
             </Card.Header>
             <Card.Body>
@@ -322,7 +322,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4">
         <Col xs={12}>
           <Card className="shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
               <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups</h5>
             </Card.Header>
             <Card.Body>

@@ -5,7 +5,7 @@ export const generateCheckupPDF = (checkup, patient, tests) => {
   const doc = new jsPDF()
 
   // Header
-  doc.setFillColor(13, 110, 253) // Bootstrap primary blue
+  doc.setFillColor(8, 145, 178) // Professional cyan/teal
   doc.rect(0, 0, 210, 40, 'F')
 
   doc.setTextColor(255, 255, 255)
@@ -40,9 +40,9 @@ export const generateCheckupPDF = (checkup, patient, tests) => {
     head: [['Test Name', 'Price']],
     body: testData,
     theme: 'striped',
-    headStyles: { fillColor: [13, 110, 253] },
+    headStyles: { fillColor: [8, 145, 178] },
     foot: [['Total Amount', `₹${checkup.total.toFixed(2)}`]],
-    footStyles: { fillColor: [13, 110, 253], textColor: [255, 255, 255], fontStyle: 'bold' }
+    footStyles: { fillColor: [8, 145, 178], textColor: [255, 255, 255], fontStyle: 'bold' }
   })
 
   // Notes

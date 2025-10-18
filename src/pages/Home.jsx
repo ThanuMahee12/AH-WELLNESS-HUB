@@ -59,7 +59,7 @@ function Home() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #2d2d2d 100%)',
+      background: 'linear-gradient(135deg, #E8F4F8 0%, #D4EEF7 50%, #C0E8F5 100%)',
       position: 'relative',
       overflow: 'hidden',
       width: '100%'
@@ -73,7 +73,7 @@ function Home() {
           top: '10%',
           left: '5%',
           fontSize: 'clamp(3rem, 8vw, 5rem)',
-          color: 'rgba(255,255,255,0.03)',
+          color: 'rgba(8, 145, 178, 0.1)',
           zIndex: 1
         }}
       >
@@ -88,7 +88,7 @@ function Home() {
           top: '60%',
           right: '10%',
           fontSize: 'clamp(2.5rem, 6vw, 4rem)',
-          color: 'rgba(255,255,255,0.03)',
+          color: 'rgba(8, 145, 178, 0.1)',
           zIndex: 1,
           animationDelay: '1s'
         }}
@@ -104,7 +104,7 @@ function Home() {
           bottom: '20%',
           left: '15%',
           fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
-          color: 'rgba(255,255,255,0.03)',
+          color: 'rgba(8, 145, 178, 0.1)',
           zIndex: 1,
           animationDelay: '0.5s'
         }}
@@ -130,7 +130,7 @@ function Home() {
           width: '300px',
           height: '300px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 70%)',
           filter: 'blur(60px)',
           zIndex: 0
         }}
@@ -154,7 +154,7 @@ function Home() {
                   }}
                   style={{ display: 'inline-block', marginBottom: '2rem' }}
                 >
-                  <FaTint style={{ fontSize: 'clamp(3.5rem, 10vw, 6rem)', color: '#fff' }} />
+                  <FaTint style={{ fontSize: 'clamp(3.5rem, 10vw, 6rem)', color: '#0891B2' }} />
                 </motion.div>
 
                 <motion.h1
@@ -164,9 +164,9 @@ function Home() {
                   style={{
                     fontSize: 'clamp(2rem, 6vw, 4.5rem)',
                     fontWeight: '800',
-                    color: 'white',
+                    color: '#0E7490',
                     marginBottom: '1.5rem',
-                    textShadow: '0 4px 20px rgba(255,255,255,0.1)',
+                    textShadow: '0 4px 20px rgba(8, 145, 178, 0.3)',
                     letterSpacing: '-1px'
                   }}
                 >
@@ -177,9 +177,9 @@ function Home() {
               <motion.div variants={itemVariants}>
                 <p style={{
                   fontSize: 'clamp(1rem, 2.5vw, 1.4rem)',
-                  color: 'rgba(255,255,255,0.7)',
+                  color: '#0E7490',
                   marginBottom: '2.5rem',
-                  fontWeight: '300',
+                  fontWeight: '500',
                   maxWidth: '700px',
                   margin: '0 auto 2.5rem',
                   lineHeight: '1.6'
@@ -190,7 +190,7 @@ function Home() {
 
               <motion.div variants={itemVariants}>
                 <motion.div
-                  whileHover={{ scale: 1.05, boxShadow: '0 15px 40px rgba(255,255,255,0.15)' }}
+                  whileHover={{ scale: 1.05, boxShadow: '0 15px 40px rgba(6, 182, 212, 0.4)' }}
                   whileTap={{ scale: 0.98 }}
                   style={{ display: 'inline-block' }}
                 >
@@ -202,10 +202,10 @@ function Home() {
                       fontSize: 'clamp(1rem, 2vw, 1.2rem)',
                       fontWeight: '600',
                       borderRadius: '50px',
-                      background: 'linear-gradient(135deg, #fff 0%, #f5f5f5 100%)',
-                      color: '#1a1a1a',
+                      background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
+                      color: '#ffffff',
                       border: 'none',
-                      boxShadow: '0 10px 30px rgba(255,255,255,0.1)',
+                      boxShadow: '0 10px 30px rgba(6, 182, 212, 0.35)',
                       transition: 'all 0.3s cubic-bezier(0.6, 0.05, 0.01, 0.9)'
                     }}
                   >
@@ -220,10 +220,10 @@ function Home() {
           <motion.div variants={itemVariants}>
             <Row className="g-3 g-md-4 mt-4 mt-md-5">
               {[
-                { icon: FaMicroscope, label: 'Advanced Testing', color: '#fff' },
-                { icon: FaUserMd, label: 'Patient Care', color: '#fff' },
-                { icon: FaHeartbeat, label: 'Health Monitoring', color: '#fff' },
-                { icon: FaFileInvoice, label: 'Smart Billing', color: '#fff' }
+                { icon: FaMicroscope, label: 'Advanced Testing', color: '#0891B2' },
+                { icon: FaUserMd, label: 'Patient Care', color: '#0891B2' },
+                { icon: FaHeartbeat, label: 'Health Monitoring', color: '#0891B2' },
+                { icon: FaFileInvoice, label: 'Smart Billing', color: '#F59E0B' }
               ].map((feature, index) => (
                 <Col xs={6} md={3} key={index}>
                   <motion.div
@@ -233,16 +233,16 @@ function Home() {
                     whileHover={{
                       y: -10,
                       scale: 1.03,
-                      boxShadow: '0 15px 40px rgba(255,255,255,0.1)',
+                      boxShadow: '0 15px 40px rgba(6, 182, 212, 0.25)',
                       transition: { duration: 0.3 }
                     }}
                     style={{
-                      background: 'rgba(255,255,255,0.05)',
+                      background: 'rgba(255,255,255,0.75)',
                       backdropFilter: 'blur(10px)',
                       borderRadius: '20px',
                       padding: 'clamp(1.5rem, 3vw, 2rem) clamp(0.8rem, 2vw, 1rem)',
                       textAlign: 'center',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(6, 182, 212, 0.3)',
                       cursor: 'pointer',
                       transition: 'all 0.3s cubic-bezier(0.6, 0.05, 0.01, 0.9)'
                     }}
@@ -251,11 +251,11 @@ function Home() {
                       fontSize: 'clamp(2rem, 5vw, 3rem)',
                       color: feature.color,
                       marginBottom: '1rem',
-                      filter: 'drop-shadow(0 4px 8px rgba(255,255,255,0.2))'
+                      filter: 'drop-shadow(0 4px 8px rgba(8, 145, 178, 0.3))'
                     }} />
                     <p style={{
-                      color: 'white',
-                      fontWeight: '500',
+                      color: '#0E7490',
+                      fontWeight: '600',
                       margin: 0,
                       fontSize: 'clamp(0.85rem, 1.5vw, 1rem)'
                     }}>{feature.label}</p>
@@ -280,27 +280,27 @@ function Home() {
                     transition={{ duration: 0.6, delay: 1.2 + index * 0.1 }}
                     whileHover={{
                       scale: 1.05,
-                      boxShadow: '0 15px 40px rgba(255,255,255,0.1)',
+                      boxShadow: '0 15px 40px rgba(6, 182, 212, 0.25)',
                       transition: { duration: 0.3 }
                     }}
                     style={{
-                      background: 'rgba(255,255,255,0.05)',
+                      background: 'rgba(255,255,255,0.75)',
                       backdropFilter: 'blur(10px)',
                       borderRadius: '15px',
                       padding: 'clamp(1.2rem, 2vw, 1.5rem)',
                       marginBottom: '1rem',
-                      border: '1px solid rgba(255,255,255,0.1)'
+                      border: '1px solid rgba(6, 182, 212, 0.3)'
                     }}
                   >
                     <h3 style={{
-                      color: 'white',
+                      color: '#0891B2',
                       fontSize: 'clamp(2rem, 4vw, 2.5rem)',
                       fontWeight: '700',
                       margin: 0,
                       marginBottom: '0.5rem'
                     }}>{stat.value}</h3>
                     <p style={{
-                      color: 'rgba(255,255,255,0.6)',
+                      color: '#0E7490',
                       margin: 0,
                       fontSize: 'clamp(0.9rem, 1.5vw, 1rem)'
                     }}>{stat.label}</p>
