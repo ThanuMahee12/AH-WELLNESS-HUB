@@ -34,6 +34,7 @@ const getUserFields = (currentUserRole) => [
           { value: 'user', label: 'User' },
           { value: 'editor', label: 'Editor' },
           { value: 'maintainer', label: 'Maintainer' },
+          { value: 'superadmin', label: 'Super Admin' },
         ]
       : [
           { value: 'user', label: 'User' },
