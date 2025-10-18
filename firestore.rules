@@ -7,10 +7,31 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Users collection - users can only read/write their own profile
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // Helper function to check if user is superadmin
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserRole() == 'superadmin';
+    }
+
+    // Helper function to check if user is maintainer
+    function isMaintainer() {
+      return isAuthenticated() && getUserRole() == 'maintainer';
+    }
+
+    // Helper function to check if user is admin (superadmin or maintainer)
+    function isAdmin() {
+      return isSuperAdmin() || isMaintainer();
+    }
+
+    // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+      // Superadmin can write to any user, maintainer can read only, users can write to their own profile
+      allow write: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == userId);
     }
 
     // Patients collection - all authenticated users can manage
@@ -26,6 +47,14 @@ service cloud.firestore {
     // Checkups collection - all authenticated users can manage
     match /checkups/{checkupId} {
       allow read, write: if isAuthenticated();
+    }
+
+    // User change requests collection - for maintainer approval workflow
+    match /userChangeRequests/{requestId} {
+      allow read: if isAuthenticated();
+      // Maintainer can create requests, superadmin can approve/reject
+      allow create: if isMaintainer();
+      allow update, delete: if isSuperAdmin();
     }
 
     // Deny all other access

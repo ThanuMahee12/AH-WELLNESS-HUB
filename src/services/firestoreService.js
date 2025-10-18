@@ -44,8 +44,6 @@ export const firestoreService = {
   // Update document
   update: async (collectionName, id, data) => {
     try {
-      console.log('Firestore Update:', { collectionName, id, data })
-
       // Remove any undefined or null values and non-plain objects
       const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null && typeof value !== 'function') {
@@ -54,8 +52,6 @@ export const firestoreService = {
         return acc
       }, {})
 
-      console.log('Clean data:', cleanData)
-
       const docRef = doc(db, collectionName, id)
       await updateDoc(docRef, {
         ...cleanData,
@@ -63,7 +59,6 @@ export const firestoreService = {
       })
       return { success: true }
     } catch (error) {
-      console.error('Firestore update error:', error)
       return { success: false, error: error.message }
     }
   },
