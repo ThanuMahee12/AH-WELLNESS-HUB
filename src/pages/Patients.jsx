@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux'
-import { Container, Row, Col } from 'react-bootstrap'
+import { Container, Row, Col, Form, Button, ButtonGroup } from 'react-bootstrap'
 import { FaUserInjured, FaMale, FaFemale, FaUser } from 'react-icons/fa'
 import { fetchPatients, addPatient, updatePatient, deletePatient, selectAllPatients } from '../store/patientsSlice'
 import { useCRUD } from '../hooks'
@@ -7,11 +7,64 @@ import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
 import { CRUDTable, CRUDModal } from '../components/crud'
 
-// Form field configuration
+// Custom Gender Icon Selector Component
+const GenderIconSelector = ({ value, onChange, name, disabled }) => {
+  const genderOptions = [
+    { value: 'Male', icon: FaMale, color: 'primary', label: 'Male' },
+    { value: 'Female', icon: FaFemale, color: 'danger', label: 'Female' },
+    { value: 'Other', icon: FaUser, color: 'secondary', label: 'Other' }
+  ]
+
+  return (
+    <Form.Group className="mb-3">
+      <Form.Label>
+        Gender <span className="text-danger ms-1">*</span>
+      </Form.Label>
+      <div className="d-flex gap-3">
+        {genderOptions.map((option) => {
+          const Icon = option.icon
+          const isSelected = value === option.value
+          return (
+            <div
+              key={option.value}
+              onClick={() => !disabled && onChange({ target: { name, value: option.value } })}
+              style={{
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                padding: '15px 25px',
+                border: `2px solid ${isSelected ? `var(--bs-${option.color})` : '#dee2e6'}`,
+                borderRadius: '8px',
+                backgroundColor: isSelected ? `var(--bs-${option.color})` : 'white',
+                color: isSelected ? 'white' : `var(--bs-${option.color})`,
+                transition: 'all 0.2s',
+                textAlign: 'center',
+                flex: 1,
+                opacity: disabled ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!disabled && !isSelected) {
+                  e.currentTarget.style.backgroundColor = '#f8f9fa'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSelected) {
+                  e.currentTarget.style.backgroundColor = 'white'
+                }
+              }}
+            >
+              <Icon size={32} className="mb-2" />
+              <div style={{ fontSize: '14px', fontWeight: '500' }}>{option.label}</div>
+            </div>
+          )
+        })}
+      </div>
+    </Form.Group>
+  )
+}
+
+// Form field configuration (without gender - handled separately)
 const PATIENT_FIELDS = [
   { name: 'name', label: 'Patient Name', type: 'text', required: true, colSize: 6 },
   { name: 'age', label: 'Age', type: 'number', required: true, colSize: 6 },
-  { name: 'gender', label: 'Gender', type: 'radio', required: true, colSize: 12, options: ['Male', 'Female', 'Other'] },
   { name: 'mobile', label: 'Mobile', type: 'tel', required: true, colSize: 6 },
   { name: 'email', label: 'Email', type: 'email', required: false, colSize: 6 },
   { name: 'address', label: 'Address', type: 'textarea', required: true, colSize: 12, rows: 2 },
@@ -115,7 +168,66 @@ function Patients() {
         onSubmit={handleSubmit}
         onClose={handleClose}
         loading={isSubmitting}
-      />
+      >
+        <Row>
+          {PATIENT_FIELDS.slice(0, 2).map((field) => (
+            <Col key={field.name} xs={12} md={field.colSize || 6}>
+              <Form.Group className="mb-3">
+                <Form.Label>
+                  {field.label}
+                  {field.required && <span className="text-danger ms-1">*</span>}
+                </Form.Label>
+                <Form.Control
+                  type={field.type}
+                  name={field.name}
+                  value={formData[field.name] || ''}
+                  onChange={handleChange}
+                  required={field.required}
+                  disabled={isSubmitting}
+                />
+              </Form.Group>
+            </Col>
+          ))}
+          <Col xs={12}>
+            <GenderIconSelector
+              value={formData.gender}
+              onChange={handleChange}
+              name="gender"
+              disabled={isSubmitting}
+            />
+          </Col>
+          {PATIENT_FIELDS.slice(2).map((field) => (
+            <Col key={field.name} xs={12} md={field.colSize || 6}>
+              <Form.Group className="mb-3">
+                <Form.Label>
+                  {field.label}
+                  {field.required && <span className="text-danger ms-1">*</span>}
+                </Form.Label>
+                {field.type === 'textarea' ? (
+                  <Form.Control
+                    as="textarea"
+                    rows={field.rows || 3}
+                    name={field.name}
+                    value={formData[field.name] || ''}
+                    onChange={handleChange}
+                    required={field.required}
+                    disabled={isSubmitting}
+                  />
+                ) : (
+                  <Form.Control
+                    type={field.type}
+                    name={field.name}
+                    value={formData[field.name] || ''}
+                    onChange={handleChange}
+                    required={field.required}
+                    disabled={isSubmitting}
+                  />
+                )}
+              </Form.Group>
+            </Col>
+          ))}
+        </Row>
+      </CRUDModal>
     </Container>
   );
 }
