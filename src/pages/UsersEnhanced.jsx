@@ -15,7 +15,7 @@ import { authService } from '../services/authService'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
-import { CRUDTable, CRUDModal } from '../components/crud'
+import { CRUDTable } from '../components/crud'
 import { generateRandomPassword, copyToClipboard } from '../utils/passwordUtils'
 
 // Form field configuration
@@ -330,29 +330,81 @@ function UsersEnhanced() {
       </Row>
 
       {/* User Form Modal */}
-      <CRUDModal
-        show={showModal}
-        title={isEditing ? (isMaintainer ? 'Request User Edit' : 'Edit User') : (isMaintainer ? 'Request New User' : 'Add New User')}
-        isEditing={isEditing}
-        fields={getUserFields(currentUser?.role)}
-        formData={formData}
-        formErrors={formErrors}
-        onFormChange={handleChange}
-        onSubmit={handleSubmit}
-        onClose={() => {
-          handleClose()
-          setFormError('')
-        }}
-        loading={isSubmitting}
-      >
-        {formError && <Alert variant="danger" className="mb-3">{formError}</Alert>}
+      <Modal show={showModal} onHide={() => {
+        handleClose()
+        setFormError('')
+      }} size="lg" backdrop="static">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {isEditing ? (isMaintainer ? 'Request User Edit' : 'Edit User') : (isMaintainer ? 'Request New User' : 'Add New User')}
+          </Modal.Title>
+        </Modal.Header>
 
-        {isMaintainer && (
-          <Alert variant="info" className="mb-3">
-            This {isEditing ? 'edit' : 'new user'} will require superadmin approval before taking effect.
-          </Alert>
-        )}
-      </CRUDModal>
+        <Form onSubmit={handleSubmit}>
+          <Modal.Body>
+            {formError && <Alert variant="danger" className="mb-3">{formError}</Alert>}
+
+            {isMaintainer && (
+              <Alert variant="info" className="mb-3">
+                This {isEditing ? 'edit' : 'new user'} will require superadmin approval before taking effect.
+              </Alert>
+            )}
+
+            <Row>
+              {getUserFields(currentUser?.role).map((field) => (
+                <Col key={field.name} xs={12} md={field.colSize || 6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      {field.label} {field.required && <span className="text-danger">*</span>}
+                    </Form.Label>
+                    {field.type === 'select' ? (
+                      <Form.Select
+                        name={field.name}
+                        value={formData[field.name] || ''}
+                        onChange={handleChange}
+                        required={field.required}
+                      >
+                        <option value="">Select {field.label}</option>
+                        {field.options.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    ) : (
+                      <Form.Control
+                        type={field.type}
+                        name={field.name}
+                        value={formData[field.name] || ''}
+                        onChange={handleChange}
+                        required={field.required}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                    {formErrors[field.name] && (
+                      <Form.Text className="text-danger">
+                        {formErrors[field.name]}
+                      </Form.Text>
+                    )}
+                  </Form.Group>
+                </Col>
+              ))}
+            </Row>
+          </Modal.Body>
+
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => {
+              handleClose()
+              setFormError('')
+            }} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : isEditing ? 'Update' : (isMaintainer ? 'Submit Request' : 'Add')}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
 
       {/* Password Display Modal */}
       <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)} centered>
