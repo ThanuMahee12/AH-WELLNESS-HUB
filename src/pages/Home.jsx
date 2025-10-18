@@ -46,7 +46,7 @@ function Home() {
 
   const rotateVariants = {
     animate: {
-      rotateZ: [0, 360],
+      rotateY: [0, 360],
       transition: {
         duration: 20,
         repeat: Infinity,
@@ -123,12 +123,12 @@ function Home() {
         }}
       />
 
-      <Container className="py-5" style={{ position: 'relative', zIndex: 2, maxWidth: '100%', overflow: 'hidden' }}>
+      <Container className="py-3 py-md-5 px-3 px-md-4" style={{ position: 'relative', zIndex: 2, maxWidth: '100%', overflow: 'hidden' }}>
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          style={{ minHeight: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+          style={{ minHeight: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1rem' }}
         >
           {/* Hero Section */}
           <Row className="mb-5 text-center">
@@ -139,15 +139,17 @@ function Home() {
                   animate="animate"
                   style={{
                     display: 'inline-block',
-                    marginBottom: '2rem',
-                    perspective: '1000px'
+                    marginBottom: 'clamp(1.5rem, 4vw, 2.5rem)',
+                    perspective: '1000px',
+                    transformStyle: 'preserve-3d',
                   }}
                 >
                   <img
                     src={bloodLabLogo}
                     alt="Blood Lab Logo"
                     style={{
-                      width: 'clamp(150px, 20vw, 250px)',
+                      width: 'clamp(120px, 35vw, 250px)',
+                      maxWidth: '250px',
                       height: 'auto',
                       filter: 'drop-shadow(0 8px 24px rgba(8, 145, 178, 0.3))'
                     }}
@@ -159,27 +161,31 @@ function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, delay: 0.3 }}
                   style={{
-                    fontSize: 'clamp(2.5rem, 7vw, 5rem)',
-                    fontWeight: '800',
+                    fontSize: 'clamp(1.4rem, 5.5vw, 4rem)',
+                    fontWeight: '700',
                     color: '#0E7490',
-                    marginBottom: '1.5rem',
+                    marginBottom: 'clamp(1rem, 3vw, 1.5rem)',
                     textShadow: '0 4px 20px rgba(8, 145, 178, 0.3)',
-                    letterSpacing: '-1px'
+                    letterSpacing: 'clamp(-0.5px, -0.1vw, -1px)',
+                    lineHeight: '1.2',
+                    padding: '0 0.5rem'
                   }}
                 >
-                  Blood Lab Manager
+                  AH WELLNESS HUB & ASIRI LABORATORIES
                 </motion.h1>
               </motion.div>
 
               <motion.div variants={itemVariants}>
                 <p style={{
-                  fontSize: 'clamp(1.1rem, 3vw, 1.6rem)',
+                  fontSize: 'clamp(0.95rem, 3.5vw, 1.6rem)',
                   color: '#0E7490',
-                  marginBottom: '3rem',
+                  marginBottom: 'clamp(2rem, 5vw, 3rem)',
                   fontWeight: '500',
-                  maxWidth: '800px',
-                  margin: '0 auto 3rem',
-                  lineHeight: '1.7'
+                  maxWidth: '90%',
+                  margin: '0 auto',
+                  marginBottom: 'clamp(2rem, 5vw, 3rem)',
+                  lineHeight: '1.6',
+                  padding: '0 1rem'
                 }}>
                   Professional Point of Sale System for Modern Blood Testing Laboratories
                 </p>
@@ -187,23 +193,25 @@ function Home() {
 
               <motion.div variants={itemVariants}>
                 <motion.div
-                  whileHover={{ scale: 1.08, boxShadow: '0 20px 50px rgba(6, 182, 212, 0.45)' }}
-                  whileTap={{ scale: 0.98 }}
-                  style={{ display: 'inline-block' }}
+                  whileHover={{ scale: 1.05, boxShadow: '0 20px 50px rgba(6, 182, 212, 0.45)' }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{ display: 'inline-block', width: '100%', maxWidth: '400px', padding: '0 1rem' }}
                 >
                   <Button
                     size="lg"
                     onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
+                    className="w-100"
                     style={{
-                      padding: 'clamp(1rem, 2.5vw, 1.3rem) clamp(2.5rem, 6vw, 4rem)',
-                      fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
+                      padding: 'clamp(0.9rem, 3vw, 1.3rem) clamp(2rem, 5vw, 3rem)',
+                      fontSize: 'clamp(1rem, 3.5vw, 1.4rem)',
                       fontWeight: '600',
                       borderRadius: '50px',
                       background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
                       color: '#ffffff',
                       border: 'none',
-                      boxShadow: '0 12px 35px rgba(6, 182, 212, 0.4)',
-                      transition: 'all 0.3s cubic-bezier(0.6, 0.05, 0.01, 0.9)'
+                      boxShadow: '0 10px 30px rgba(6, 182, 212, 0.35)',
+                      transition: 'all 0.3s cubic-bezier(0.6, 0.05, 0.01, 0.9)',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
