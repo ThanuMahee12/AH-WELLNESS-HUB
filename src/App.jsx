@@ -23,6 +23,10 @@ function App() {
   const noSidebarPages = ['/', '/login']
   const showSidebar = isAuthenticated && !noSidebarPages.includes(location.pathname)
 
+  // Pages that shouldn't show navbar
+  const noNavbarPages = ['/']
+  const showNavbar = !noNavbarPages.includes(location.pathname)
+
   useEffect(() => {
     // Listen to Firebase auth state changes
     const unsubscribe = authService.onAuthStateChange((user) => {
@@ -35,8 +39,8 @@ function App() {
 
   return (
     <div className="d-flex flex-column min-vh-100" style={{ overflow: 'hidden', width: '100%' }}>
-      <Navbar />
-      <div className="d-flex flex-grow-1" style={{ marginTop: '60px', overflow: 'hidden', width: '100%' }}>
+      {showNavbar && <Navbar />}
+      <div className="d-flex flex-grow-1" style={{ marginTop: showNavbar ? '60px' : '0', overflow: 'hidden', width: '100%' }}>
         {showSidebar && <Sidebar />}
         <div
           className="flex-grow-1"
