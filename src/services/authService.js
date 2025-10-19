@@ -115,16 +115,47 @@ export const authService = {
     return auth.currentUser
   },
 
+  // Delete user from Firestore and mark for Auth deletion
+  deleteUser: async (userId) => {
+    try {
+      // Delete from Firestore
+      await setDoc(doc(db, 'users', userId), {
+        deleted: true,
+        deletedAt: new Date().toISOString()
+      }, { merge: true })
+
+      // Note: Deleting from Firebase Auth requires Admin SDK (backend)
+      // For now, we mark the user as deleted in Firestore
+      // You should set up a Cloud Function to delete from Auth:
+      // https://firebase.google.com/docs/auth/admin/manage-users#delete_a_user
+
+      return {
+        success: true,
+        message: 'User marked for deletion. Auth cleanup pending.'
+      }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
   // Auth state observer
   onAuthStateChange: (callback) => {
     return onAuthStateChanged(auth, async (user) => {
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid))
         if (userDoc.exists()) {
+          // Check if user is marked as deleted
+          const userData = userDoc.data()
+          if (userData.deleted) {
+            // User is deleted, sign them out
+            await signOut(auth)
+            callback(null)
+            return
+          }
           callback({
             uid: user.uid,
             email: user.email,
-            ...userDoc.data()
+            ...userData
           })
         } else {
           callback(null)

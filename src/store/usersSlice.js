@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
+import { authService } from '../services/authService'
 import { registerUser } from './authSlice'
 
 const COLLECTION = 'users'
@@ -21,7 +22,9 @@ export const fetchUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     const result = await firestoreService.getAll(COLLECTION)
     if (result.success) {
-      return result.data
+      // Filter out deleted users
+      const activeUsers = result.data.filter(user => !user.deleted)
+      return activeUsers
     } else {
       return rejectWithValue(result.error)
     }
@@ -56,7 +59,8 @@ export const updateUser = createAsyncThunk(
 export const deleteUser = createAsyncThunk(
   'users/delete',
   async (id, { rejectWithValue }) => {
-    const result = await firestoreService.delete(COLLECTION, id)
+    // Use authService to mark user as deleted
+    const result = await authService.deleteUser(id)
     if (result.success) {
       return id
     } else {
