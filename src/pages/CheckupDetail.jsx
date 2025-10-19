@@ -143,7 +143,7 @@ function CheckupDetail() {
       billClone.style.left = '-9999px'
       billClone.style.top = '0'
       billClone.style.width = '210mm' // A4 width
-      billClone.style.padding = '15px'
+      billClone.style.padding = '25px' // Increased padding for better PDF layout
       billClone.style.backgroundColor = '#ffffff'
       document.body.appendChild(billClone)
 
@@ -420,7 +420,7 @@ function CheckupDetail() {
                 max-width: 100% !important;
                 height: auto !important;
                 margin: 0 !important;
-                padding: 15px !important;
+                padding: 25px !important;
                 box-shadow: none !important;
                 border: none !important;
                 background: white !important;
@@ -460,7 +460,7 @@ function CheckupDetail() {
               max-width: ${pdfSettings.width}mm;
               height: auto;
               max-height: ${pdfSettings.height}mm;
-              padding: ${pdfSettings.width < 100 ? '8px' : '15px'} !important;
+              padding: ${pdfSettings.width < 100 ? '8px' : '25px'} !important;
               font-size: ${pdfSettings.width < 100 ? '0.65rem' : '0.85rem'} !important;
               overflow: visible;
               page-break-inside: avoid;
@@ -516,7 +516,7 @@ function CheckupDetail() {
             ` : ''}
           `}</style>
           <Card className="shadow-sm">
-            <Card.Body ref={billRef} className="bill-content" style={{ padding: '1.5rem', backgroundColor: 'white' }}>
+            <Card.Body ref={billRef} className="bill-content" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
               {/* Compact Header */}
               <div className="mb-3 pb-2 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
                 <Row className="align-items-center">
