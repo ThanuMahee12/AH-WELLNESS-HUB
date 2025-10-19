@@ -9,6 +9,7 @@ import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsS
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorAlert from '../components/common/ErrorAlert'
+import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 
 function Checkups() {
   const dispatch = useDispatch()
@@ -19,6 +20,7 @@ function Checkups() {
   const { loading: checkupsLoading, error: checkupsError } = useSelector(state => state.checkups)
   const { loading: patientsLoading } = useSelector(state => state.patients)
   const { loading: testsLoading } = useSelector(state => state.tests)
+  const { checkPermission } = usePermission()
   const [showModal, setShowModal] = useState(false)
   const [editingCheckup, setEditingCheckup] = useState(null)
   const [currentStep, setCurrentStep] = useState(1)
@@ -181,21 +183,23 @@ function Checkups() {
         <Col>
           <div className="d-flex justify-content-between align-items-center flex-wrap">
             <h2><FaClipboardCheck className="me-2 text-secondary" />Checkups / Billing</h2>
-            <Button
-              onClick={() => handleShow()}
-              className="mt-2 mt-md-0"
-              disabled={patients.length === 0 || loading}
-              style={{
-                backgroundColor: '#06B6D4',
-                border: 'none',
-                color: 'white',
-                padding: '0.5rem 1.5rem',
-                borderRadius: '0.375rem',
-                fontWeight: '500'
-              }}
-            >
-              <FaPlus className="me-2" />New Checkup
-            </Button>
+            <PermissionGate resource="checkups" action="create">
+              <Button
+                onClick={() => handleShow()}
+                className="mt-2 mt-md-0"
+                disabled={patients.length === 0 || loading}
+                style={{
+                  backgroundColor: '#06B6D4',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '0.375rem',
+                  fontWeight: '500'
+                }}
+              >
+                <FaPlus className="me-2" />New Checkup
+              </Button>
+            </PermissionGate>
           </div>
         </Col>
       </Row>
@@ -281,30 +285,34 @@ function Checkups() {
                           <td data-label="Date/Time">{new Date(checkup.timestamp).toLocaleString()}</td>
                           <td data-label="Actions">
                             <div className="d-flex gap-2 justify-content-center flex-wrap">
-                              <Button
-                                size="sm"
-                                onClick={() => handleShow(checkup)}
-                                disabled={loading}
-                                style={{
-                                  backgroundColor: '#0891B2',
-                                  border: 'none',
-                                  color: 'white'
-                                }}
-                              >
-                                <FaEdit />
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleDelete(checkup.id)}
-                                disabled={loading}
-                                style={{
-                                  backgroundColor: '#ef4444',
-                                  border: 'none',
-                                  color: 'white'
-                                }}
-                              >
-                                <FaTrash />
-                              </Button>
+                              <PermissionGate resource="checkups" action="edit">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleShow(checkup)}
+                                  disabled={loading}
+                                  style={{
+                                    backgroundColor: '#0891B2',
+                                    border: 'none',
+                                    color: 'white'
+                                  }}
+                                >
+                                  <FaEdit />
+                                </Button>
+                              </PermissionGate>
+                              <PermissionGate resource="checkups" action="delete">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleDelete(checkup.id)}
+                                  disabled={loading}
+                                  style={{
+                                    backgroundColor: '#ef4444',
+                                    border: 'none',
+                                    color: 'white'
+                                  }}
+                                >
+                                  <FaTrash />
+                                </Button>
+                              </PermissionGate>
                             </div>
                           </td>
                         </tr>

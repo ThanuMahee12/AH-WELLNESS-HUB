@@ -376,10 +376,32 @@ function UsersEnhanced() {
           <CRUDTable
             data={users}
             columns={TABLE_COLUMNS}
-            onEdit={handleOpen}
+            onEdit={isMaintainer ? (user) => {
+              // Maintainer can only edit themselves
+              if (user.uid === currentUser.uid || user.id === currentUser.uid) {
+                handleOpen(user)
+              }
+            } : handleOpen}
             onDelete={isSuperAdmin ? (id) => handleDelete(id, 'Are you sure you want to delete this user?') : null}
             loading={loading}
             emptyMessage="No users found. Add your first user to get started."
+            renderActions={isMaintainer ? (user) => {
+              // Maintainer can only edit self, show buttons conditionally
+              const isSelf = user.uid === currentUser.uid || user.id === currentUser.uid
+              return isSelf ? (
+                <Button
+                  size="sm"
+                  onClick={() => handleOpen(user)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '2px solid #0891B2',
+                    color: '#0891B2'
+                  }}
+                >
+                  Edit Profile
+                </Button>
+              ) : null
+            } : undefined}
           />
         </Col>
       </Row>
@@ -406,8 +428,8 @@ function UsersEnhanced() {
             )}
 
             {isMaintainer && isEditing && (
-              <Alert variant="warning" className="mb-3">
-                You can edit username, mobile, and role. Email cannot be changed by maintainers.
+              <Alert variant="info" className="mb-3">
+                You are editing your own profile. You can update username and mobile. Email and role cannot be changed.
               </Alert>
             )}
 
@@ -424,6 +446,7 @@ function UsersEnhanced() {
                         value={formData[field.name] || ''}
                         onChange={handleChange}
                         required={field.required}
+                        disabled={isEditing && isMaintainer && field.name === 'role'}
                       >
                         <option value="">Select {field.label}</option>
                         {field.options.map((opt) => (
@@ -440,7 +463,7 @@ function UsersEnhanced() {
                         onChange={handleChange}
                         required={field.required}
                         placeholder={field.placeholder}
-                        disabled={isEditing && field.name === 'email' && isMaintainer}
+                        disabled={isEditing && isMaintainer && (field.name === 'email' || field.name === 'role')}
                       />
                     )}
                     {isEditing && field.name === 'email' && isSuperAdmin && (

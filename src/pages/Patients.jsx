@@ -1,12 +1,13 @@
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col, Form, Button, ButtonGroup } from 'react-bootstrap'
-import { FaUserInjured, FaMale, FaFemale, FaUser } from 'react-icons/fa'
+import { FaUserInjured, FaMale, FaFemale, FaUser, FaEdit, FaTrash } from 'react-icons/fa'
 import { fetchPatients, addPatient, updatePatient, deletePatient, selectAllPatients } from '../store/patientsSlice'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
 import { CRUDTable, CRUDModal } from '../components/crud'
+import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 
 // Custom Gender Icon Selector Component
 const GenderIconSelector = ({ value, onChange, name, disabled }) => {
@@ -58,6 +59,7 @@ function Patients() {
   const patients = useSelector(selectAllPatients);
   const { loading, error } = useSelector(state => state.patients);
   const { success, error: showError } = useNotification();
+  const { checkPermission } = usePermission();
 
   // Table column configuration
   const TABLE_COLUMNS = [
@@ -134,13 +136,49 @@ function Patients() {
     },
   });
 
+  // Custom render actions with permissions
+  const renderActions = (item) => (
+    <>
+      <PermissionGate resource="patients" action="edit">
+        <Button
+          size="sm"
+          onClick={() => handleOpen(item)}
+          className="me-2"
+          style={{
+            backgroundColor: 'transparent',
+            border: '2px solid #0891B2',
+            color: '#0891B2'
+          }}
+        >
+          <FaEdit className="me-1" />
+          Edit
+        </Button>
+      </PermissionGate>
+      <PermissionGate resource="patients" action="delete">
+        <Button
+          size="sm"
+          onClick={() => handleDelete(item.id, 'Are you sure you want to delete this patient?')}
+          style={{
+            backgroundColor: 'transparent',
+            border: '2px solid #0aa2c0',
+            color: '#0aa2c0'
+          }}
+        >
+          <FaTrash className="me-1" />
+          Delete
+        </Button>
+      </PermissionGate>
+    </>
+  );
+
   return (
     <Container fluid className="p-3 p-md-4">
       <PageHeader
         icon={FaUserInjured}
         title="Patients Management"
-        onAddClick={() => handleOpen()}
+        onAddClick={checkPermission('patients', 'create') ? () => handleOpen() : undefined}
         addButtonText="Add New Patient"
+        showAddButton={checkPermission('patients', 'create')}
       />
 
       <Row>
@@ -148,8 +186,7 @@ function Patients() {
           <CRUDTable
             data={patients}
             columns={TABLE_COLUMNS}
-            onEdit={handleOpen}
-            onDelete={(id) => handleDelete(id, 'Are you sure you want to delete this patient?')}
+            renderActions={renderActions}
             loading={loading}
             error={error}
             emptyMessage="No patients registered yet"
