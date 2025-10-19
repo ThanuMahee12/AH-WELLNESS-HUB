@@ -181,17 +181,17 @@ function Home() {
 
               <motion.div variants={itemVariants}>
                 <motion.div
-                  whileHover={{ scale: 1.05, boxShadow: '0 20px 50px rgba(6, 182, 212, 0.45)' }}
+                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  style={{ display: 'inline-block', width: '100%', maxWidth: '400px', padding: '0 1rem' }}
+                  style={{ display: 'inline-block', width: '100%', maxWidth: '300px', padding: '0 1rem' }}
                 >
                   <Button
                     size="lg"
                     onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
                     className="w-100"
                     style={{
-                      padding: 'clamp(0.9rem, 3vw, 1.3rem) clamp(2rem, 5vw, 3rem)',
-                      fontSize: 'clamp(1rem, 3.5vw, 1.4rem)',
+                      // padding: 'clamp(0.9rem, 3vw, 1.3rem) clamp(2rem, 5vw, 3rem)',
+                      fontSize: 'clamp(1rem, 3.5vw, 1.2rem)',
                       fontWeight: '600',
                       borderRadius: '50px',
                       background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
