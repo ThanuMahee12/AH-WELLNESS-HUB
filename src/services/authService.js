@@ -4,12 +4,11 @@ import {
   sendPasswordResetEmail,
   createUserWithEmailAndPassword,
   updateProfile,
-  onAuthStateChanged,
-  signInWithCustomToken
+  onAuthStateChanged
 } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../config/firebase'
-import { initializeApp } from 'firebase/app'
+import { initializeApp, deleteApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { firebaseConfig } from '../config/firebase'
 
@@ -89,7 +88,7 @@ export const authService = {
 
       // Sign out from secondary auth and delete the secondary app
       await secondaryAuth.signOut()
-      await secondaryApp.delete()
+      await deleteApp(secondaryApp)
 
       return {
         success: true,
@@ -99,6 +98,14 @@ export const authService = {
         }
       }
     } catch (error) {
+      // Clean up secondary app if it exists
+      try {
+        if (error.secondaryApp) {
+          await deleteApp(error.secondaryApp)
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up secondary app:', cleanupError)
+      }
       return { success: false, error: error.message }
     }
   },
