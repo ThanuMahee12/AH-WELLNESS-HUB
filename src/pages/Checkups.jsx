@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Badge } from 'react-bootstrap'
-import { FaPlus, FaEdit, FaTrash, FaFilePdf, FaClipboardCheck } from 'react-icons/fa'
+import { FaPlus, FaEdit, FaTrash, FaClipboardCheck } from 'react-icons/fa'
 import Select from 'react-select'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
-import { generateCheckupPDF } from '../utils/pdfGenerator'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import ErrorAlert from '../components/common/ErrorAlert'
 
 function Checkups() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const checkups = useSelector(selectAllCheckups)
   const patients = useSelector(selectAllPatients)
   const tests = useSelector(selectAllTests)
@@ -155,11 +156,8 @@ function Checkups() {
     return <LoadingSpinner text="Loading checkups data..." />
   }
 
-  const handleGeneratePDF = (checkup) => {
-    const patient = patients.find(p => p.id === checkup.patientId)
-    if (patient) {
-      generateCheckupPDF(checkup, patient, tests)
-    }
+  const handleViewDetails = (checkupId) => {
+    navigate(`/checkups/${checkupId}`)
   }
 
   const getPatientName = (patientId) => {
@@ -248,7 +246,21 @@ function Checkups() {
                     ) : (
                       checkups.map(checkup => (
                         <tr key={checkup.id}>
-                          <td data-label="Bill ID"><Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>#{checkup.id}</Badge></td>
+                          <td data-label="Bill ID">
+                            <Badge
+                              onClick={() => handleViewDetails(checkup.id)}
+                              style={{
+                                backgroundColor: '#06B6D4',
+                                color: 'white',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#0891B2'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = '#06B6D4'}
+                            >
+                              #{checkup.id}
+                            </Badge>
+                          </td>
                           <td data-label="Patient"><strong>{getPatientName(checkup.patientId)}</strong></td>
                           <td data-label="Tests">
                             <div
@@ -271,18 +283,6 @@ function Checkups() {
                             <div className="d-flex gap-2 justify-content-center flex-wrap">
                               <Button
                                 size="sm"
-                                onClick={() => handleGeneratePDF(checkup)}
-                                disabled={loading}
-                                style={{
-                                  backgroundColor: '#06B6D4',
-                                  border: 'none',
-                                  color: 'white'
-                                }}
-                              >
-                                <FaFilePdf />
-                              </Button>
-                              <Button
-                                size="sm"
                                 onClick={() => handleShow(checkup)}
                                 disabled={loading}
                                 style={{
@@ -298,7 +298,7 @@ function Checkups() {
                                 onClick={() => handleDelete(checkup.id)}
                                 disabled={loading}
                                 style={{
-                                  backgroundColor: '#0aa2c0',
+                                  backgroundColor: '#ef4444',
                                   border: 'none',
                                   color: 'white'
                                 }}
