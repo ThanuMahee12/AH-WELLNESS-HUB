@@ -29,7 +29,7 @@ const TABLE_COLUMNS = [
     key: 'role',
     label: 'Role',
     render: (value) => (
-      <Badge bg={value === 'admin' ? 'warning' : 'info'}>
+      <Badge style={{ backgroundColor: value === 'admin' ? '#0891B2' : '#06B6D4', color: 'white' }}>
         {value}
       </Badge>
     )

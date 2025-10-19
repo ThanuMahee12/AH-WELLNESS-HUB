@@ -10,9 +10,9 @@ import { CRUDTable, CRUDModal } from '../components/crud'
 // Custom Gender Icon Selector Component
 const GenderIconSelector = ({ value, onChange, name, disabled }) => {
   const genderOptions = [
-    { value: 'Male', icon: FaMale, color: 'primary' },
-    { value: 'Female', icon: FaFemale, color: 'danger' },
-    { value: 'Other', icon: FaUser, color: 'secondary' }
+    { value: 'Male', icon: FaMale, color: '#0891B2' },
+    { value: 'Female', icon: FaFemale, color: '#06B6D4' },
+    { value: 'Other', icon: FaUser, color: '#0aa2c0' }
   ]
 
   return (
@@ -29,11 +29,11 @@ const GenderIconSelector = ({ value, onChange, name, disabled }) => {
               key={option.value}
               size={28}
               onClick={() => !disabled && onChange({ target: { name, value: option.value } })}
-              className={isSelected ? `text-${option.color}` : 'text-muted'}
               style={{
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 opacity: disabled ? 0.6 : isSelected ? 1 : 0.4,
-                transition: 'opacity 0.2s'
+                transition: 'opacity 0.2s',
+                color: isSelected ? option.color : '#9ca3af'
               }}
             />
           )
@@ -59,11 +59,11 @@ const TABLE_COLUMNS = [
     label: '',
     render: (value) => {
       if (value === 'Male') {
-        return <FaMale className="text-primary" size={18} />
+        return <FaMale style={{ color: '#0891B2' }} size={18} />
       } else if (value === 'Female') {
-        return <FaFemale className="text-danger" size={18} />
+        return <FaFemale style={{ color: '#06B6D4' }} size={18} />
       } else {
-        return <FaUser className="text-secondary" size={18} />
+        return <FaUser style={{ color: '#0aa2c0' }} size={18} />
       }
     }
   },

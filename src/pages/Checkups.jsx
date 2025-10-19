@@ -219,7 +219,7 @@ function Checkups() {
                     ) : (
                       checkups.map(checkup => (
                         <tr key={checkup.id}>
-                          <td data-label="Bill ID"><Badge bg="info">#{checkup.id}</Badge></td>
+                          <td data-label="Bill ID"><Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>#{checkup.id}</Badge></td>
                           <td data-label="Patient"><strong>{getPatientName(checkup.patientId)}</strong></td>
                           <td data-label="Tests Count">{checkup.tests.length}</td>
                           <td data-label="Total"><strong>Rs. {checkup.total.toFixed(2)}</strong></td>
@@ -228,26 +228,38 @@ function Checkups() {
                           <td data-label="Actions">
                             <div className="d-flex gap-2 justify-content-center flex-wrap">
                               <Button
-                                variant="success"
                                 size="sm"
                                 onClick={() => handleGeneratePDF(checkup)}
                                 disabled={loading}
+                                style={{
+                                  backgroundColor: '#06B6D4',
+                                  border: 'none',
+                                  color: 'white'
+                                }}
                               >
                                 <FaFilePdf />
                               </Button>
                               <Button
-                                variant="warning"
                                 size="sm"
                                 onClick={() => handleShow(checkup)}
                                 disabled={loading}
+                                style={{
+                                  backgroundColor: '#0891B2',
+                                  border: 'none',
+                                  color: 'white'
+                                }}
                               >
                                 <FaEdit />
                               </Button>
                               <Button
-                                variant="danger"
                                 size="sm"
                                 onClick={() => handleDelete(checkup.id)}
                                 disabled={loading}
+                                style={{
+                                  backgroundColor: '#0aa2c0',
+                                  border: 'none',
+                                  color: 'white'
+                                }}
                               >
                                 <FaTrash />
                               </Button>
@@ -457,7 +469,7 @@ function Checkups() {
                         <div style={{ fontSize: '14px' }}><strong>{option.label}</strong></div>
                         {option.details && <small className="text-muted" style={{ fontSize: '12px' }}>{option.details}</small>}
                       </div>
-                      <Badge bg="secondary" style={{ fontSize: '11px' }}>Rs. {option.price.toFixed(2)}</Badge>
+                      <Badge style={{ backgroundColor: '#0891B2', color: 'white', fontSize: '11px' }}>Rs. {option.price.toFixed(2)}</Badge>
                     </div>
                   )
                 }}
@@ -511,7 +523,7 @@ function Checkups() {
 
             <Form.Group className="mb-3">
               <Form.Label>
-                Total Amount: <Badge bg="success" className="fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
+                Total Amount: <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }} className="fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
               </Form.Label>
             </Form.Group>
 
