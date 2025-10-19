@@ -59,18 +59,31 @@ const addBillInfo = (doc, checkup, patient) => {
  * Add tests table
  */
 const addTestsTable = (doc, checkup, tests) => {
-  const testData = checkup.tests.map(testId => {
-    const test = tests.find(t => t.id === testId)
-    return test ? [test.name, `Rs. ${test.price.toFixed(2)}`] : ['Unknown Test', 'Rs. 0.00']
+  const testData = checkup.tests.map(testItem => {
+    const test = tests.find(t => t.id === testItem.testId)
+
+    if (test) {
+      return [
+        test.name,
+        `Rs. ${test.price.toFixed(2)}`,
+        testItem.notes || '-'
+      ]
+    }
+    return ['Unknown Test', 'Rs. 0.00', '-']
   })
 
   doc.autoTable({
     startY: 95,
-    head: [['Test Name', 'Price']],
+    head: [['Test Name', 'Price', 'Test Notes']],
     body: testData,
     theme: 'striped',
     headStyles: { fillColor: PDF_CONFIG.colors.primary },
-    foot: [['Total Amount', `Rs. ${checkup.total.toFixed(2)}`]],
+    columnStyles: {
+      0: { cellWidth: 60 },
+      1: { cellWidth: 30 },
+      2: { cellWidth: 90 }
+    },
+    foot: [['Total Amount', `Rs. ${checkup.total.toFixed(2)}`, '']],
     footStyles: {
       fillColor: PDF_CONFIG.colors.primary,
       textColor: PDF_CONFIG.colors.white,

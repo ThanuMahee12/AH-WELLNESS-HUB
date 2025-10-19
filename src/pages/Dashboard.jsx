@@ -61,8 +61,11 @@ function Dashboard() {
   const getTestDistribution = () => {
     const testCounts = {}
     checkups.forEach(checkup => {
-      checkup.tests?.forEach(test => {
-        testCounts[test.name] = (testCounts[test.name] || 0) + 1
+      checkup.tests?.forEach(testItem => {
+        const test = tests.find(t => t.id === testItem.testId)
+        if (test) {
+          testCounts[test.name] = (testCounts[test.name] || 0) + 1
+        }
       })
     })
 

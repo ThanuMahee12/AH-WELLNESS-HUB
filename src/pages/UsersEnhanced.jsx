@@ -79,13 +79,13 @@ function UsersEnhanced() {
       label: 'Role',
       render: (value) => {
         const colors = {
-          superadmin: 'danger',
-          maintainer: 'primary',
-          editor: 'warning',
-          user: 'info',
-          admin: 'primary' // backward compatibility
+          superadmin: '#0891B2',
+          maintainer: '#06B6D4',
+          editor: '#0aa2c0',
+          user: '#67e8f9',
+          admin: '#06B6D4' // backward compatibility
         }
-        return <Badge bg={colors[value] || 'secondary'}>{value}</Badge>
+        return <Badge style={{ backgroundColor: colors[value] || '#0891B2', color: 'white' }}>{value}</Badge>
       }
     },
   ]
@@ -98,8 +98,12 @@ function UsersEnhanced() {
       render: (value, item) => (
         <Button
           size="sm"
-          variant="outline-warning"
           onClick={() => handleResetPassword(item)}
+          style={{
+            backgroundColor: 'transparent',
+            border: '2px solid #0891B2',
+            color: '#0891B2'
+          }}
         >
           <FaKey /> Reset Password
         </Button>
@@ -361,7 +365,7 @@ function UsersEnhanced() {
             <FaClock className="me-2" />
             You have {pendingRequestsCount} pending change request{pendingRequestsCount > 1 ? 's' : ''}
           </span>
-          <Button variant="info" size="sm" onClick={() => setShowRequestsModal(true)}>
+          <Button size="sm" onClick={() => setShowRequestsModal(true)} style={{ backgroundColor: '#06B6D4', border: 'none', color: 'white' }}>
             View Requests
           </Button>
         </Alert>
@@ -372,10 +376,32 @@ function UsersEnhanced() {
           <CRUDTable
             data={users}
             columns={TABLE_COLUMNS}
-            onEdit={handleOpen}
+            onEdit={isMaintainer ? (user) => {
+              // Maintainer can only edit themselves
+              if (user.uid === currentUser.uid || user.id === currentUser.uid) {
+                handleOpen(user)
+              }
+            } : handleOpen}
             onDelete={isSuperAdmin ? (id) => handleDelete(id, 'Are you sure you want to delete this user?') : null}
             loading={loading}
             emptyMessage="No users found. Add your first user to get started."
+            renderActions={isMaintainer ? (user) => {
+              // Maintainer can only edit self, show buttons conditionally
+              const isSelf = user.uid === currentUser.uid || user.id === currentUser.uid
+              return isSelf ? (
+                <Button
+                  size="sm"
+                  onClick={() => handleOpen(user)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '2px solid #0891B2',
+                    color: '#0891B2'
+                  }}
+                >
+                  Edit Profile
+                </Button>
+              ) : null
+            } : undefined}
           />
         </Col>
       </Row>
@@ -402,8 +428,8 @@ function UsersEnhanced() {
             )}
 
             {isMaintainer && isEditing && (
-              <Alert variant="warning" className="mb-3">
-                You can edit username, mobile, and role. Email cannot be changed by maintainers.
+              <Alert variant="info" className="mb-3">
+                You are editing your own profile. You can update username and mobile. Email and role cannot be changed.
               </Alert>
             )}
 
@@ -420,6 +446,7 @@ function UsersEnhanced() {
                         value={formData[field.name] || ''}
                         onChange={handleChange}
                         required={field.required}
+                        disabled={isEditing && isMaintainer && field.name === 'role'}
                       >
                         <option value="">Select {field.label}</option>
                         {field.options.map((opt) => (
@@ -436,7 +463,7 @@ function UsersEnhanced() {
                         onChange={handleChange}
                         required={field.required}
                         placeholder={field.placeholder}
-                        disabled={isEditing && field.name === 'email' && isMaintainer}
+                        disabled={isEditing && isMaintainer && (field.name === 'email' || field.name === 'role')}
                       />
                     )}
                     {isEditing && field.name === 'email' && isSuperAdmin && (
@@ -538,7 +565,7 @@ function UsersEnhanced() {
                     <div className="d-flex justify-content-between align-items-start">
                       <div className="flex-grow-1">
                         <h6>
-                          <Badge bg={request.type === 'create' ? 'success' : 'warning'}>
+                          <Badge style={{ backgroundColor: request.type === 'create' ? '#06B6D4' : '#0891B2', color: 'white' }}>
                             {request.type === 'create' ? 'NEW USER' : 'UPDATE USER'}
                           </Badge>
                           {' '}by {request.requestedByName}
@@ -550,7 +577,7 @@ function UsersEnhanced() {
                                 <strong>Username:</strong> {request.data.username}<br/>
                                 <strong>Email:</strong> {request.data.email}<br/>
                                 <strong>Mobile:</strong> {request.data.mobile}<br/>
-                                <strong>Role:</strong> <Badge bg="info">{request.data.role}</Badge>
+                                <strong>Role:</strong> <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>{request.data.role}</Badge>
                               </Col>
                               {request.originalData && (
                                 <Col md={6}>
@@ -558,7 +585,7 @@ function UsersEnhanced() {
                                   <small>Username: {request.originalData.username}</small><br/>
                                   <small>Email: {request.originalData.email}</small><br/>
                                   <small>Mobile: {request.originalData.mobile}</small><br/>
-                                  <small>Role: <Badge bg="secondary">{request.originalData.role}</Badge></small>
+                                  <small>Role: <Badge style={{ backgroundColor: '#94a3b8', color: 'white' }}>{request.originalData.role}</Badge></small>
                                 </Col>
                               )}
                             </Row>
@@ -569,15 +596,15 @@ function UsersEnhanced() {
                     <div className="mt-3 d-flex gap-2">
                       <Button
                         size="sm"
-                        variant="success"
                         onClick={() => handleApproveRequest(request)}
+                        style={{ backgroundColor: '#06B6D4', border: 'none', color: 'white' }}
                       >
                         <FaCheckCircle /> Approve
                       </Button>
                       <Button
                         size="sm"
-                        variant="danger"
                         onClick={() => handleRejectRequest(request)}
+                        style={{ backgroundColor: '#0aa2c0', border: 'none', color: 'white' }}
                       >
                         <FaTimesCircle /> Reject
                       </Button>

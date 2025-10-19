@@ -49,7 +49,7 @@ function Sidebar() {
       <div className={`sidebar ${showMobile ? 'show' : ''}`}>
         <div className="sidebar-header">
           <FaFlask className="sidebar-logo" />
-          <h4 className="sidebar-title">Blood Lab</h4>
+          <h4 className="sidebar-title">AH WELLNESS HUB</h4>
         </div>
 
         <Nav className="flex-column sidebar-nav">

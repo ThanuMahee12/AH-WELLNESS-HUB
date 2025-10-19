@@ -1,8 +1,9 @@
 import { Container, Navbar as BSNavbar, Button, Badge } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { FaFlask, FaUser, FaSignOutAlt } from 'react-icons/fa'
+import { FaUser, FaSignOutAlt } from 'react-icons/fa'
 import { logoutUser } from '../store/authSlice'
+import bloodLabLogo from '../assets/blood-lab-logo.png'
 import '../styles/navbar.css'
 
 function Navbar() {
@@ -19,8 +20,13 @@ function Navbar() {
     <BSNavbar className="top-navbar shadow-sm" expand="lg">
       <Container fluid className="px-3 px-md-4">
         <BSNavbar.Brand as={Link} to="/" className="d-flex align-items-center">
-          <FaFlask className="me-2 brand-icon" />
-          <span className="brand-text">Blood Lab Manager</span>
+          <img
+            src={bloodLabLogo}
+            alt="Blood Lab Manager"
+            className="brand-logo"
+            style={{ height: '50px', width: 'auto' }}
+          />
+          <span className="brand-text ms-2">AWH</span>
         </BSNavbar.Brand>
 
         {isAuthenticated && (

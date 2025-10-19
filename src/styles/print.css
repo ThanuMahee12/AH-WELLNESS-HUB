@@ -1,0 +1,89 @@
+/* Global Print Styles - Show ONLY bill content */
+@media print {
+  /* Hide EVERYTHING first */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Only show bill content and its children */
+  .bill-content,
+  .bill-content * {
+    visibility: visible !important;
+  }
+
+  /* Position bill content at top of page */
+  .bill-content {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    word-wrap: break-word !important;
+    white-space: normal !important;
+  }
+
+  /* Ensure proper text wrapping */
+  .bill-content * {
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Fix table wrapping */
+  .bill-content table {
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  .bill-content td,
+  .bill-content th {
+    word-wrap: break-word !important;
+    white-space: normal !important;
+  }
+
+  /* Ensure rows and columns wrap properly */
+  .bill-content .row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+
+  .bill-content .col,
+  .bill-content [class*="col-"] {
+    flex-shrink: 1 !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Reset body and root container */
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+
+  /* Remove all margins from layout containers */
+  #root,
+  #root > div,
+  .container-fluid {
+    margin: 0 !important;
+    padding: 0 !important;
+    margin-top: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  /* Hide navbar, sidebar explicitly */
+  nav,
+  .navbar,
+  .sidebar,
+  aside {
+    display: none !important;
+  }
+
+  /* Hide "Bill #:" label to save space */
+  .bill-label {
+    display: none !important;
+  }
+}

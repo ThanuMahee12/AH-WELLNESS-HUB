@@ -8,6 +8,9 @@ import {
 } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../config/firebase'
+import { initializeApp, deleteApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
+import { firebaseConfig } from '../config/firebase'
 
 export const authService = {
   // Login user
@@ -18,12 +21,20 @@ export const authService = {
       const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid))
 
       if (userDoc.exists()) {
+        const userData = userDoc.data()
+
+        // Check if user account is disabled
+        if (userData.disabled) {
+          await signOut(auth) // Sign them out immediately
+          return { success: false, error: 'This account has been disabled. Contact administrator.' }
+        }
+
         return {
           success: true,
           user: {
             uid: userCredential.user.uid,
             email: userCredential.user.email,
-            ...userDoc.data()
+            ...userData
           }
         }
       } else {
@@ -54,11 +65,16 @@ export const authService = {
     }
   },
 
-  // Register new user (called by existing users)
+  // Register new user (called by super admin)
   register: async (userData) => {
     try {
+      // Create a secondary auth instance to avoid logging out the current user
+      const secondaryApp = initializeApp(firebaseConfig, 'Secondary')
+      const secondaryAuth = getAuth(secondaryApp)
+
+      // Create the new user in the secondary auth instance
       const userCredential = await createUserWithEmailAndPassword(
-        auth,
+        secondaryAuth,
         userData.email,
         userData.password
       )
@@ -72,8 +88,15 @@ export const authService = {
         createdAt: new Date().toISOString()
       }
 
+      // Save to Firestore using the shared db instance
       await setDoc(doc(db, 'users', userCredential.user.uid), userProfile)
+
+      // Update the display name in the secondary auth
       await updateProfile(userCredential.user, { displayName: userData.username })
+
+      // Sign out from secondary auth and delete the secondary app
+      await secondaryAuth.signOut()
+      await deleteApp(secondaryApp)
 
       return {
         success: true,
@@ -83,6 +106,14 @@ export const authService = {
         }
       }
     } catch (error) {
+      // Clean up secondary app if it exists
+      try {
+        if (error.secondaryApp) {
+          await deleteApp(error.secondaryApp)
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up secondary app:', cleanupError)
+      }
       return { success: false, error: error.message }
     }
   },
@@ -92,18 +123,70 @@ export const authService = {
     return auth.currentUser
   },
 
+  // Disable user account (prevents login without deleting data)
+  deleteUser: async (userId) => {
+    try {
+      // Mark user as disabled instead of deleting
+      await setDoc(doc(db, 'users', userId), {
+        disabled: true,
+        disabledAt: new Date().toISOString()
+      }, { merge: true })
+
+      // Note: User account is disabled but data is preserved
+      // The user will not be able to login
+      // To re-enable, set disabled: false in Firestore
+
+      return {
+        success: true,
+        message: 'User account has been disabled successfully.'
+      }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Enable user account
+  enableUser: async (userId) => {
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        disabled: false,
+        enabledAt: new Date().toISOString()
+      }, { merge: true })
+
+      return {
+        success: true,
+        message: 'User account has been enabled successfully.'
+      }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
   // Auth state observer
   onAuthStateChange: (callback) => {
     return onAuthStateChanged(auth, async (user) => {
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid))
         if (userDoc.exists()) {
+          const userData = userDoc.data()
+
+          // Check if user account is disabled
+          if (userData.disabled) {
+            // User is disabled, sign them out automatically
+            await signOut(auth)
+            callback(null)
+            return
+          }
+
           callback({
             uid: user.uid,
             email: user.email,
-            ...userDoc.data()
+            ...userData
           })
         } else {
+          // User profile doesn't exist in Firestore
+          // Sign them out automatically
+          await signOut(auth)
           callback(null)
         }
       } else {

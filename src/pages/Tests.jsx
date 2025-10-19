@@ -1,11 +1,12 @@
 import { useSelector } from 'react-redux'
-import { Container, Row, Col } from 'react-bootstrap'
-import { FaFlask } from 'react-icons/fa'
+import { Container, Row, Col, Button } from 'react-bootstrap'
+import { FaFlask, FaEdit, FaTrash } from 'react-icons/fa'
 import { fetchTests, addTest, updateTest, deleteTest, selectAllTests } from '../store/testsSlice'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
 import { CRUDTable, CRUDModal } from '../components/crud'
+import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 
 // Form field configuration
 const TEST_FIELDS = [
@@ -27,6 +28,7 @@ function Tests() {
   const tests = useSelector(selectAllTests);
   const { loading, error } = useSelector(state => state.tests);
   const { success, error: showError } = useNotification();
+  const { checkPermission } = usePermission();
 
   // Custom hook handles ALL CRUD operations, modal, and form state
   const {
@@ -63,13 +65,51 @@ function Tests() {
     },
   });
 
+  // Custom render actions with permissions
+  const renderActions = (item) => (
+    <>
+      <PermissionGate resource="tests" action="edit">
+        <Button
+          size="sm"
+          onClick={() => handleOpen(item)}
+          className="me-2"
+          style={{
+            backgroundColor: 'transparent',
+            border: '2px solid #0891B2',
+            color: '#0891B2'
+          }}
+        >
+          <FaEdit className="me-1" />
+          Edit
+        </Button>
+      </PermissionGate>
+      <PermissionGate resource="tests" action="delete">
+        <Button
+          size="sm"
+          onClick={() => handleDelete(item.id, 'Are you sure you want to delete this test?')}
+          style={{
+            backgroundColor: 'transparent',
+            border: '2px solid #0aa2c0',
+            color: '#0aa2c0'
+          }}
+        >
+          <FaTrash className="me-1" />
+          Delete
+        </Button>
+      </PermissionGate>
+    </>
+  );
+
+  const hasEditOrDelete = checkPermission('tests', 'edit') || checkPermission('tests', 'delete');
+
   return (
     <Container fluid className="p-3 p-md-4">
       <PageHeader
         icon={FaFlask}
         title="Blood Tests Management"
-        onAddClick={() => handleOpen()}
+        onAddClick={checkPermission('tests', 'create') ? () => handleOpen() : undefined}
         addButtonText="Add New Test"
+        showAddButton={checkPermission('tests', 'create')}
       />
 
       <Row>
@@ -77,8 +117,7 @@ function Tests() {
           <CRUDTable
             data={tests}
             columns={TABLE_COLUMNS}
-            onEdit={handleOpen}
-            onDelete={(id) => handleDelete(id, 'Are you sure you want to delete this test?')}
+            renderActions={hasEditOrDelete ? renderActions : undefined}
             loading={loading}
             error={error}
             emptyMessage="No tests available"
