@@ -171,6 +171,8 @@ function Patients() {
     </>
   );
 
+  const hasEditOrDelete = checkPermission('patients', 'edit') || checkPermission('patients', 'delete');
+
   return (
     <Container fluid className="p-3 p-md-4">
       <PageHeader
@@ -186,7 +188,7 @@ function Patients() {
           <CRUDTable
             data={patients}
             columns={TABLE_COLUMNS}
-            renderActions={renderActions}
+            renderActions={hasEditOrDelete ? renderActions : undefined}
             loading={loading}
             error={error}
             emptyMessage="No patients registered yet"

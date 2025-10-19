@@ -100,6 +100,8 @@ function Tests() {
     </>
   );
 
+  const hasEditOrDelete = checkPermission('tests', 'edit') || checkPermission('tests', 'delete');
+
   return (
     <Container fluid className="p-3 p-md-4">
       <PageHeader
@@ -115,7 +117,7 @@ function Tests() {
           <CRUDTable
             data={tests}
             columns={TABLE_COLUMNS}
-            renderActions={renderActions}
+            renderActions={hasEditOrDelete ? renderActions : undefined}
             loading={loading}
             error={error}
             emptyMessage="No tests available"

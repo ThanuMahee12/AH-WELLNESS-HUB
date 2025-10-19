@@ -237,13 +237,15 @@ function Checkups() {
                       <th>Tests</th>
                       <th>Total (Rs.)</th>
                       <th>Date/Time</th>
-                      <th className="text-center">Actions</th>
+                      {(checkPermission('checkups', 'edit') || checkPermission('checkups', 'delete')) && (
+                        <th className="text-center">Actions</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {checkups.length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="text-center py-4 text-muted">
+                        <td colSpan={(checkPermission('checkups', 'edit') || checkPermission('checkups', 'delete')) ? "6" : "5"} className="text-center py-4 text-muted">
                           No checkups recorded yet
                         </td>
                       </tr>
@@ -283,38 +285,40 @@ function Checkups() {
                           </td>
                           <td data-label="Total"><strong>Rs. {checkup.total.toFixed(2)}</strong></td>
                           <td data-label="Date/Time">{new Date(checkup.timestamp).toLocaleString()}</td>
-                          <td data-label="Actions">
-                            <div className="d-flex gap-2 justify-content-center flex-wrap">
-                              <PermissionGate resource="checkups" action="edit">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleShow(checkup)}
-                                  disabled={loading}
-                                  style={{
-                                    backgroundColor: '#0891B2',
-                                    border: 'none',
-                                    color: 'white'
-                                  }}
-                                >
-                                  <FaEdit />
-                                </Button>
-                              </PermissionGate>
-                              <PermissionGate resource="checkups" action="delete">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleDelete(checkup.id)}
-                                  disabled={loading}
-                                  style={{
-                                    backgroundColor: '#ef4444',
-                                    border: 'none',
-                                    color: 'white'
-                                  }}
-                                >
-                                  <FaTrash />
-                                </Button>
-                              </PermissionGate>
-                            </div>
-                          </td>
+                          {(checkPermission('checkups', 'edit') || checkPermission('checkups', 'delete')) && (
+                            <td data-label="Actions">
+                              <div className="d-flex gap-2 justify-content-center flex-wrap">
+                                <PermissionGate resource="checkups" action="edit">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleShow(checkup)}
+                                    disabled={loading}
+                                    style={{
+                                      backgroundColor: '#0891B2',
+                                      border: 'none',
+                                      color: 'white'
+                                    }}
+                                  >
+                                    <FaEdit />
+                                  </Button>
+                                </PermissionGate>
+                                <PermissionGate resource="checkups" action="delete">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleDelete(checkup.id)}
+                                    disabled={loading}
+                                    style={{
+                                      backgroundColor: '#ef4444',
+                                      border: 'none',
+                                      color: 'white'
+                                    }}
+                                  >
+                                    <FaTrash />
+                                  </Button>
+                                </PermissionGate>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))
                     )}
