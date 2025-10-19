@@ -6,7 +6,7 @@ import {
   updateProfile,
   onAuthStateChanged
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../config/firebase'
 import { initializeApp, deleteApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
@@ -21,12 +21,20 @@ export const authService = {
       const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid))
 
       if (userDoc.exists()) {
+        const userData = userDoc.data()
+
+        // Check if user account is disabled
+        if (userData.disabled) {
+          await signOut(auth) // Sign them out immediately
+          return { success: false, error: 'This account has been disabled. Contact administrator.' }
+        }
+
         return {
           success: true,
           user: {
             uid: userCredential.user.uid,
             email: userCredential.user.email,
-            ...userDoc.data()
+            ...userData
           }
         }
       } else {
@@ -115,26 +123,39 @@ export const authService = {
     return auth.currentUser
   },
 
-  // Delete user completely from Firestore
+  // Disable user account (prevents login without deleting data)
   deleteUser: async (userId) => {
     try {
-      // Completely delete the user document from Firestore
-      await deleteDoc(doc(db, 'users', userId))
+      // Mark user as disabled instead of deleting
+      await setDoc(doc(db, 'users', userId), {
+        disabled: true,
+        disabledAt: new Date().toISOString()
+      }, { merge: true })
 
-      // Note: Firebase Authentication cannot be deleted from client-side code
-      // for security reasons. It requires Firebase Admin SDK (Cloud Functions).
-      //
-      // IMPORTANT: The user will still exist in Firebase Authentication.
-      // To fully remove them from Auth, you need to:
-      // 1. Set up Firebase Cloud Functions with Admin SDK
-      // 2. Or manually delete from Firebase Console: Authentication > Users
-      //
-      // However, deleted users won't be able to login because their Firestore
-      // profile is removed, and the login function checks for profile existence.
+      // Note: User account is disabled but data is preserved
+      // The user will not be able to login
+      // To re-enable, set disabled: false in Firestore
 
       return {
         success: true,
-        message: 'User deleted from database. Remove from Authentication via Firebase Console if needed.'
+        message: 'User account has been disabled successfully.'
+      }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Enable user account
+  enableUser: async (userId) => {
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        disabled: false,
+        enabledAt: new Date().toISOString()
+      }, { merge: true })
+
+      return {
+        success: true,
+        message: 'User account has been enabled successfully.'
       }
     } catch (error) {
       return { success: false, error: error.message }
@@ -148,13 +169,22 @@ export const authService = {
         const userDoc = await getDoc(doc(db, 'users', user.uid))
         if (userDoc.exists()) {
           const userData = userDoc.data()
+
+          // Check if user account is disabled
+          if (userData.disabled) {
+            // User is disabled, sign them out automatically
+            await signOut(auth)
+            callback(null)
+            return
+          }
+
           callback({
             uid: user.uid,
             email: user.email,
             ...userData
           })
         } else {
-          // User profile doesn't exist in Firestore (deleted user)
+          // User profile doesn't exist in Firestore
           // Sign them out automatically
           await signOut(auth)
           callback(null)
