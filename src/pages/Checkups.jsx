@@ -25,7 +25,9 @@ function Checkups() {
   const [formData, setFormData] = useState({
     patientId: '',
     tests: [],
-    notes: ''
+    notes: '',
+    weight: '',
+    height: ''
   })
   const [newPatientData, setNewPatientData] = useState({
     name: '',
@@ -49,7 +51,7 @@ function Checkups() {
     setEditingCheckup(null)
     setCurrentStep(1)
     setShowNewPatientForm(false)
-    setFormData({ patientId: '', tests: [], notes: '' })
+    setFormData({ patientId: '', tests: [], notes: '', weight: '', height: '' })
     setNewPatientData({ name: '', age: '', gender: 'Male', mobile: '', email: '', address: '' })
   }
 
@@ -60,7 +62,9 @@ function Checkups() {
       setFormData({
         patientId: checkup.patientId,
         tests: checkup.tests,
-        notes: checkup.notes
+        notes: checkup.notes,
+        weight: checkup.weight || '',
+        height: checkup.height || ''
       })
     }
     setShowModal(true)
@@ -533,6 +537,33 @@ function Checkups() {
                 Total Amount: <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }} className="fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
               </Form.Label>
             </Form.Group>
+
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Weight (kg)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        step="0.1"
+                        value={formData.weight}
+                        onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                        placeholder="Enter weight in kg (optional)"
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Height (cm)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        step="0.1"
+                        value={formData.height}
+                        onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                        placeholder="Enter height in cm (optional)"
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Notes / Remarks</Form.Label>
