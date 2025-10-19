@@ -161,10 +161,17 @@ function Checkups() {
           <div className="d-flex justify-content-between align-items-center flex-wrap">
             <h2><FaClipboardCheck className="me-2 text-secondary" />Checkups / Billing</h2>
             <Button
-              variant="secondary"
               onClick={() => handleShow()}
               className="mt-2 mt-md-0"
               disabled={patients.length === 0 || loading}
+              style={{
+                backgroundColor: '#06B6D4',
+                border: 'none',
+                color: 'white',
+                padding: '0.5rem 1.5rem',
+                borderRadius: '0.375rem',
+                fontWeight: '500'
+              }}
             >
               <FaPlus className="me-2" />New Checkup
             </Button>

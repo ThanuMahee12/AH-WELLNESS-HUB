@@ -27,7 +27,17 @@ const PageHeader = React.memo(({
             {title}
           </h2>
           {showAddButton && onAddClick && (
-            <Button variant="secondary" onClick={onAddClick}>
+            <Button
+              onClick={onAddClick}
+              style={{
+                backgroundColor: '#06B6D4',
+                border: 'none',
+                color: 'white',
+                padding: '0.5rem 1.5rem',
+                borderRadius: '0.375rem',
+                fontWeight: '500'
+              }}
+            >
               <FaPlus className="me-2" />
               {addButtonText}
             </Button>
