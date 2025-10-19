@@ -22,9 +22,8 @@ export const fetchUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     const result = await firestoreService.getAll(COLLECTION)
     if (result.success) {
-      // Filter out deleted users
-      const activeUsers = result.data.filter(user => !user.deleted)
-      return activeUsers
+      // Return all users (deleted users are now completely removed from Firestore)
+      return result.data
     } else {
       return rejectWithValue(result.error)
     }

@@ -6,7 +6,7 @@ import {
   updateProfile,
   onAuthStateChanged
 } from 'firebase/auth'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore'
 import { auth, db } from '../config/firebase'
 import { initializeApp, deleteApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
@@ -115,23 +115,26 @@ export const authService = {
     return auth.currentUser
   },
 
-  // Delete user from Firestore and mark for Auth deletion
+  // Delete user completely from Firestore
   deleteUser: async (userId) => {
     try {
-      // Delete from Firestore
-      await setDoc(doc(db, 'users', userId), {
-        deleted: true,
-        deletedAt: new Date().toISOString()
-      }, { merge: true })
+      // Completely delete the user document from Firestore
+      await deleteDoc(doc(db, 'users', userId))
 
-      // Note: Deleting from Firebase Auth requires Admin SDK (backend)
-      // For now, we mark the user as deleted in Firestore
-      // You should set up a Cloud Function to delete from Auth:
-      // https://firebase.google.com/docs/auth/admin/manage-users#delete_a_user
+      // Note: Firebase Authentication cannot be deleted from client-side code
+      // for security reasons. It requires Firebase Admin SDK (Cloud Functions).
+      //
+      // IMPORTANT: The user will still exist in Firebase Authentication.
+      // To fully remove them from Auth, you need to:
+      // 1. Set up Firebase Cloud Functions with Admin SDK
+      // 2. Or manually delete from Firebase Console: Authentication > Users
+      //
+      // However, deleted users won't be able to login because their Firestore
+      // profile is removed, and the login function checks for profile existence.
 
       return {
         success: true,
-        message: 'User marked for deletion. Auth cleanup pending.'
+        message: 'User deleted from database. Remove from Authentication via Firebase Console if needed.'
       }
     } catch (error) {
       return { success: false, error: error.message }
@@ -144,20 +147,16 @@ export const authService = {
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid))
         if (userDoc.exists()) {
-          // Check if user is marked as deleted
           const userData = userDoc.data()
-          if (userData.deleted) {
-            // User is deleted, sign them out
-            await signOut(auth)
-            callback(null)
-            return
-          }
           callback({
             uid: user.uid,
             email: user.email,
             ...userData
           })
         } else {
+          // User profile doesn't exist in Firestore (deleted user)
+          // Sign them out automatically
+          await signOut(auth)
           callback(null)
         }
       } else {
