@@ -101,15 +101,24 @@ function Checkups() {
   }
 
   const handleTestChange = (selectedOptions) => {
+    const newTests = selectedOptions ? selectedOptions.map(option => {
+      // Check if test already exists in formData to preserve notes
+      const existingTest = formData.tests.find(t => t.testId === option.value)
+      return {
+        testId: option.value,
+        notes: existingTest?.notes || ''
+      }
+    }) : []
+
     setFormData(prev => ({
       ...prev,
-      tests: selectedOptions ? selectedOptions.map(option => option.value) : []
+      tests: newTests
     }))
   }
 
   const calculateTotal = () => {
-    return formData.tests.reduce((sum, testId) => {
-      const test = tests.find(t => t.id === testId)
+    return formData.tests.reduce((sum, testItem) => {
+      const test = tests.find(t => t.id === testItem.testId)
       return sum + (test?.price || 0)
     }, 0)
   }
@@ -156,6 +165,16 @@ function Checkups() {
   const getPatientName = (patientId) => {
     const patient = patients.find(p => p.id === patientId)
     return patient ? patient.name : 'Unknown'
+  }
+
+  const getTestNames = (testItems) => {
+    return testItems
+      .map(testItem => {
+        const test = tests.find(t => t.id === testItem.testId)
+        return test ? test.name : null
+      })
+      .filter(Boolean)
+      .join(', ')
   }
 
   return (
@@ -213,17 +232,16 @@ function Checkups() {
                     <tr>
                       <th>Bill ID</th>
                       <th>Patient</th>
-                      <th>Tests Count</th>
+                      <th>Tests</th>
                       <th>Total (Rs.)</th>
                       <th>Date/Time</th>
-                      <th>Notes</th>
                       <th className="text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {checkups.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center py-4 text-muted">
+                        <td colSpan="6" className="text-center py-4 text-muted">
                           No checkups recorded yet
                         </td>
                       </tr>
@@ -232,10 +250,23 @@ function Checkups() {
                         <tr key={checkup.id}>
                           <td data-label="Bill ID"><Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>#{checkup.id}</Badge></td>
                           <td data-label="Patient"><strong>{getPatientName(checkup.patientId)}</strong></td>
-                          <td data-label="Tests Count">{checkup.tests.length}</td>
+                          <td data-label="Tests">
+                            <div
+                              style={{
+                                maxWidth: '300px',
+                                maxHeight: '80px',
+                                overflowY: 'auto',
+                                overflowX: 'hidden',
+                                wordWrap: 'break-word',
+                                fontSize: '0.875rem',
+                                lineHeight: '1.4'
+                              }}
+                            >
+                              {getTestNames(checkup.tests)}
+                            </div>
+                          </td>
                           <td data-label="Total"><strong>Rs. {checkup.total.toFixed(2)}</strong></td>
                           <td data-label="Date/Time">{new Date(checkup.timestamp).toLocaleString()}</td>
-                          <td data-label="Notes">{checkup.notes || '-'}</td>
                           <td data-label="Actions">
                             <div className="d-flex gap-2 justify-content-center flex-wrap">
                               <Button
@@ -460,7 +491,7 @@ function Checkups() {
                   details: test.details
                 }))}
                 value={tests
-                  .filter(test => formData.tests.includes(test.id))
+                  .filter(test => formData.tests.some(t => t.testId === test.id))
                   .map(test => ({
                     value: test.id,
                     label: test.name
@@ -537,6 +568,35 @@ function Checkups() {
                 Total Amount: <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }} className="fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
               </Form.Label>
             </Form.Group>
+
+                {/* Individual Test Notes */}
+                {formData.tests.length > 0 && (
+                  <Form.Group className="mb-3">
+                    <Form.Label>Test-Specific Notes</Form.Label>
+                    {formData.tests.map((testItem, index) => {
+                      const test = tests.find(t => t.id === testItem.testId)
+                      return test ? (
+                        <div key={testItem.testId} className="mb-2">
+                          <Form.Label style={{ fontSize: '0.9rem', color: '#0891B2' }}>
+                            <strong>{test.name}</strong>
+                          </Form.Label>
+                          <Form.Control
+                            as="textarea"
+                            rows={2}
+                            value={testItem.notes}
+                            onChange={(e) => {
+                              const updatedTests = [...formData.tests]
+                              updatedTests[index] = { ...updatedTests[index], notes: e.target.value }
+                              setFormData({ ...formData, tests: updatedTests })
+                            }}
+                            placeholder={`Notes for ${test.name} (optional)`}
+                            style={{ fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      ) : null
+                    })}
+                  </Form.Group>
+                )}
 
                 <Row>
                   <Col md={6}>

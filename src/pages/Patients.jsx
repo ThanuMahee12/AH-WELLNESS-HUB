@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col, Form, Button, ButtonGroup } from 'react-bootstrap'
 import { FaUserInjured, FaMale, FaFemale, FaUser } from 'react-icons/fa'
 import { fetchPatients, addPatient, updatePatient, deletePatient, selectAllPatients } from '../store/patientsSlice'
@@ -52,32 +53,49 @@ const PATIENT_FIELDS = [
   { name: 'address', label: 'Address', type: 'textarea', required: true, colSize: 12, rows: 2 },
 ];
 
-// Table column configuration
-const TABLE_COLUMNS = [
-  {
-    key: 'gender',
-    label: '',
-    render: (value) => {
-      if (value === 'Male') {
-        return <FaMale style={{ color: '#0891B2' }} size={18} />
-      } else if (value === 'Female') {
-        return <FaFemale style={{ color: '#06B6D4' }} size={18} />
-      } else {
-        return <FaUser style={{ color: '#0aa2c0' }} size={18} />
-      }
-    }
-  },
-  { key: 'name', label: 'Name', render: (value) => <strong>{value}</strong> },
-  { key: 'age', label: 'Age' },
-  { key: 'mobile', label: 'Mobile' },
-  { key: 'email', label: 'Email', render: (value) => value || '-' },
-  { key: 'address', label: 'Address' },
-];
-
 function Patients() {
+  const navigate = useNavigate();
   const patients = useSelector(selectAllPatients);
   const { loading, error } = useSelector(state => state.patients);
   const { success, error: showError } = useNotification();
+
+  // Table column configuration
+  const TABLE_COLUMNS = [
+    {
+      key: 'gender',
+      label: '',
+      render: (value) => {
+        if (value === 'Male') {
+          return <FaMale style={{ color: '#0891B2' }} size={18} />
+        } else if (value === 'Female') {
+          return <FaFemale style={{ color: '#06B6D4' }} size={18} />
+        } else {
+          return <FaUser style={{ color: '#0aa2c0' }} size={18} />
+        }
+      }
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      render: (value, item) => (
+        <strong
+          onClick={() => navigate(`/patients/${item.id}`)}
+          style={{
+            cursor: 'pointer',
+            color: '#0891B2',
+            textDecoration: 'none'
+          }}
+          onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+          onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+        >
+          {value}
+        </strong>
+      )
+    },
+    { key: 'age', label: 'Age' },
+    { key: 'mobile', label: 'Mobile' },
+    { key: 'address', label: 'Address' },
+  ];
 
   // Custom hook handles ALL CRUD operations, modal, and form state
   const {

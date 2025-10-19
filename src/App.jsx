@@ -14,6 +14,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Patients = lazy(() => import('./pages/Patients'))
+const PatientDetail = lazy(() => import('./pages/PatientDetail'))
 const Checkups = lazy(() => import('./pages/Checkups'))
 const Tests = lazy(() => import('./pages/Tests'))
 const Users = lazy(() => import('./pages/UsersEnhanced'))
@@ -78,6 +79,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Patients />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/patients/:id"
+                  element={
+                    <ProtectedRoute>
+                      <PatientDetail />
                     </ProtectedRoute>
                   }
                 />
