@@ -4,10 +4,14 @@ import {
   sendPasswordResetEmail,
   createUserWithEmailAndPassword,
   updateProfile,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInWithCustomToken
 } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../config/firebase'
+import { initializeApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
+import { firebaseConfig } from '../config/firebase'
 
 export const authService = {
   // Login user
@@ -54,11 +58,16 @@ export const authService = {
     }
   },
 
-  // Register new user (called by existing users)
+  // Register new user (called by super admin)
   register: async (userData) => {
     try {
+      // Create a secondary auth instance to avoid logging out the current user
+      const secondaryApp = initializeApp(firebaseConfig, 'Secondary')
+      const secondaryAuth = getAuth(secondaryApp)
+
+      // Create the new user in the secondary auth instance
       const userCredential = await createUserWithEmailAndPassword(
-        auth,
+        secondaryAuth,
         userData.email,
         userData.password
       )
@@ -72,8 +81,15 @@ export const authService = {
         createdAt: new Date().toISOString()
       }
 
+      // Save to Firestore using the shared db instance
       await setDoc(doc(db, 'users', userCredential.user.uid), userProfile)
+
+      // Update the display name in the secondary auth
       await updateProfile(userCredential.user, { displayName: userData.username })
+
+      // Sign out from secondary auth and delete the secondary app
+      await secondaryAuth.signOut()
+      await secondaryApp.delete()
 
       return {
         success: true,

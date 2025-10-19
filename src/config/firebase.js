@@ -22,4 +22,7 @@ const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 
+// Export config for secondary auth instances
+export { firebaseConfig }
+
 export default app
