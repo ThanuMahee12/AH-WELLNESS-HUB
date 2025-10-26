@@ -18,6 +18,7 @@ const PatientDetail = lazy(() => import('./pages/PatientDetail'))
 const Checkups = lazy(() => import('./pages/Checkups'))
 const CheckupDetail = lazy(() => import('./pages/CheckupDetail'))
 const Tests = lazy(() => import('./pages/Tests'))
+const Medicines = lazy(() => import('./pages/Medicines'))
 const Users = lazy(() => import('./pages/UsersEnhanced'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 
@@ -112,6 +113,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Tests />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/medicines"
+                  element={
+                    <ProtectedRoute>
+                      <Medicines />
                     </ProtectedRoute>
                   }
                 />

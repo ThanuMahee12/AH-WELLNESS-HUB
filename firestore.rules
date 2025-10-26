@@ -55,6 +55,14 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // Medicines collection - role-based access
+    match /medicines/{medicineId} {
+      // Editor can only view
+      allow read: if isAuthenticated();
+      // Maintainer and SuperAdmin can create, update, delete
+      allow write: if isAdmin();
+    }
+
     // User change requests collection - for maintainer approval workflow
     match /userChangeRequests/{requestId} {
       allow read: if isAuthenticated();

@@ -47,6 +47,12 @@ export const PERMISSIONS = {
       edit: false,
       delete: false,
     },
+    medicines: {
+      view: false,
+      create: false,
+      edit: false,
+      delete: false,
+    },
     users: {
       view: false,
       create: false,
@@ -81,6 +87,12 @@ export const PERMISSIONS = {
       edit: true,
       delete: false,
     },
+    medicines: {
+      view: true, // Can view medicines
+      create: false,
+      edit: false,
+      delete: false,
+    },
     users: {
       view: false,
       create: false,
@@ -110,6 +122,12 @@ export const PERMISSIONS = {
       delete: true,
     },
     patients: {
+      view: true,
+      create: true,
+      edit: true,
+      delete: true,
+    },
+    medicines: {
       view: true,
       create: true,
       edit: true,
@@ -147,6 +165,12 @@ export const PERMISSIONS = {
       delete: true,
     },
     patients: {
+      view: true,
+      create: true,
+      edit: true,
+      delete: true,
+    },
+    medicines: {
       view: true,
       create: true,
       edit: true,
