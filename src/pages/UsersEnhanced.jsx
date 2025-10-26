@@ -17,6 +17,7 @@ import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
 import { CRUDTable } from '../components/crud'
 import { generateRandomPassword, copyToClipboard } from '../utils/passwordUtils'
+import { canViewRole } from '../constants/roles'
 
 // Form field configuration
 const getUserFields = (currentUserRole) => [
@@ -61,6 +62,16 @@ function UsersEnhanced() {
 
   const isSuperAdmin = currentUser?.role === 'superadmin'
   const isMaintainer = currentUser?.role === 'maintainer'
+
+  // Filter users based on what roles the current user can view
+  const filteredUsers = users.filter(user => {
+    // Always include self
+    if (user.uid === currentUser?.uid || user.id === currentUser?.uid) return true
+    // If no role specified, include the user
+    if (!user.role) return true
+    // Check if current user can view this user's role
+    return canViewRole(currentUser?.role, user.role)
+  })
 
   useEffect(() => {
     dispatch(fetchUserChangeRequests())
@@ -374,7 +385,7 @@ function UsersEnhanced() {
       <Row>
         <Col>
           <CRUDTable
-            data={users}
+            data={filteredUsers}
             columns={TABLE_COLUMNS}
             onEdit={isMaintainer ? (user) => {
               // Maintainer can only edit themselves
