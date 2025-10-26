@@ -225,7 +225,7 @@ function Checkups() {
                 <Table striped hover className="mb-0 table-mobile-responsive">
                   <thead>
                     <tr>
-                      <th>Bill ID</th>
+                      <th>Bill No</th>
                       <th>Patient</th>
                       <th>Tests</th>
                       <th>Total (Rs.)</th>
@@ -245,7 +245,7 @@ function Checkups() {
                     ) : (
                       checkups.map(checkup => (
                         <tr key={checkup.id}>
-                          <td data-label="Bill ID">
+                          <td data-label="Bill No">
                             <Badge
                               onClick={() => handleViewDetails(checkup.id)}
                               style={{
@@ -257,7 +257,7 @@ function Checkups() {
                               onMouseEnter={(e) => e.target.style.backgroundColor = '#0891B2'}
                               onMouseLeave={(e) => e.target.style.backgroundColor = '#06B6D4'}
                             >
-                              #{checkup.id}
+                              {checkup.billNo || `#${checkup.id}`}
                             </Badge>
                           </td>
                           <td data-label="Patient"><strong>{getPatientName(checkup.patientId)}</strong></td>

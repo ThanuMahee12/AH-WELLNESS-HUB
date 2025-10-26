@@ -763,7 +763,7 @@ function CheckupDetail() {
                     </p>
                     <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
                       <span style={{ whiteSpace: 'nowrap' }}>
-                        <strong>Bill #:</strong> {checkup.id}
+                        <strong>Bill #:</strong> {checkup.billNo || checkup.id}
                       </span>
                       {' | '}
                       <span style={{ whiteSpace: 'nowrap' }}>
@@ -1185,49 +1185,41 @@ function CheckupDetail() {
               <Card className="shadow-sm">
                 <Card.Body ref={prescriptionRef} className="prescription-preview" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
                   {/* Header */}
-                  <div className="mb-3 pb-2 prescription-header" style={{ borderBottom: '2px solid #0891B2' }}>
-                    <Row className="align-items-center">
-                      <Col xs={3} className="text-start">
-                        <img src={bloodLabLogo} alt="AWH Logo" style={{ height: '60px', objectFit: 'contain' }} />
-                      </Col>
-                      <Col xs={6} className="text-center">
-                        <h4 style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
-                          AH WELLNESS HUB & ASIRI LABORATORIES
-                        </h4>
-                        <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                  <div className="mb-3 pb-2 prescription-header" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <Row>
+                      <Col xs={6}>
+                        <h5 style={{ color: '#334155', fontWeight: '600', marginBottom: '0.25rem', fontSize: '1rem' }}>
                           Medical Prescription
-                        </p>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                          <span style={{ whiteSpace: 'nowrap' }}>
-                            <strong>Rx #:</strong> {checkup.id}
-                          </span>
-                          {' | '}
-                          <span style={{ whiteSpace: 'nowrap' }}>
-                            {new Date(checkup.timestamp).toLocaleDateString()}
-                          </span>
-                          {' | '}
-                          <span style={{ whiteSpace: 'nowrap' }}>
-                            {new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
+                        </h5>
                       </Col>
-                      <Col xs={3} className="text-end">
-                        <img src={asiriLogo} alt="ASIRI Logo" style={{ height: '50px', objectFit: 'contain', opacity: 0.8 }} />
+                      <Col xs={6} className="text-end">
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          <div>{new Date(checkup.timestamp).toLocaleDateString()}</div>
+                          <div>{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
                       </Col>
                     </Row>
                   </div>
 
                   {/* Patient Info */}
                   <div className="mb-3" style={{ fontSize: '0.85rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.375rem' }}>
-                    <Row>
-                      <Col xs={6}>
+                    <Row className="mb-2">
+                      <Col xs={12} md={6}>
                         <strong>Patient:</strong> {patient.name}
                       </Col>
-                      <Col xs={3}>
+                      <Col xs={6} md={3}>
                         <strong>Age:</strong> {patient.age} years
                       </Col>
-                      <Col xs={3}>
+                      <Col xs={6} md={3}>
                         <strong>Gender:</strong> {patient.gender}
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col xs={6} md={3}>
+                        <strong>Weight:</strong> {checkup.weight || 'N/A'}
+                      </Col>
+                      <Col xs={6} md={3}>
+                        <strong>Height:</strong> {checkup.height || 'N/A'}
                       </Col>
                     </Row>
                   </div>

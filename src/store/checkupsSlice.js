@@ -34,9 +34,20 @@ export const addCheckup = createAsyncThunk(
     // Generate unique serial number
     const serialNumber = generateCheckupSerialNumber()
 
+    // Generate bill number in YYYYMMDDHHMMSS format
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    const seconds = String(now.getSeconds()).padStart(2, '0')
+    const billNo = `${year}${month}${day}${hours}${minutes}${seconds}`
+
     const dataWithMetadata = {
       ...checkupData,
       serialNumber, // Add 12-digit serial number
+      billNo, // Add bill number (YYYYMMDDHHMMSS format)
       timestamp: new Date().toISOString(),
       createdBy: getState().auth.user?.id || 'system',
       createdByName: getState().auth.user?.username || 'System',
