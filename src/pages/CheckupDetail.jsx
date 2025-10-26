@@ -758,18 +758,29 @@ function CheckupDetail() {
                     <h4 style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
                       AH WELLNESS HUB & ASIRI LABORATORIES
                     </h4>
-                    <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 0 }}>
+                    <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
                       Complete Health Care Solutions
                     </p>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      <span style={{ whiteSpace: 'nowrap' }}>
+                        <strong>Bill #:</strong> {checkup.id}
+                      </span>
+                      {' | '}
+                      <span style={{ whiteSpace: 'nowrap' }}>
+                        {new Date(checkup.timestamp).toLocaleDateString()}
+                      </span>
+                      {' | '}
+                      <span style={{ whiteSpace: 'nowrap' }}>
+                        {new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </Col>
                   <Col xs={3} className="text-end">
-                    <div style={{ fontSize: '0.75rem' }}>
-                      <p className="mb-0">
-                        <strong className="bill-label">Bill #:</strong> {checkup.id}
-                      </p>
-                      <p className="mb-0">{new Date(checkup.timestamp).toLocaleDateString()}</p>
-                      <p className="mb-0">{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                    </div>
+                    <img
+                      src={asiriLogo}
+                      alt="ASIRI Logo"
+                      style={{ height: '50px', objectFit: 'contain', opacity: 0.8 }}
+                    />
                   </Col>
                 </Row>
               </div>
@@ -1183,15 +1194,25 @@ function CheckupDetail() {
                         <h4 style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
                           AH WELLNESS HUB & ASIRI LABORATORIES
                         </h4>
-                        <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 0 }}>
+                        <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
                           Medical Prescription
                         </p>
+                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            <strong>Rx #:</strong> {checkup.id}
+                          </span>
+                          {' | '}
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            {new Date(checkup.timestamp).toLocaleDateString()}
+                          </span>
+                          {' | '}
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            {new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
                       </Col>
                       <Col xs={3} className="text-end">
-                        <div style={{ fontSize: '0.75rem' }}>
-                          <p className="mb-0"><strong>Date:</strong> {new Date(checkup.timestamp).toLocaleDateString()}</p>
-                          <p className="mb-0"><strong>Rx #:</strong> {checkup.id}</p>
-                        </div>
+                        <img src={asiriLogo} alt="ASIRI Logo" style={{ height: '50px', objectFit: 'contain', opacity: 0.8 }} />
                       </Col>
                     </Row>
                   </div>
