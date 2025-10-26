@@ -137,8 +137,8 @@ function Home() {
                     src={bloodLabLogo}
                     alt="Blood Lab Logo"
                     style={{
-                      width: 'clamp(120px, 35vw, 250px)',
-                      maxWidth: '250px',
+                      width: 'clamp(100px, 30vw, 200px)',
+                      maxWidth: '200px',
                       height: 'auto',
                       filter: 'drop-shadow(0 8px 24px rgba(8, 145, 178, 0.3))'
                     }}
