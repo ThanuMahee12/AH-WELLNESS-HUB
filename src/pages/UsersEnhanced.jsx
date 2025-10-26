@@ -15,7 +15,7 @@ import { authService } from '../services/authService'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
-import { CRUDTable } from '../components/crud'
+import { EnhancedCRUDTable } from '../components/crud'
 import { generateRandomPassword, copyToClipboard } from '../utils/passwordUtils'
 import { canViewRole } from '../constants/roles'
 
@@ -384,7 +384,7 @@ function UsersEnhanced() {
 
       <Row>
         <Col>
-          <CRUDTable
+          <EnhancedCRUDTable
             data={filteredUsers}
             columns={TABLE_COLUMNS}
             onEdit={isMaintainer ? (user) => {
@@ -396,6 +396,8 @@ function UsersEnhanced() {
             onDelete={isSuperAdmin ? (id) => handleDelete(id, 'Are you sure you want to delete this user?') : null}
             loading={loading}
             emptyMessage="No users found. Add your first user to get started."
+            itemsPerPage={10}
+            searchFields={['username', 'email', 'mobile', 'role']}
             renderActions={isMaintainer ? (user) => {
               // Maintainer can only edit self, show buttons conditionally
               const isSelf = user.uid === currentUser.uid || user.id === currentUser.uid

@@ -5,7 +5,7 @@ import { fetchTests, addTest, updateTest, deleteTest, selectAllTests } from '../
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
-import { CRUDTable, CRUDModal } from '../components/crud'
+import { EnhancedCRUDTable, CRUDModal } from '../components/crud'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 
 // Form field configuration
@@ -191,13 +191,15 @@ function Tests() {
 
       <Row>
         <Col>
-          <CRUDTable
+          <EnhancedCRUDTable
             data={tests}
             columns={TABLE_COLUMNS}
             renderActions={hasEditOrDelete ? renderActions : undefined}
             loading={loading}
             error={error}
             emptyMessage="No tests available"
+            itemsPerPage={10}
+            searchFields={['code', 'name', 'details', 'rules']}
           />
         </Col>
       </Row>
