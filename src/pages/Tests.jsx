@@ -22,10 +22,38 @@ const TABLE_COLUMNS = [
   {
     key: 'code',
     label: 'Code',
-    render: (value) => <strong style={{ color: '#0891B2' }}>{value}</strong>
+    render: (value) => (
+      <strong style={{
+        color: '#0891B2',
+        whiteSpace: 'nowrap'
+      }}>
+        {value}
+      </strong>
+    )
   },
-  { key: 'name', label: 'Test Name', render: (value) => <strong>{value}</strong> },
-  { key: 'price', label: 'Price (Rs.)', render: (value) => `Rs. ${parseFloat(value).toFixed(2)}` },
+  {
+    key: 'name',
+    label: 'Test Name',
+    render: (value) => (
+      <strong style={{
+        whiteSpace: 'pre-wrap',
+        wordWrap: 'break-word',
+        maxWidth: '250px',
+        display: 'inline-block'
+      }}>
+        {value}
+      </strong>
+    )
+  },
+  {
+    key: 'price',
+    label: 'Price (Rs.)',
+    render: (value) => (
+      <span style={{ whiteSpace: 'nowrap' }}>
+        Rs. {parseFloat(value).toFixed(2)}
+      </span>
+    )
+  },
   {
     key: 'details',
     label: 'Details',
