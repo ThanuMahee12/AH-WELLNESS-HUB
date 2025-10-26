@@ -13,8 +13,8 @@ const MEDICINE_FIELDS = [
   { name: 'code', label: 'Medicine Code', type: 'text', required: true, colSize: 6, placeholder: 'e.g., MED001' },
   { name: 'name', label: 'Medicine Name', type: 'text', required: true, colSize: 6 },
   { name: 'brand', label: 'Brand', type: 'text', required: true, colSize: 6 },
-  { name: 'unit', label: 'Unit', type: 'text', required: true, colSize: 6, placeholder: 'e.g., mg, ml, tablets' },
-  { name: 'quantity', label: 'Quantity', type: 'text', required: true, colSize: 6 },
+  { name: 'dosage', label: 'Dosage', type: 'text', required: true, colSize: 6, placeholder: 'e.g., 20mg, 500mg, 10ml' },
+  { name: 'unit', label: 'Unit', type: 'text', required: true, colSize: 6, placeholder: 'e.g., tablets, capsules, ml' },
   { name: 'description', label: 'Description', type: 'textarea', required: false, colSize: 12, rows: 2 },
   { name: 'details', label: 'Details (Meta - Not shown in table)', type: 'richtext', required: false, colSize: 12, height: '150px' },
 ];
@@ -62,20 +62,22 @@ const TABLE_COLUMNS = [
     )
   },
   {
-    key: 'unit',
-    label: 'Unit',
+    key: 'dosage',
+    label: 'Dosage',
     render: (value) => (
       <span style={{
         whiteSpace: 'nowrap',
-        fontSize: 'clamp(0.85rem, 2vw, 1rem)'
+        fontSize: 'clamp(0.85rem, 2vw, 1rem)',
+        color: '#059669',
+        fontWeight: '600'
       }}>
         {value}
       </span>
     )
   },
   {
-    key: 'quantity',
-    label: 'Quantity',
+    key: 'unit',
+    label: 'Unit',
     render: (value) => (
       <span style={{
         whiteSpace: 'nowrap',
@@ -146,15 +148,11 @@ function Medicines() {
       code: '',
       name: '',
       brand: '',
+      dosage: '',
       unit: '',
-      quantity: '',
       description: '',
       details: '',
     },
-    transformData: (data) => ({
-      ...data,
-      // quantity stays as string, no conversion needed
-    }),
     customValidation: validateForm,
     onSuccess: (action) => {
       success(`Medicine ${action} successfully!`);

@@ -2,10 +2,12 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
-import { FaArrowLeft, FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt } from 'react-icons/fa'
+import { FaArrowLeft, FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa'
+import Select from 'react-select'
 import { selectAllCheckups, updateCheckup } from '../store/checkupsSlice'
 import { selectAllPatients } from '../store/patientsSlice'
 import { selectAllTests } from '../store/testsSlice'
+import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
 import { RichTextEditor } from '../components/ui'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import asiriLogo from '../assets/asiri-logo.png'
@@ -21,6 +23,7 @@ function CheckupDetail() {
   const checkups = useSelector(selectAllCheckups)
   const patients = useSelector(selectAllPatients)
   const tests = useSelector(selectAllTests)
+  const medicines = useSelector(selectAllMedicines)
 
   const [checkup, setCheckup] = useState(null)
   const [patient, setPatient] = useState(null)
@@ -30,14 +33,29 @@ function CheckupDetail() {
   const [editedTestNotes, setEditedTestNotes] = useState({})
   const [editedCommonNotes, setEditedCommonNotes] = useState('')
   const [editedPrescription, setEditedPrescription] = useState('')
+  const [prescriptionMedicines, setPrescriptionMedicines] = useState([])
+  const [prescriptionNotes, setPrescriptionNotes] = useState('')
   const [activeTab, setActiveTab] = useState('details')
   const [showPdfSettings, setShowPdfSettings] = useState(false)
+  const [showPrescriptionPdfSettings, setShowPrescriptionPdfSettings] = useState(false)
   const [pdfSettings, setPdfSettings] = useState({
     format: 'a4',
     width: 210,
     height: 297,
     orientation: 'portrait'
   })
+  const [prescriptionPdfSettings, setPrescriptionPdfSettings] = useState({
+    format: 'a4',
+    width: 210,
+    height: 297,
+    orientation: 'portrait'
+  })
+  const prescriptionRef = useRef()
+
+  useEffect(() => {
+    // Fetch medicines when component mounts
+    dispatch(fetchMedicines())
+  }, [dispatch])
 
   useEffect(() => {
     const foundCheckup = checkups.find(c => c.id === id)
@@ -51,6 +69,8 @@ function CheckupDetail() {
       setEditedNotes(foundCheckup.notes || '')
       setEditedCommonNotes(foundCheckup.commonNotes || '')
       setEditedPrescription(foundCheckup.prescription || '')
+      setPrescriptionMedicines(foundCheckup.prescriptionMedicines || [])
+      setPrescriptionNotes(foundCheckup.prescriptionNotes || '')
       const testNotesMap = {}
       foundCheckup.tests.forEach(testItem => {
         testNotesMap[testItem.testId] = testItem.notes || ''
@@ -69,6 +89,8 @@ function CheckupDetail() {
     setEditedNotes(checkup.notes || '')
     setEditedCommonNotes(checkup.commonNotes || '')
     setEditedPrescription(checkup.prescription || '')
+    setPrescriptionMedicines(checkup.prescriptionMedicines || [])
+    setPrescriptionNotes(checkup.prescriptionNotes || '')
     const testNotesMap = {}
     checkup.tests.forEach(testItem => {
       testNotesMap[testItem.testId] = testItem.notes || ''
@@ -90,6 +112,8 @@ function CheckupDetail() {
         notes: editedNotes,
         commonNotes: editedCommonNotes,
         prescription: editedPrescription,
+        prescriptionMedicines: prescriptionMedicines,
+        prescriptionNotes: prescriptionNotes,
         tests: updatedTests
       })).unwrap()
 
@@ -98,6 +122,108 @@ function CheckupDetail() {
     } catch (error) {
       console.error('Error updating checkup:', error)
       alert('Failed to update checkup')
+    }
+  }
+
+  const handleAddMedicine = () => {
+    setPrescriptionMedicines([...prescriptionMedicines, {
+      medicineId: '',
+      quantity: '',
+      instructions: ''
+    }])
+  }
+
+  const handleRemoveMedicine = (index) => {
+    setPrescriptionMedicines(prescriptionMedicines.filter((_, i) => i !== index))
+  }
+
+  const handleMedicineChange = (index, field, value) => {
+    const updated = [...prescriptionMedicines]
+    updated[index] = { ...updated[index], [field]: value }
+    setPrescriptionMedicines(updated)
+  }
+
+  const handlePrescriptionFormatChange = (format) => {
+    const presets = {
+      a4: { width: 210, height: 297, orientation: 'portrait' },
+      a5: { width: 148, height: 210, orientation: 'portrait' },
+      letter: { width: 215.9, height: 279.4, orientation: 'portrait' },
+      custom: { width: prescriptionPdfSettings.width, height: prescriptionPdfSettings.height, orientation: prescriptionPdfSettings.orientation }
+    }
+
+    setPrescriptionPdfSettings({
+      format,
+      ...presets[format]
+    })
+  }
+
+  const handlePrintPrescription = () => {
+    if (prescriptionRef.current) {
+      prescriptionRef.current.classList.add('printing')
+    }
+    window.print()
+    setTimeout(() => {
+      if (prescriptionRef.current) {
+        prescriptionRef.current.classList.remove('printing')
+      }
+    }, 100)
+  }
+
+  const handleGeneratePrescriptionPDF = async () => {
+    if (!prescriptionRef.current) return
+
+    setIsGenerating(true)
+
+    try {
+      const prescriptionClone = prescriptionRef.current.cloneNode(true)
+      prescriptionClone.style.position = 'absolute'
+      prescriptionClone.style.left = '-9999px'
+      prescriptionClone.style.top = '0'
+      prescriptionClone.style.width = '210mm'
+      prescriptionClone.style.padding = '25px'
+      prescriptionClone.style.backgroundColor = '#ffffff'
+      document.body.appendChild(prescriptionClone)
+
+      const canvas = await html2canvas(prescriptionClone, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        windowWidth: 794,
+        windowHeight: 1123
+      })
+
+      document.body.removeChild(prescriptionClone)
+
+      const imgData = canvas.toDataURL('image/png')
+
+      const pdf = new jsPDF({
+        orientation: prescriptionPdfSettings.orientation,
+        unit: 'mm',
+        format: prescriptionPdfSettings.format === 'custom' ? [prescriptionPdfSettings.width, prescriptionPdfSettings.height] : prescriptionPdfSettings.format
+      })
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      const imgScaledWidth = imgWidth * ratio
+      const imgScaledHeight = imgHeight * ratio
+
+      const marginX = (pdfWidth - imgScaledWidth) / 2
+      const marginY = 5
+
+      pdf.addImage(imgData, 'PNG', marginX, marginY, imgScaledWidth, imgScaledHeight)
+      pdf.save(`Prescription_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
+
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert('Failed to generate PDF. Error: ' + error.message)
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -260,44 +386,88 @@ function CheckupDetail() {
                   className="no-print"
                 >
                   <FaEdit className="me-2" />
-                  Edit Notes
+                  {activeTab === 'details' ? 'Edit Invoice' : activeTab === 'notes' ? 'Edit Notes' : 'Edit Prescription'}
                 </Button>
-                <Button
-                  onClick={handlePrint}
-                  size="sm"
-                  style={{
-                    backgroundColor: '#10b981',
-                    border: 'none',
-                    color: 'white'
-                  }}
-                  className="no-print"
-                >
-                  <FaPrint className="me-2" />
-                  Print
-                </Button>
-                <Button
-                  onClick={handleGeneratePDF}
-                  disabled={isGenerating}
-                  size="sm"
-                  style={{
-                    backgroundColor: '#0891B2',
-                    border: 'none',
-                    color: 'white'
-                  }}
-                  className="no-print"
-                >
-                  <FaFilePdf className="me-2" />
-                  {isGenerating ? 'Generating PDF...' : 'Download as PDF'}
-                </Button>
-                <Button
-                  onClick={() => setShowPdfSettings(!showPdfSettings)}
-                  size="sm"
-                  variant="outline-secondary"
-                  className="no-print"
-                >
-                  <FaCog className="me-2" />
-                  Settings
-                </Button>
+                {activeTab === 'details' && (
+                  <>
+                    <Button
+                      onClick={handlePrint}
+                      size="sm"
+                      style={{
+                        backgroundColor: '#10b981',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                      className="no-print"
+                    >
+                      <FaPrint className="me-2" />
+                      Print
+                    </Button>
+                    <Button
+                      onClick={handleGeneratePDF}
+                      disabled={isGenerating}
+                      size="sm"
+                      style={{
+                        backgroundColor: '#0891B2',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                      className="no-print"
+                    >
+                      <FaFilePdf className="me-2" />
+                      {isGenerating ? 'Generating PDF...' : 'Download PDF'}
+                    </Button>
+                    <Button
+                      onClick={() => setShowPdfSettings(!showPdfSettings)}
+                      size="sm"
+                      variant="outline-secondary"
+                      className="no-print"
+                    >
+                      <FaCog className="me-2" />
+                      Settings
+                    </Button>
+                  </>
+                )}
+                {activeTab === 'prescription' && (
+                  <>
+                    <Button
+                      onClick={handlePrintPrescription}
+                      size="sm"
+                      style={{
+                        backgroundColor: '#10b981',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                      className="no-print"
+                    >
+                      <FaPrint className="me-2" />
+                      Print
+                    </Button>
+                    <Button
+                      onClick={handleGeneratePrescriptionPDF}
+                      disabled={isGenerating}
+                      size="sm"
+                      style={{
+                        backgroundColor: '#0891B2',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                      className="no-print"
+                    >
+                      <FaFilePdf className="me-2" />
+                      {isGenerating ? 'Generating...' : 'Download PDF'}
+                    </Button>
+                    <Button
+                      onClick={() => setShowPrescriptionPdfSettings(!showPrescriptionPdfSettings)}
+                      size="sm"
+                      variant="outline-secondary"
+                      className="no-print"
+                    >
+                      <FaCog className="me-2" />
+                      Settings
+                    </Button>
+                  </>
+                )}
               </>
             ) : (
               <>
@@ -422,11 +592,11 @@ function CheckupDetail() {
               title={
                 <span>
                   <FaFilePdf className="me-2" />
-                  Details & Print
+                  Invoice
                 </span>
               }
             >
-              {/* Details Tab Content - Original Bill */}
+              {/* Invoice Tab Content */}
             </Tab>
             <Tab
               eventKey="notes"
@@ -612,13 +782,6 @@ function CheckupDetail() {
                   </Col>
                   <Col xs={6} className="text-end">
                     <strong>Mobile:</strong> {patient.mobile}
-                    {(checkup.weight && checkup.weight !== '0') || (checkup.height && checkup.height !== '0') ? (
-                      <span className="ms-3">
-                        {checkup.weight && checkup.weight !== '0' && `Wt: ${checkup.weight}kg`}
-                        {checkup.weight && checkup.height && checkup.weight !== '0' && checkup.height !== '0' && ' | '}
-                        {checkup.height && checkup.height !== '0' && `Ht: ${checkup.height}cm`}
-                      </span>
-                    ) : null}
                   </Col>
                 </Row>
               </div>
@@ -844,86 +1007,359 @@ function CheckupDetail() {
 
       {/* Prescription Tab */}
       {activeTab === 'prescription' && (
-        <Row>
-          <Col>
-            <Card className="shadow-sm">
-              <Card.Body>
-                <h5 style={{ color: '#0891B2', marginBottom: '1.5rem' }}>
-                  <FaPrescriptionBottleAlt className="me-2" />
-                  Prescription
-                </h5>
+        <>
+          {/* PDF Settings */}
+          <Collapse in={showPrescriptionPdfSettings}>
+            <Row className="mb-3 no-print">
+              <Col>
+                <Card style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <Card.Body className="py-2">
+                    <Row className="align-items-center">
+                      <Col md={4}>
+                        <Form.Group className="mb-0">
+                          <Form.Label style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>Paper Size</Form.Label>
+                          <Form.Select
+                            size="sm"
+                            value={prescriptionPdfSettings.format}
+                            onChange={(e) => handlePrescriptionFormatChange(e.target.value)}
+                            style={{ fontSize: '0.85rem' }}
+                          >
+                            <option value="a4">A4 (210 x 297 mm)</option>
+                            <option value="a5">A5 (148 x 210 mm)</option>
+                            <option value="letter">Letter (8.5 x 11 in)</option>
+                            <option value="custom">Custom Size</option>
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                      {prescriptionPdfSettings.format === 'custom' && (
+                        <>
+                          <Col md={2}>
+                            <Form.Group className="mb-0">
+                              <Form.Label style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>Width (mm)</Form.Label>
+                              <Form.Control
+                                type="number"
+                                size="sm"
+                                value={prescriptionPdfSettings.width}
+                                onChange={(e) => setPrescriptionPdfSettings({...prescriptionPdfSettings, width: parseFloat(e.target.value)})}
+                                style={{ fontSize: '0.85rem' }}
+                              />
+                            </Form.Group>
+                          </Col>
+                          <Col md={2}>
+                            <Form.Group className="mb-0">
+                              <Form.Label style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>Height (mm)</Form.Label>
+                              <Form.Control
+                                type="number"
+                                size="sm"
+                                value={prescriptionPdfSettings.height}
+                                onChange={(e) => setPrescriptionPdfSettings({...prescriptionPdfSettings, height: parseFloat(e.target.value)})}
+                                style={{ fontSize: '0.85rem' }}
+                              />
+                            </Form.Group>
+                          </Col>
+                        </>
+                      )}
+                    </Row>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          </Collapse>
 
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                      <strong>Patient:</strong> {patient.name} | <strong>Age:</strong> {patient.age}yr | <strong>Gender:</strong> {patient.gender}
+          {/* Medicine Selection Section - Only visible when editing */}
+          {isEditing && (
+            <Row className="mb-3 no-print">
+              <Col>
+                <Card style={{ backgroundColor: '#f8fafc', border: '1px solid #e0f2fe' }}>
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h6 style={{ color: '#0891B2', marginBottom: 0 }}>Add Medicines to Prescription</h6>
+                      <Button
+                        size="sm"
+                        onClick={handleAddMedicine}
+                        style={{ backgroundColor: '#10b981', border: 'none' }}
+                      >
+                        <FaPlus className="me-1" />
+                        Add Medicine
+                      </Button>
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                      {new Date(checkup.timestamp).toLocaleDateString()}
-                    </div>
+
+                    {prescriptionMedicines.map((med, index) => {
+                      const selectedMedicine = medicines.find(m => m.id === med.medicineId)
+                      return (
+                        <Card key={index} className="mb-2 prescription-form-card" style={{ border: '1px solid #cbd5e1' }}>
+                          <Card.Body className="p-3">
+                            <Row>
+                              <Col md={5}>
+                                <Form.Group className="mb-2">
+                                  <Form.Label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Medicine (Name - Dosage - Brand)</Form.Label>
+                                  <Select
+                                    value={selectedMedicine ? {
+                                      value: selectedMedicine.id,
+                                      label: `${selectedMedicine.name} - ${selectedMedicine.dosage} - ${selectedMedicine.brand}`
+                                    } : null}
+                                    onChange={(option) => handleMedicineChange(index, 'medicineId', option.value)}
+                                    options={medicines.map(m => ({
+                                      value: m.id,
+                                      label: `${m.name} - ${m.dosage} - ${m.brand}`
+                                    }))}
+                                    placeholder="Select medicine with dosage..."
+                                    styles={{
+                                      control: (base) => ({ ...base, fontSize: '0.9rem' }),
+                                      menu: (base) => ({ ...base, fontSize: '0.9rem' })
+                                    }}
+                                  />
+                                </Form.Group>
+                              </Col>
+                              <Col md={2}>
+                                <Form.Group className="mb-2">
+                                  <Form.Label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Quantity</Form.Label>
+                                  <Form.Control
+                                    size="sm"
+                                    type="text"
+                                    value={med.quantity}
+                                    onChange={(e) => handleMedicineChange(index, 'quantity', e.target.value)}
+                                    placeholder="e.g., 10"
+                                  />
+                                </Form.Group>
+                              </Col>
+                              <Col md={4}>
+                                <Form.Group className="mb-2">
+                                  <Form.Label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Instructions</Form.Label>
+                                  <Form.Control
+                                    size="sm"
+                                    type="text"
+                                    value={med.instructions}
+                                    onChange={(e) => handleMedicineChange(index, 'instructions', e.target.value)}
+                                    placeholder="e.g., After meals, Twice daily"
+                                  />
+                                </Form.Group>
+                              </Col>
+                              <Col md={1} className="d-flex align-items-end">
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => handleRemoveMedicine(index)}
+                                  style={{ marginBottom: '0.5rem' }}
+                                >
+                                  <FaTrash />
+                                </Button>
+                              </Col>
+                            </Row>
+                          </Card.Body>
+                        </Card>
+                      )
+                    })}
+
+                    <Form.Group className="mt-3">
+                      <Form.Label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#0891B2' }}>Additional Instructions / Notes</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={3}
+                        value={prescriptionNotes}
+                        onChange={(e) => setPrescriptionNotes(e.target.value)}
+                        placeholder="Add general instructions or notes for the prescription..."
+                        style={{ fontSize: '0.9rem' }}
+                      />
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          )}
+
+          {/* Live Prescription Preview */}
+          <Row>
+            <Col>
+              <Card className="shadow-sm">
+                <Card.Body ref={prescriptionRef} className="prescription-preview" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
+                  {/* Header */}
+                  <div className="mb-3 pb-2 prescription-header" style={{ borderBottom: '2px solid #0891B2' }}>
+                    <Row className="align-items-center">
+                      <Col xs={3} className="text-start">
+                        <img src={bloodLabLogo} alt="AWH Logo" style={{ height: '60px', objectFit: 'contain' }} />
+                      </Col>
+                      <Col xs={6} className="text-center">
+                        <h4 style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
+                          AH WELLNESS HUB & ASIRI LABORATORIES
+                        </h4>
+                        <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 0 }}>
+                          Medical Prescription
+                        </p>
+                      </Col>
+                      <Col xs={3} className="text-end">
+                        <div style={{ fontSize: '0.75rem' }}>
+                          <p className="mb-0"><strong>Date:</strong> {new Date(checkup.timestamp).toLocaleDateString()}</p>
+                          <p className="mb-0"><strong>Rx #:</strong> {checkup.id}</p>
+                        </div>
+                      </Col>
+                    </Row>
                   </div>
 
-                  {isEditing ? (
-                    <RichTextEditor
-                      label="Prescription Details"
-                      value={editedPrescription}
-                      onChange={(value) => setEditedPrescription(value)}
-                      placeholder="Add prescription details, medications, dosage, instructions..."
-                      height="400px"
-                    />
-                  ) : (
-                    <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', padding: '1.5rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', border: '1px solid #e0f2fe', minHeight: '300px' }}>
-                      {checkup.prescription ? (
-                        <div dangerouslySetInnerHTML={{ __html: checkup.prescription }} />
-                      ) : (
-                        <em style={{ color: '#94a3b8' }}>No prescription added</em>
-                      )}
+                  {/* Patient Info */}
+                  <div className="mb-3" style={{ fontSize: '0.85rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.375rem' }}>
+                    <Row>
+                      <Col xs={6}>
+                        <strong>Patient:</strong> {patient.name}
+                      </Col>
+                      <Col xs={3}>
+                        <strong>Age:</strong> {patient.age} years
+                      </Col>
+                      <Col xs={3}>
+                        <strong>Gender:</strong> {patient.gender}
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Medicines Table */}
+                  {prescriptionMedicines.length > 0 && (
+                    <div className="mb-3">
+                      <h6 style={{ color: '#0891B2', marginBottom: '0.75rem', fontSize: '0.95rem' }}>℞ Prescribed Medications</h6>
+                      <Table bordered className="prescription-table" style={{ marginBottom: '0', fontSize: '0.85rem' }}>
+                        <thead style={{ backgroundColor: '#e0f2fe' }}>
+                          <tr>
+                            <th style={{ color: '#0891B2', padding: '0.5rem' }}>Medicine (Brand)</th>
+                            <th style={{ color: '#0891B2', padding: '0.5rem', width: '15%' }}>Dosage</th>
+                            <th style={{ color: '#0891B2', padding: '0.5rem', width: '15%' }}>Quantity</th>
+                            <th style={{ color: '#0891B2', padding: '0.5rem', width: '25%' }}>Instructions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {prescriptionMedicines.map((med, index) => {
+                            const medicine = medicines.find(m => m.id === med.medicineId)
+                            return medicine ? (
+                              <tr key={index}>
+                                <td style={{ padding: '0.5rem' }}>
+                                  <strong>{medicine.name}</strong>
+                                  <br />
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{medicine.brand}</span>
+                                </td>
+                                <td style={{ padding: '0.5rem', fontWeight: '600', color: '#059669' }}>{medicine.dosage || '-'}</td>
+                                <td style={{ padding: '0.5rem' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
+                                <td style={{ padding: '0.5rem' }}>{med.instructions || '-'}</td>
+                              </tr>
+                            ) : null
+                          })}
+                        </tbody>
+                      </Table>
                     </div>
                   )}
+
+                  {/* Additional Notes */}
+                  {prescriptionNotes && (
+                    <div className="mb-3">
+                      <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Instructions</h6>
+                      <p style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                        {prescriptionNotes}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {prescriptionMedicines.length === 0 && !prescriptionNotes && (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                      <FaPrescriptionBottleAlt size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                      <p style={{ fontSize: '0.9rem' }}>
+                        <em>No prescription added yet. Click "Edit Notes" to add medicines and instructions.</em>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Footer */}
+                  <div className="mt-4 pt-3" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
+                    <Row>
+                      <Col xs={6}>
+                        <p className="mb-0">
+                          <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
+                          <strong>Mobile:</strong> +94 72 338 8793
+                        </p>
+                        <p className="mb-0">
+                          <FaEnvelope className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
+                          <strong>Email:</strong> vijayjena@yahoo.com
+                        </p>
+                      </Col>
+                      <Col xs={6} className="text-end">
+                        <div style={{ marginTop: '1rem' }}>
+                          <div style={{ borderTop: '1px solid #64748b', width: '150px', marginLeft: 'auto', marginBottom: '0.25rem' }} />
+                          <p style={{ fontSize: '0.75rem', marginBottom: 0 }}>Doctor's Signature</p>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                </Card.Body>
+              </Card>
+
+              {/* Save/Cancel Buttons */}
+              {isEditing && (
+                <div className="d-flex gap-2 justify-content-end mt-3">
+                  <Button
+                    onClick={handleSave}
+                    style={{ backgroundColor: '#10b981', border: 'none' }}
+                  >
+                    <FaSave className="me-2" />
+                    Save Prescription
+                  </Button>
+                  <Button onClick={handleCancel} variant="secondary">
+                    <FaTimes className="me-2" />
+                    Cancel
+                  </Button>
                 </div>
+              )}
+            </Col>
+          </Row>
 
-                {isEditing && (
-                  <div className="d-flex gap-2 justify-content-end mt-3">
-                    <Button
-                      onClick={handleSave}
-                      style={{
-                        backgroundColor: '#10b981',
-                        border: 'none',
-                        color: 'white'
-                      }}
-                    >
-                      <FaSave className="me-2" />
-                      Save Prescription
-                    </Button>
-                    <Button
-                      onClick={handleCancel}
-                      variant="secondary"
-                    >
-                      <FaTimes className="me-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                )}
+          {/* Responsive Styles for Prescription */}
+          <style>{`
+            @media (max-width: 767px) {
+              .prescription-form-card {
+                padding: 0.5rem !important;
+              }
 
-                {!isEditing && checkup.prescription && (
-                  <div className="d-flex gap-2 justify-content-end mt-3">
-                    <Button
-                      onClick={() => window.print()}
-                      style={{
-                        backgroundColor: '#10b981',
-                        border: 'none',
-                        color: 'white'
-                      }}
-                    >
-                      <FaPrint className="me-2" />
-                      Print Prescription
-                    </Button>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+              .prescription-form-card .row {
+                margin: 0 !important;
+              }
+
+              .prescription-form-card .col-md-5,
+              .prescription-form-card .col-md-2,
+              .prescription-form-card .col-md-4,
+              .prescription-form-card .col-md-1 {
+                padding: 0.25rem !important;
+                margin-bottom: 0.5rem;
+              }
+
+              .prescription-table {
+                font-size: 0.75rem !important;
+              }
+
+              .prescription-table th,
+              .prescription-table td {
+                padding: 0.3rem !important;
+              }
+
+              .prescription-preview {
+                padding: 1rem !important;
+              }
+
+              .prescription-header h4 {
+                font-size: 0.9rem !important;
+              }
+
+              .prescription-header img {
+                height: 40px !important;
+              }
+            }
+
+            @media (min-width: 768px) and (max-width: 991px) {
+              .prescription-form-card {
+                padding: 0.75rem !important;
+              }
+
+              .prescription-table {
+                font-size: 0.8rem !important;
+              }
+            }
+          `}</style>
+        </>
       )}
     </Container>
   )
