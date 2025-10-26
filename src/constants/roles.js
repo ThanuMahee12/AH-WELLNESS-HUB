@@ -47,6 +47,12 @@ export const PERMISSIONS = {
       edit: false,
       delete: false,
     },
+    medicines: {
+      view: false,
+      create: false,
+      edit: false,
+      delete: false,
+    },
     users: {
       view: false,
       create: false,
@@ -79,6 +85,12 @@ export const PERMISSIONS = {
       view: true,
       create: true,
       edit: true,
+      delete: false,
+    },
+    medicines: {
+      view: true, // Can view medicines
+      create: false,
+      edit: false,
       delete: false,
     },
     users: {
@@ -115,14 +127,20 @@ export const PERMISSIONS = {
       edit: true,
       delete: true,
     },
+    medicines: {
+      view: true,
+      create: true,
+      edit: true,
+      delete: true,
+    },
     users: {
-      view: true, // Can see users, editors, other maintainers
+      view: true, // Can see users, editors, and self
       create: true, // Request to add user
       edit: true, // Request to edit user
       delete: true, // Request to remove user
       viewOwn: true,
       resetPassword: true, // Can initiate password reset
-      viewRoles: [ROLES.USER, ROLES.EDITOR, ROLES.MAINTAINER], // Can view these roles
+      viewRoles: [ROLES.USER, ROLES.EDITOR], // Can view these roles (excluding other maintainers and superadmins)
     },
     approvals: {
       view: true,
@@ -147,6 +165,12 @@ export const PERMISSIONS = {
       delete: true,
     },
     patients: {
+      view: true,
+      create: true,
+      edit: true,
+      delete: true,
+    },
+    medicines: {
       view: true,
       create: true,
       edit: true,

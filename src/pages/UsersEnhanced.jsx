@@ -15,8 +15,9 @@ import { authService } from '../services/authService'
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
-import { CRUDTable } from '../components/crud'
+import { EnhancedCRUDTable } from '../components/crud'
 import { generateRandomPassword, copyToClipboard } from '../utils/passwordUtils'
+import { canViewRole } from '../constants/roles'
 
 // Form field configuration
 const getUserFields = (currentUserRole) => [
@@ -61,6 +62,16 @@ function UsersEnhanced() {
 
   const isSuperAdmin = currentUser?.role === 'superadmin'
   const isMaintainer = currentUser?.role === 'maintainer'
+
+  // Filter users based on what roles the current user can view
+  const filteredUsers = users.filter(user => {
+    // Always include self
+    if (user.uid === currentUser?.uid || user.id === currentUser?.uid) return true
+    // If no role specified, include the user
+    if (!user.role) return true
+    // Check if current user can view this user's role
+    return canViewRole(currentUser?.role, user.role)
+  })
 
   useEffect(() => {
     dispatch(fetchUserChangeRequests())
@@ -373,8 +384,8 @@ function UsersEnhanced() {
 
       <Row>
         <Col>
-          <CRUDTable
-            data={users}
+          <EnhancedCRUDTable
+            data={filteredUsers}
             columns={TABLE_COLUMNS}
             onEdit={isMaintainer ? (user) => {
               // Maintainer can only edit themselves
@@ -385,6 +396,8 @@ function UsersEnhanced() {
             onDelete={isSuperAdmin ? (id) => handleDelete(id, 'Are you sure you want to delete this user?') : null}
             loading={loading}
             emptyMessage="No users found. Add your first user to get started."
+            itemsPerPage={10}
+            searchFields={['username', 'email', 'mobile', 'role']}
             renderActions={isMaintainer ? (user) => {
               // Maintainer can only edit self, show buttons conditionally
               const isSelf = user.uid === currentUser.uid || user.id === currentUser.uid

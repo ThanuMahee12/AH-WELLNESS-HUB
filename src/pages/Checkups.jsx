@@ -28,7 +28,6 @@ function Checkups() {
   const [formData, setFormData] = useState({
     patientId: '',
     tests: [],
-    notes: '',
     weight: '',
     height: ''
   })
@@ -54,7 +53,7 @@ function Checkups() {
     setEditingCheckup(null)
     setCurrentStep(1)
     setShowNewPatientForm(false)
-    setFormData({ patientId: '', tests: [], notes: '', weight: '', height: '' })
+    setFormData({ patientId: '', tests: [], weight: '', height: '' })
     setNewPatientData({ name: '', age: '', gender: 'Male', mobile: '', email: '', address: '' })
   }
 
@@ -65,7 +64,6 @@ function Checkups() {
       setFormData({
         patientId: checkup.patientId,
         tests: checkup.tests,
-        notes: checkup.notes,
         weight: checkup.weight || '',
         height: checkup.height || ''
       })
@@ -104,14 +102,9 @@ function Checkups() {
   }
 
   const handleTestChange = (selectedOptions) => {
-    const newTests = selectedOptions ? selectedOptions.map(option => {
-      // Check if test already exists in formData to preserve notes
-      const existingTest = formData.tests.find(t => t.testId === option.value)
-      return {
-        testId: option.value,
-        notes: existingTest?.notes || ''
-      }
-    }) : []
+    const newTests = selectedOptions ? selectedOptions.map(option => ({
+      testId: option.value
+    })) : []
 
     setFormData(prev => ({
       ...prev,
@@ -232,7 +225,7 @@ function Checkups() {
                 <Table striped hover className="mb-0 table-mobile-responsive">
                   <thead>
                     <tr>
-                      <th>Bill ID</th>
+                      <th>Bill No</th>
                       <th>Patient</th>
                       <th>Tests</th>
                       <th>Total (Rs.)</th>
@@ -252,7 +245,7 @@ function Checkups() {
                     ) : (
                       checkups.map(checkup => (
                         <tr key={checkup.id}>
-                          <td data-label="Bill ID">
+                          <td data-label="Bill No">
                             <Badge
                               onClick={() => handleViewDetails(checkup.id)}
                               style={{
@@ -264,7 +257,7 @@ function Checkups() {
                               onMouseEnter={(e) => e.target.style.backgroundColor = '#0891B2'}
                               onMouseLeave={(e) => e.target.style.backgroundColor = '#06B6D4'}
                             >
-                              #{checkup.id}
+                              {checkup.billNo || `#${checkup.id}`}
                             </Badge>
                           </td>
                           <td data-label="Patient"><strong>{getPatientName(checkup.patientId)}</strong></td>
@@ -499,6 +492,7 @@ function Checkups() {
                 options={tests.map(test => ({
                   value: test.id,
                   label: test.name,
+                  code: test.code,
                   price: test.price,
                   details: test.details
                 }))}
@@ -506,24 +500,31 @@ function Checkups() {
                   .filter(test => formData.tests.some(t => t.testId === test.id))
                   .map(test => ({
                     value: test.id,
-                    label: test.name
+                    label: test.name,
+                    code: test.code
                   }))}
                 onChange={handleTestChange}
                 isDisabled={loading}
-                placeholder="Search tests..."
+                placeholder="Search tests by name or code..."
                 formatOptionLabel={(option, { context }) => {
                   if (context === 'value') {
-                    // In tags - show only name
-                    return option.label
+                    // In tags - show code and name
+                    return (
+                      <span>
+                        <strong style={{ color: '#0891B2' }}>{option.code}</strong> - {option.label}
+                      </span>
+                    )
                   }
-                  // In dropdown - show details and price
+                  // In dropdown - show code, name, details and price
                   return (
                     <div className="d-flex justify-content-between align-items-center">
                       <div>
-                        <div style={{ fontSize: '14px' }}><strong>{option.label}</strong></div>
+                        <div style={{ fontSize: '14px' }}>
+                          <strong style={{ color: '#0891B2' }}>{option.code}</strong> - <strong>{option.label}</strong>
+                        </div>
                         {option.details && <small className="text-muted" style={{ fontSize: '12px' }}>{option.details}</small>}
                       </div>
-                      <Badge style={{ backgroundColor: '#0891B2', color: 'white', fontSize: '11px' }}>Rs. {option.price.toFixed(2)}</Badge>
+                      <Badge style={{ backgroundColor: '#0891B2', color: 'white', fontSize: '11px' }}>Rs. {option.price?.toFixed(2)}</Badge>
                     </div>
                   )
                 }}
@@ -581,35 +582,6 @@ function Checkups() {
               </Form.Label>
             </Form.Group>
 
-                {/* Individual Test Notes */}
-                {formData.tests.length > 0 && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Test-Specific Notes</Form.Label>
-                    {formData.tests.map((testItem, index) => {
-                      const test = tests.find(t => t.id === testItem.testId)
-                      return test ? (
-                        <div key={testItem.testId} className="mb-2">
-                          <Form.Label style={{ fontSize: '0.9rem', color: '#0891B2' }}>
-                            <strong>{test.name}</strong>
-                          </Form.Label>
-                          <Form.Control
-                            as="textarea"
-                            rows={2}
-                            value={testItem.notes}
-                            onChange={(e) => {
-                              const updatedTests = [...formData.tests]
-                              updatedTests[index] = { ...updatedTests[index], notes: e.target.value }
-                              setFormData({ ...formData, tests: updatedTests })
-                            }}
-                            placeholder={`Notes for ${test.name} (optional)`}
-                            style={{ fontSize: '0.85rem' }}
-                          />
-                        </div>
-                      ) : null
-                    })}
-                  </Form.Group>
-                )}
-
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
@@ -637,16 +609,11 @@ function Checkups() {
                   </Col>
                 </Row>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Notes / Remarks</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Any special notes or remarks..."
-                  />
-                </Form.Group>
+                <div style={{ padding: '1rem', backgroundColor: '#e0f2fe', borderRadius: '0.375rem', marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.9rem', color: '#0369a1', marginBottom: 0 }}>
+                    <strong>Note:</strong> You can add detailed notes and prescriptions after creating the checkup by clicking on "View Details" and using the Notes & Prescription tabs.
+                  </p>
+                </div>
               </>
             )}
           </Modal.Body>

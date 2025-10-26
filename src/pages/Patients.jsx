@@ -6,7 +6,7 @@ import { fetchPatients, addPatient, updatePatient, deletePatient, selectAllPatie
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
-import { CRUDTable, CRUDModal } from '../components/crud'
+import { EnhancedCRUDTable, CRUDModal } from '../components/crud'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 
 // Custom Gender Icon Selector Component
@@ -185,13 +185,15 @@ function Patients() {
 
       <Row>
         <Col>
-          <CRUDTable
+          <EnhancedCRUDTable
             data={patients}
             columns={TABLE_COLUMNS}
             renderActions={hasEditOrDelete ? renderActions : undefined}
             loading={loading}
             error={error}
             emptyMessage="No patients registered yet"
+            itemsPerPage={10}
+            searchFields={['name', 'age', 'gender', 'mobile', 'email', 'address']}
           />
         </Col>
       </Row>

@@ -7,6 +7,7 @@ import {
   FaUserInjured,
   FaClipboardCheck,
   FaFlask,
+  FaPills,
   FaUsers,
   FaBars,
   FaTimes
@@ -23,6 +24,7 @@ function Sidebar() {
     { path: '/patients', icon: FaUserInjured, label: 'Patients' },
     { path: '/checkups', icon: FaClipboardCheck, label: 'Checkups' },
     { path: '/tests', icon: FaFlask, label: 'Tests' },
+    { path: '/medicines', icon: FaPills, label: 'Medicines', roles: ['superadmin', 'maintainer', 'editor'] },
     { path: '/users', icon: FaUsers, label: 'Users', roles: ['superadmin', 'maintainer', 'admin'] },
   ]
 

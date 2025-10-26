@@ -5,23 +5,81 @@ import { fetchTests, addTest, updateTest, deleteTest, selectAllTests } from '../
 import { useCRUD } from '../hooks'
 import { useNotification } from '../context'
 import { PageHeader } from '../components/ui'
-import { CRUDTable, CRUDModal } from '../components/crud'
+import { EnhancedCRUDTable, CRUDModal } from '../components/crud'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 
 // Form field configuration
 const TEST_FIELDS = [
+  { name: 'code', label: 'Test Code', type: 'text', required: true, colSize: 6, placeholder: 'e.g., S108' },
   { name: 'name', label: 'Test Name', type: 'text', required: true, colSize: 6 },
   { name: 'price', label: 'Price (Rs.)', type: 'number', required: true, colSize: 6, props: { step: '0.01' } },
-  { name: 'details', label: 'Test Details', type: 'textarea', required: false, colSize: 12, rows: 3 },
-  { name: 'rules', label: 'Test Rules/Instructions', type: 'textarea', required: false, colSize: 12, rows: 3 },
+  { name: 'details', label: 'Test Details', type: 'textarea', required: false, colSize: 6, rows: 3 },
+  { name: 'rules', label: 'Test Rules/Instructions', type: 'textarea', required: false, colSize: 6, rows: 3 },
 ];
 
 // Table column configuration
 const TABLE_COLUMNS = [
-  { key: 'name', label: 'Test Name', render: (value) => <strong>{value}</strong> },
-  { key: 'price', label: 'Price (Rs.)', render: (value) => `Rs. ${parseFloat(value).toFixed(2)}` },
-  { key: 'details', label: 'Details' },
-  { key: 'rules', label: 'Rules' },
+  {
+    key: 'code',
+    label: 'Code',
+    render: (value) => (
+      <strong style={{
+        color: '#0891B2',
+        whiteSpace: 'nowrap'
+      }}>
+        {value}
+      </strong>
+    )
+  },
+  {
+    key: 'name',
+    label: 'Test Name',
+    render: (value) => (
+      <strong style={{
+        whiteSpace: 'pre-wrap',
+        wordWrap: 'break-word',
+        maxWidth: '250px',
+        display: 'inline-block'
+      }}>
+        {value}
+      </strong>
+    )
+  },
+  {
+    key: 'price',
+    label: 'Price (Rs.)',
+    render: (value) => (
+      <span style={{ whiteSpace: 'nowrap' }}>
+        Rs. {parseFloat(value).toFixed(2)}
+      </span>
+    )
+  },
+  {
+    key: 'details',
+    label: 'Details',
+    render: (value) => (
+      <div style={{
+        whiteSpace: 'pre-wrap',
+        wordWrap: 'break-word',
+        maxWidth: '200px'
+      }}>
+        {value}
+      </div>
+    )
+  },
+  {
+    key: 'rules',
+    label: 'Rules',
+    render: (value) => (
+      <div style={{
+        whiteSpace: 'pre-wrap',
+        wordWrap: 'break-word',
+        maxWidth: '200px'
+      }}>
+        {value}
+      </div>
+    )
+  },
 ];
 
 function Tests() {
@@ -29,6 +87,23 @@ function Tests() {
   const { loading, error } = useSelector(state => state.tests);
   const { success, error: showError } = useNotification();
   const { checkPermission } = usePermission();
+
+  // Custom validation for unique code field
+  const validateForm = (data, isEdit, editingId) => {
+    const errors = {};
+
+    // Check if code is unique
+    const codeExists = tests.find(test =>
+      test.code?.toLowerCase() === data.code?.toLowerCase() &&
+      test.id !== editingId
+    );
+
+    if (codeExists) {
+      errors.code = `Test code "${data.code}" already exists. Please use a unique code.`;
+    }
+
+    return errors;
+  };
 
   // Custom hook handles ALL CRUD operations, modal, and form state
   const {
@@ -48,6 +123,7 @@ function Tests() {
     updateAction: updateTest,
     deleteAction: deleteTest,
     initialFormState: {
+      code: '',
       name: '',
       price: '',
       details: '',
@@ -57,6 +133,7 @@ function Tests() {
       ...data,
       price: parseFloat(data.price),
     }),
+    customValidation: validateForm,
     onSuccess: (action) => {
       success(`Test ${action} successfully!`);
     },
@@ -114,13 +191,15 @@ function Tests() {
 
       <Row>
         <Col>
-          <CRUDTable
+          <EnhancedCRUDTable
             data={tests}
             columns={TABLE_COLUMNS}
             renderActions={hasEditOrDelete ? renderActions : undefined}
             loading={loading}
             error={error}
             emptyMessage="No tests available"
+            itemsPerPage={10}
+            searchFields={['code', 'name', 'details', 'rules']}
           />
         </Col>
       </Row>
