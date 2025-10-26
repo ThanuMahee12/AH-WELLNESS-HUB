@@ -499,6 +499,7 @@ function Checkups() {
                 options={tests.map(test => ({
                   value: test.id,
                   label: test.name,
+                  code: test.code,
                   price: test.price,
                   details: test.details
                 }))}
@@ -506,24 +507,31 @@ function Checkups() {
                   .filter(test => formData.tests.some(t => t.testId === test.id))
                   .map(test => ({
                     value: test.id,
-                    label: test.name
+                    label: test.name,
+                    code: test.code
                   }))}
                 onChange={handleTestChange}
                 isDisabled={loading}
-                placeholder="Search tests..."
+                placeholder="Search tests by name or code..."
                 formatOptionLabel={(option, { context }) => {
                   if (context === 'value') {
-                    // In tags - show only name
-                    return option.label
+                    // In tags - show code and name
+                    return (
+                      <span>
+                        <strong style={{ color: '#0891B2' }}>{option.code}</strong> - {option.label}
+                      </span>
+                    )
                   }
-                  // In dropdown - show details and price
+                  // In dropdown - show code, name, details and price
                   return (
                     <div className="d-flex justify-content-between align-items-center">
                       <div>
-                        <div style={{ fontSize: '14px' }}><strong>{option.label}</strong></div>
+                        <div style={{ fontSize: '14px' }}>
+                          <strong style={{ color: '#0891B2' }}>{option.code}</strong> - <strong>{option.label}</strong>
+                        </div>
                         {option.details && <small className="text-muted" style={{ fontSize: '12px' }}>{option.details}</small>}
                       </div>
-                      <Badge style={{ backgroundColor: '#0891B2', color: 'white', fontSize: '11px' }}>Rs. {option.price.toFixed(2)}</Badge>
+                      <Badge style={{ backgroundColor: '#0891B2', color: 'white', fontSize: '11px' }}>Rs. {option.price?.toFixed(2)}</Badge>
                     </div>
                   )
                 }}
@@ -590,7 +598,10 @@ function Checkups() {
                       return test ? (
                         <div key={testItem.testId} className="mb-2">
                           <Form.Label style={{ fontSize: '0.9rem', color: '#0891B2' }}>
-                            <strong>{test.name}</strong>
+                            <strong>{test.code}</strong> - <strong>{test.name}</strong>
+                            <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
+                              (Rs. {test.price?.toFixed(2)})
+                            </span>
                           </Form.Label>
                           <Form.Control
                             as="textarea"
@@ -601,7 +612,7 @@ function Checkups() {
                               updatedTests[index] = { ...updatedTests[index], notes: e.target.value }
                               setFormData({ ...formData, tests: updatedTests })
                             }}
-                            placeholder={`Notes for ${test.name} (optional)`}
+                            placeholder={`Notes for ${test.code} - ${test.name} (optional)`}
                             style={{ fontSize: '0.85rem' }}
                           />
                         </div>

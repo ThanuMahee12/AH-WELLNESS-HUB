@@ -581,7 +581,9 @@ function CheckupDetail() {
                       const test = tests.find(t => t.id === testItem.testId)
                       return test ? (
                         <tr key={testItem.testId}>
-                          <td style={{ padding: '0.4rem 0.6rem' }}>{test.name}</td>
+                          <td style={{ padding: '0.4rem 0.6rem' }}>
+                            <strong style={{ color: '#0891B2' }}>{test.code}</strong> - {test.name}
+                          </td>
                           <td style={{ textAlign: 'right', padding: '0.4rem 0.6rem' }}>Rs. {test.price.toFixed(2)}</td>
                         </tr>
                       ) : null
@@ -603,14 +605,17 @@ function CheckupDetail() {
                     return test ? (
                       <div key={testItem.testId} className="mb-2">
                         <Form.Label style={{ fontSize: '0.85rem', color: '#0891B2', marginBottom: '0.25rem' }}>
-                          <strong>{test.name}</strong>
+                          <strong>{test.code}</strong> - <strong>{test.name}</strong>
+                          <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#666' }}>
+                            (Rs. {test.price?.toFixed(2)})
+                          </span>
                         </Form.Label>
                         <Form.Control
                           as="textarea"
                           rows={2}
                           value={editedTestNotes[testItem.testId] || ''}
                           onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
-                          placeholder={`Internal notes for ${test.name}...`}
+                          placeholder={`Internal notes for ${test.code} - ${test.name}...`}
                           style={{ fontSize: '0.85rem' }}
                         />
                       </div>
