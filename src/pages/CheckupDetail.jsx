@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button, Table, Form, Collapse } from 'react-bootstrap'
-import { FaArrowLeft, FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog } from 'react-icons/fa'
+import { Container, Row, Col, Card, Button, Table, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
+import { FaArrowLeft, FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt } from 'react-icons/fa'
 import { selectAllCheckups, updateCheckup } from '../store/checkupsSlice'
 import { selectAllPatients } from '../store/patientsSlice'
 import { selectAllTests } from '../store/testsSlice'
+import { RichTextEditor } from '../components/ui'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import asiriLogo from '../assets/asiri-logo.png'
 import jsPDF from 'jspdf'
@@ -27,6 +28,9 @@ function CheckupDetail() {
   const [isEditing, setIsEditing] = useState(false)
   const [editedNotes, setEditedNotes] = useState('')
   const [editedTestNotes, setEditedTestNotes] = useState({})
+  const [editedCommonNotes, setEditedCommonNotes] = useState('')
+  const [editedPrescription, setEditedPrescription] = useState('')
+  const [activeTab, setActiveTab] = useState('details')
   const [showPdfSettings, setShowPdfSettings] = useState(false)
   const [pdfSettings, setPdfSettings] = useState({
     format: 'a4',
@@ -45,6 +49,8 @@ function CheckupDetail() {
 
       // Initialize edit states
       setEditedNotes(foundCheckup.notes || '')
+      setEditedCommonNotes(foundCheckup.commonNotes || '')
+      setEditedPrescription(foundCheckup.prescription || '')
       const testNotesMap = {}
       foundCheckup.tests.forEach(testItem => {
         testNotesMap[testItem.testId] = testItem.notes || ''
@@ -61,6 +67,8 @@ function CheckupDetail() {
     setIsEditing(false)
     // Reset to original values
     setEditedNotes(checkup.notes || '')
+    setEditedCommonNotes(checkup.commonNotes || '')
+    setEditedPrescription(checkup.prescription || '')
     const testNotesMap = {}
     checkup.tests.forEach(testItem => {
       testNotesMap[testItem.testId] = testItem.notes || ''
@@ -80,6 +88,8 @@ function CheckupDetail() {
       await dispatch(updateCheckup({
         id: checkup.id,
         notes: editedNotes,
+        commonNotes: editedCommonNotes,
+        prescription: editedPrescription,
         tests: updatedTests
       })).unwrap()
 
@@ -398,9 +408,56 @@ function CheckupDetail() {
         </Row>
       </Collapse>
 
-      {/* Bill Preview */}
+      {/* Tabbed Interface */}
       <Row>
         <Col>
+          <Tabs
+            activeKey={activeTab}
+            onSelect={(k) => setActiveTab(k)}
+            className="mb-3 no-print"
+            style={{ borderBottom: '2px solid #0891B2' }}
+          >
+            <Tab
+              eventKey="details"
+              title={
+                <span>
+                  <FaFilePdf className="me-2" />
+                  Details & Print
+                </span>
+              }
+            >
+              {/* Details Tab Content - Original Bill */}
+            </Tab>
+            <Tab
+              eventKey="notes"
+              title={
+                <span>
+                  <FaStickyNote className="me-2" />
+                  Notes
+                </span>
+              }
+            >
+              {/* Notes Tab Content */}
+            </Tab>
+            <Tab
+              eventKey="prescription"
+              title={
+                <span>
+                  <FaPrescriptionBottleAlt className="me-2" />
+                  Prescription
+                </span>
+              }
+            >
+              {/* Prescription Tab Content */}
+            </Tab>
+          </Tabs>
+        </Col>
+      </Row>
+
+      {/* Bill Preview */}
+      {activeTab === 'details' && (
+        <Row>
+          <Col>
           <style>{`
             /* Print styles */
             @media print {
@@ -687,6 +744,187 @@ function CheckupDetail() {
           </Card>
         </Col>
       </Row>
+      )}
+
+      {/* Notes Tab */}
+      {activeTab === 'notes' && (
+        <Row>
+          <Col>
+            <Card className="shadow-sm">
+              <Card.Body>
+                <h5 style={{ color: '#0891B2', marginBottom: '1.5rem' }}>
+                  <FaStickyNote className="me-2" />
+                  Checkup Notes
+                </h5>
+
+                {/* Test-Related Notes */}
+                <div className="mb-4">
+                  <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                    Test-Related Notes
+                  </h6>
+                  {checkup.tests.map((testItem) => {
+                    const test = tests.find(t => t.id === testItem.testId)
+                    return test ? (
+                      <div key={testItem.testId} className="mb-3" style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.375rem', borderLeft: '4px solid #0891B2' }}>
+                        <div className="mb-2">
+                          <strong style={{ color: '#0891B2', fontSize: '1rem' }}>{test.code}</strong>
+                          <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>- {test.name}</span>
+                          <span style={{ color: '#94a3b8', marginLeft: '0.5rem', fontSize: '0.85rem' }}>(Rs. {test.price?.toFixed(2)})</span>
+                        </div>
+                        {isEditing ? (
+                          <Form.Control
+                            as="textarea"
+                            rows={3}
+                            value={editedTestNotes[testItem.testId] || ''}
+                            onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
+                            placeholder={`Add notes for ${test.name}...`}
+                            style={{ fontSize: '0.9rem' }}
+                          />
+                        ) : (
+                          <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                            {testItem.notes || <em style={{ color: '#94a3b8' }}>No notes added for this test</em>}
+                          </p>
+                        )}
+                      </div>
+                    ) : null
+                  })}
+                </div>
+
+                {/* Common Notes */}
+                <div className="mb-3">
+                  <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                    Common Notes
+                  </h6>
+                  {isEditing ? (
+                    <RichTextEditor
+                      label=""
+                      value={editedCommonNotes}
+                      onChange={(value) => setEditedCommonNotes(value)}
+                      placeholder="Add common notes for this checkup..."
+                      height="250px"
+                    />
+                  ) : (
+                    <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', minHeight: '100px' }}>
+                      {checkup.commonNotes ? (
+                        <div dangerouslySetInnerHTML={{ __html: checkup.commonNotes }} />
+                      ) : (
+                        <em style={{ color: '#94a3b8' }}>No common notes added</em>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {isEditing && (
+                  <div className="d-flex gap-2 justify-content-end mt-3">
+                    <Button
+                      onClick={handleSave}
+                      style={{
+                        backgroundColor: '#10b981',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                    >
+                      <FaSave className="me-2" />
+                      Save Notes
+                    </Button>
+                    <Button
+                      onClick={handleCancel}
+                      variant="secondary"
+                    >
+                      <FaTimes className="me-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {/* Prescription Tab */}
+      {activeTab === 'prescription' && (
+        <Row>
+          <Col>
+            <Card className="shadow-sm">
+              <Card.Body>
+                <h5 style={{ color: '#0891B2', marginBottom: '1.5rem' }}>
+                  <FaPrescriptionBottleAlt className="me-2" />
+                  Prescription
+                </h5>
+
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                      <strong>Patient:</strong> {patient.name} | <strong>Age:</strong> {patient.age}yr | <strong>Gender:</strong> {patient.gender}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                      {new Date(checkup.timestamp).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  {isEditing ? (
+                    <RichTextEditor
+                      label="Prescription Details"
+                      value={editedPrescription}
+                      onChange={(value) => setEditedPrescription(value)}
+                      placeholder="Add prescription details, medications, dosage, instructions..."
+                      height="400px"
+                    />
+                  ) : (
+                    <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', padding: '1.5rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', border: '1px solid #e0f2fe', minHeight: '300px' }}>
+                      {checkup.prescription ? (
+                        <div dangerouslySetInnerHTML={{ __html: checkup.prescription }} />
+                      ) : (
+                        <em style={{ color: '#94a3b8' }}>No prescription added</em>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {isEditing && (
+                  <div className="d-flex gap-2 justify-content-end mt-3">
+                    <Button
+                      onClick={handleSave}
+                      style={{
+                        backgroundColor: '#10b981',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                    >
+                      <FaSave className="me-2" />
+                      Save Prescription
+                    </Button>
+                    <Button
+                      onClick={handleCancel}
+                      variant="secondary"
+                    >
+                      <FaTimes className="me-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+
+                {!isEditing && checkup.prescription && (
+                  <div className="d-flex gap-2 justify-content-end mt-3">
+                    <Button
+                      onClick={() => window.print()}
+                      style={{
+                        backgroundColor: '#10b981',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                    >
+                      <FaPrint className="me-2" />
+                      Print Prescription
+                    </Button>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
     </Container>
   )
 }

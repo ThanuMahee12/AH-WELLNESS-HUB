@@ -28,7 +28,6 @@ function Checkups() {
   const [formData, setFormData] = useState({
     patientId: '',
     tests: [],
-    notes: '',
     weight: '',
     height: ''
   })
@@ -54,7 +53,7 @@ function Checkups() {
     setEditingCheckup(null)
     setCurrentStep(1)
     setShowNewPatientForm(false)
-    setFormData({ patientId: '', tests: [], notes: '', weight: '', height: '' })
+    setFormData({ patientId: '', tests: [], weight: '', height: '' })
     setNewPatientData({ name: '', age: '', gender: 'Male', mobile: '', email: '', address: '' })
   }
 
@@ -65,7 +64,6 @@ function Checkups() {
       setFormData({
         patientId: checkup.patientId,
         tests: checkup.tests,
-        notes: checkup.notes,
         weight: checkup.weight || '',
         height: checkup.height || ''
       })
@@ -104,14 +102,9 @@ function Checkups() {
   }
 
   const handleTestChange = (selectedOptions) => {
-    const newTests = selectedOptions ? selectedOptions.map(option => {
-      // Check if test already exists in formData to preserve notes
-      const existingTest = formData.tests.find(t => t.testId === option.value)
-      return {
-        testId: option.value,
-        notes: existingTest?.notes || ''
-      }
-    }) : []
+    const newTests = selectedOptions ? selectedOptions.map(option => ({
+      testId: option.value
+    })) : []
 
     setFormData(prev => ({
       ...prev,
@@ -589,38 +582,6 @@ function Checkups() {
               </Form.Label>
             </Form.Group>
 
-                {/* Individual Test Notes */}
-                {formData.tests.length > 0 && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Test-Specific Notes</Form.Label>
-                    {formData.tests.map((testItem, index) => {
-                      const test = tests.find(t => t.id === testItem.testId)
-                      return test ? (
-                        <div key={testItem.testId} className="mb-2">
-                          <Form.Label style={{ fontSize: '0.9rem', color: '#0891B2' }}>
-                            <strong>{test.code}</strong> - <strong>{test.name}</strong>
-                            <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
-                              (Rs. {test.price?.toFixed(2)})
-                            </span>
-                          </Form.Label>
-                          <Form.Control
-                            as="textarea"
-                            rows={2}
-                            value={testItem.notes}
-                            onChange={(e) => {
-                              const updatedTests = [...formData.tests]
-                              updatedTests[index] = { ...updatedTests[index], notes: e.target.value }
-                              setFormData({ ...formData, tests: updatedTests })
-                            }}
-                            placeholder={`Notes for ${test.code} - ${test.name} (optional)`}
-                            style={{ fontSize: '0.85rem' }}
-                          />
-                        </div>
-                      ) : null
-                    })}
-                  </Form.Group>
-                )}
-
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
@@ -648,16 +609,11 @@ function Checkups() {
                   </Col>
                 </Row>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Notes / Remarks</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Any special notes or remarks..."
-                  />
-                </Form.Group>
+                <div style={{ padding: '1rem', backgroundColor: '#e0f2fe', borderRadius: '0.375rem', marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.9rem', color: '#0369a1', marginBottom: 0 }}>
+                    <strong>Note:</strong> You can add detailed notes and prescriptions after creating the checkup by clicking on "View Details" and using the Notes & Prescription tabs.
+                  </p>
+                </div>
               </>
             )}
           </Modal.Body>
