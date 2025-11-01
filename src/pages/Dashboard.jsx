@@ -74,27 +74,6 @@ function Dashboard() {
     return data
   }
 
-  // Daily bar chart for past 30 days
-  const getDailyBarChartData = () => {
-    const data = []
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-
-      const dayCheckups = checkups.filter(c => {
-        const checkupDate = new Date(c.timestamp)
-        return checkupDate.toDateString() === date.toDateString()
-      })
-
-      data.push({
-        date: dateStr,
-        revenue: dayCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
-      })
-    }
-    return data
-  }
-
   const getTestDistribution = () => {
     const testCounts = {}
     filteredCheckups.forEach(checkup => {
@@ -127,7 +106,6 @@ function Dashboard() {
   }
 
   const chartData = getDateRangeData()
-  const dailyBarChartData = getDailyBarChartData()
   const testDistribution = getTestDistribution()
   const monthlyRevenue = getMonthlyRevenue()
 
@@ -365,7 +343,7 @@ function Dashboard() {
       </Row>
 
       <Row className="g-3 g-md-4 mb-4">
-        <Col xs={12} lg={6}>
+        <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
               <h5 className="mb-0">
@@ -394,43 +372,6 @@ function Dashboard() {
             </Card.Body>
           </Card>
         </Col>
-
-        <Col xs={12} lg={6}>
-          <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)' }} className="text-white">
-              <h5 className="mb-0">
-                <FaChartLine className="me-2" />
-                Daily Revenue - Past 30 Days
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              {dailyBarChartData.length === 0 ? (
-                <div className="text-center p-5">
-                  <FaChartLine size={50} className="text-muted mb-3" />
-                  <p className="text-muted">No revenue data available</p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dailyBarChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="date"
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#14B8A6" name="Daily Revenue (Rs.)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
 
       {/* Quick Stats Row */}
       <Row className="g-3 g-md-4 mb-4">
