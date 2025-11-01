@@ -422,7 +422,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4">
         <Col xs={12}>
           <Card className="shadow-sm border-0">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)' }} className="text-white">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
               <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 10)</h5>
             </Card.Header>
             <Card.Body>
