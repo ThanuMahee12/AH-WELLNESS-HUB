@@ -371,6 +371,7 @@ function Dashboard() {
             </Card.Body>
           </Card>
         </Col>
+      </Row>
 
       {/* Quick Stats Row */}
       <Row className="g-3 g-md-4 mb-4">
