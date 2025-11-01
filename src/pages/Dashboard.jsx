@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 import { Container, Row, Col, Card, ButtonGroup, Button } from 'react-bootstrap'
-import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaFilter } from 'react-icons/fa'
+import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaFilter, FaEye } from 'react-icons/fa'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
@@ -422,7 +423,7 @@ function Dashboard() {
         <Col xs={12}>
           <Card className="shadow-sm border-0">
             <Card.Header style={{ background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 5)</h5>
+              <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 10)</h5>
             </Card.Header>
             <Card.Body>
               {checkups.length === 0 ? (
@@ -432,15 +433,14 @@ function Dashboard() {
                 </div>
               ) : (
                 <div className="list-group list-group-flush">
-                  {checkups.slice(-5).reverse().map(checkup => {
+                  {checkups.slice(-10).reverse().map(checkup => {
                     const patient = patients.find(p => p.id === checkup.patientId)
                     const isToday = new Date(checkup.timestamp).toDateString() === new Date().toDateString()
                     return (
                       <div key={checkup.id} className={`list-group-item px-0 ${isToday ? 'bg-light' : ''}`}>
                         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
                           <div className="flex-grow-1">
-                            <div>
-                              <span className="badge bg-primary me-2">#{checkup.id}</span>
+                            <div className="mb-1">
                               <strong>{patient?.name || 'Unknown'}</strong>
                               {isToday && <span className="badge bg-success ms-2">Today</span>}
                             </div>
@@ -449,9 +449,18 @@ function Dashboard() {
                               {new Date(checkup.timestamp).toLocaleString('en-LK')}
                             </small>
                           </div>
-                          <div className="text-start text-sm-end">
-                            <div className="text-success fw-bold fs-5">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                            <small className="text-muted">{checkup.tests?.length || 0} tests</small>
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="text-start text-sm-end">
+                              <div className="text-success fw-bold fs-5">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                              <small className="text-muted">{checkup.tests?.length || 0} tests</small>
+                            </div>
+                            <Link
+                              to={`/checkups/${checkup.id}`}
+                              className="btn btn-sm btn-outline-primary"
+                              title="View Details"
+                            >
+                              <FaEye />
+                            </Link>
                           </div>
                         </div>
                       </div>
