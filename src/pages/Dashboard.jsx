@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Container, Row, Col, Card } from 'react-bootstrap'
-import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign } from 'react-icons/fa'
+import { Container, Row, Col, Card, ButtonGroup, Button } from 'react-bootstrap'
+import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaFilter } from 'react-icons/fa'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
@@ -21,6 +21,8 @@ function Dashboard() {
   const { loading: checkupsLoading } = useSelector(state => state.checkups)
   const { loading: usersLoading } = useSelector(state => state.users)
 
+  const [dateRange, setDateRange] = useState(7) // Default: Past 7 days
+
   useEffect(() => {
     dispatch(fetchPatients())
     dispatch(fetchTests())
@@ -34,12 +36,26 @@ function Dashboard() {
     return <LoadingSpinner text="Loading dashboard..." />
   }
 
-  const totalRevenue = checkups.reduce((sum, c) => sum + (c.total || 0), 0)
+  // Filter checkups by date range
+  const getFilteredCheckups = () => {
+    const now = new Date()
+    const startDate = new Date()
+    startDate.setDate(now.getDate() - dateRange)
 
-  // Prepare chart data
-  const getLast7DaysData = () => {
-    const last7Days = []
-    for (let i = 6; i >= 0; i--) {
+    return checkups.filter(c => {
+      const checkupDate = new Date(c.timestamp)
+      return checkupDate >= startDate && checkupDate <= now
+    })
+  }
+
+  const filteredCheckups = getFilteredCheckups()
+  const totalRevenue = checkups.reduce((sum, c) => sum + (c.total || 0), 0)
+  const filteredRevenue = filteredCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
+
+  // Prepare chart data based on selected date range
+  const getDateRangeData = () => {
+    const data = []
+    for (let i = dateRange - 1; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
       const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -49,18 +65,39 @@ function Dashboard() {
         return checkupDate.toDateString() === date.toDateString()
       })
 
-      last7Days.push({
+      data.push({
         date: dateStr,
         checkups: dayCheckups.length,
         revenue: dayCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
       })
     }
-    return last7Days
+    return data
+  }
+
+  // Daily bar chart for past 30 days
+  const getDailyBarChartData = () => {
+    const data = []
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+      const dayCheckups = checkups.filter(c => {
+        const checkupDate = new Date(c.timestamp)
+        return checkupDate.toDateString() === date.toDateString()
+      })
+
+      data.push({
+        date: dateStr,
+        revenue: dayCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
+      })
+    }
+    return data
   }
 
   const getTestDistribution = () => {
     const testCounts = {}
-    checkups.forEach(checkup => {
+    filteredCheckups.forEach(checkup => {
       checkup.tests?.forEach(testItem => {
         const test = tests.find(t => t.id === testItem.testId)
         if (test) {
@@ -77,7 +114,7 @@ function Dashboard() {
 
   const getMonthlyRevenue = () => {
     const months = {}
-    checkups.forEach(checkup => {
+    filteredCheckups.forEach(checkup => {
       const date = new Date(checkup.timestamp)
       const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       months[monthKey] = (months[monthKey] || 0) + (checkup.total || 0)
@@ -89,7 +126,8 @@ function Dashboard() {
     })).slice(-6)
   }
 
-  const chartData = getLast7DaysData()
+  const chartData = getDateRangeData()
+  const dailyBarChartData = getDailyBarChartData()
   const testDistribution = getTestDistribution()
   const monthlyRevenue = getMonthlyRevenue()
 
@@ -114,10 +152,77 @@ function Dashboard() {
 
   return (
     <Container fluid className="p-3 p-md-4">
-      <Row className="mb-4">
+      <Row className="mb-3">
         <Col>
           <h2>Dashboard</h2>
           <p className="text-muted">Welcome back, <strong>{user?.username}</strong>!</p>
+        </Col>
+      </Row>
+
+      {/* Date Range Filter */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="shadow-sm border-0" style={{ backgroundColor: '#f8fafc' }}>
+            <Card.Body className="py-2">
+              <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                <div className="d-flex align-items-center">
+                  <FaFilter className="me-2" style={{ color: '#0891B2' }} />
+                  <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#64748b' }}>
+                    Date Range Filter:
+                  </span>
+                </div>
+                <ButtonGroup size="sm">
+                  <Button
+                    variant={dateRange === 7 ? 'primary' : 'outline-primary'}
+                    onClick={() => setDateRange(7)}
+                    style={{
+                      backgroundColor: dateRange === 7 ? '#0891B2' : 'transparent',
+                      borderColor: '#0891B2',
+                      color: dateRange === 7 ? 'white' : '#0891B2'
+                    }}
+                  >
+                    Past 7 Days
+                  </Button>
+                  <Button
+                    variant={dateRange === 30 ? 'primary' : 'outline-primary'}
+                    onClick={() => setDateRange(30)}
+                    style={{
+                      backgroundColor: dateRange === 30 ? '#0891B2' : 'transparent',
+                      borderColor: '#0891B2',
+                      color: dateRange === 30 ? 'white' : '#0891B2'
+                    }}
+                  >
+                    Past 30 Days
+                  </Button>
+                  <Button
+                    variant={dateRange === 60 ? 'primary' : 'outline-primary'}
+                    onClick={() => setDateRange(60)}
+                    style={{
+                      backgroundColor: dateRange === 60 ? '#0891B2' : 'transparent',
+                      borderColor: '#0891B2',
+                      color: dateRange === 60 ? 'white' : '#0891B2'
+                    }}
+                  >
+                    Past 60 Days
+                  </Button>
+                  <Button
+                    variant={dateRange === 90 ? 'primary' : 'outline-primary'}
+                    onClick={() => setDateRange(90)}
+                    style={{
+                      backgroundColor: dateRange === 90 ? '#0891B2' : 'transparent',
+                      borderColor: '#0891B2',
+                      color: dateRange === 90 ? 'white' : '#0891B2'
+                    }}
+                  >
+                    Past 90 Days
+                  </Button>
+                </ButtonGroup>
+                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  Showing data for <strong style={{ color: '#0891B2' }}>Past {dateRange} Days</strong>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
 
@@ -179,7 +284,10 @@ function Dashboard() {
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaChartLine className="me-2" />Checkups & Revenue Trend</h5>
+              <h5 className="mb-0">
+                <FaChartLine className="me-2" />
+                Checkups & Revenue Trend <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>({dateRange} Days)</span>
+              </h5>
             </Card.Header>
             <Card.Body>
               {checkups.length === 0 ? (
@@ -257,10 +365,13 @@ function Dashboard() {
       </Row>
 
       <Row className="g-3 g-md-4 mb-4">
-        <Col xs={12} lg={8}>
+        <Col xs={12} lg={6}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaRupeeSign className="me-2" />Monthly Revenue</h5>
+              <h5 className="mb-0">
+                <FaRupeeSign className="me-2" />
+                Monthly Revenue <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>(Filtered)</span>
+              </h5>
             </Card.Header>
             <Card.Body>
               {monthlyRevenue.length === 0 ? (
@@ -284,6 +395,45 @@ function Dashboard() {
           </Card>
         </Col>
 
+        <Col xs={12} lg={6}>
+          <Card className="h-100 shadow-sm">
+            <Card.Header style={{ background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)' }} className="text-white">
+              <h5 className="mb-0">
+                <FaChartLine className="me-2" />
+                Daily Revenue - Past 30 Days
+              </h5>
+            </Card.Header>
+            <Card.Body>
+              {dailyBarChartData.length === 0 ? (
+                <div className="text-center p-5">
+                  <FaChartLine size={50} className="text-muted mb-3" />
+                  <p className="text-muted">No revenue data available</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={dailyBarChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="revenue" fill="#14B8A6" name="Daily Revenue (Rs.)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Quick Stats Row */}
+      <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
