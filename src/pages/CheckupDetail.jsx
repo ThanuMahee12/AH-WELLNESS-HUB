@@ -35,6 +35,7 @@ function CheckupDetail() {
   const [editedPrescription, setEditedPrescription] = useState('')
   const [prescriptionMedicines, setPrescriptionMedicines] = useState([])
   const [prescriptionNotes, setPrescriptionNotes] = useState('')
+  const [selectedTestForNote, setSelectedTestForNote] = useState(null)
   const [activeTab, setActiveTab] = useState('details')
   const [showPdfSettings, setShowPdfSettings] = useState(false)
   const [showPrescriptionPdfSettings, setShowPrescriptionPdfSettings] = useState(false)
@@ -931,41 +932,8 @@ function CheckupDetail() {
                   Checkup Notes
                 </h5>
 
-                {/* Test-Related Notes */}
-                <div className="mb-4">
-                  <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                    Test-Related Notes
-                  </h6>
-                  {checkup.tests.map((testItem) => {
-                    const test = tests.find(t => t.id === testItem.testId)
-                    return test ? (
-                      <div key={testItem.testId} className="mb-3" style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.375rem', borderLeft: '4px solid #0891B2' }}>
-                        <div className="mb-2">
-                          <strong style={{ color: '#0891B2', fontSize: '1rem' }}>{test.code}</strong>
-                          <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>- {test.name}</span>
-                          <span style={{ color: '#94a3b8', marginLeft: '0.5rem', fontSize: '0.85rem' }}>(Rs. {test.price?.toFixed(2)})</span>
-                        </div>
-                        {isEditing ? (
-                          <Form.Control
-                            as="textarea"
-                            rows={3}
-                            value={editedTestNotes[testItem.testId] || ''}
-                            onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
-                            placeholder={`Add notes for ${test.name}...`}
-                            style={{ fontSize: '0.9rem' }}
-                          />
-                        ) : (
-                          <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-                            {testItem.notes || <em style={{ color: '#94a3b8' }}>No notes added for this test</em>}
-                          </p>
-                        )}
-                      </div>
-                    ) : null
-                  })}
-                </div>
-
                 {/* Common Notes */}
-                <div className="mb-3">
+                <div className="mb-4">
                   <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                     Common Notes
                   </h6>
@@ -987,6 +955,176 @@ function CheckupDetail() {
                     </div>
                   )}
                 </div>
+
+                {/* Test Notes - Only show if there are notes */}
+                {(Object.keys(editedTestNotes).filter(testId => editedTestNotes[testId]).length > 0 || isEditing) && (
+                  <div className="mb-3">
+                    <div className="d-flex justify-content-between align-items-center mb-3" style={{ borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem' }}>
+                      <h6 style={{ color: '#0891B2', marginBottom: 0 }}>
+                        Test Notes (Optional)
+                      </h6>
+                      {isEditing && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const testSelect = document.getElementById('test-notes-dropdown')
+                            if (testSelect) {
+                              testSelect.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                              testSelect.focus()
+                            }
+                          }}
+                          style={{ backgroundColor: '#10b981', border: 'none' }}
+                        >
+                          <FaPlus className="me-1" />
+                          Add Notes for Test
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Dropdown to select test for adding notes */}
+                    {isEditing && (
+                      <div className="mb-3 p-3" style={{ backgroundColor: '#f0f9ff', borderRadius: '0.375rem', border: '1px solid #bae6fd' }}>
+                        <Form.Group>
+                          <Form.Label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#0891B2' }}>
+                            Select Test to Add Notes
+                          </Form.Label>
+                          <Select
+                            id="test-notes-dropdown"
+                            value={selectedTestForNote}
+                            options={checkup.tests
+                              .filter(testItem => !editedTestNotes[testItem.testId])
+                              .map(testItem => {
+                                const test = tests.find(t => t.id === testItem.testId)
+                                return test ? {
+                                  value: testItem.testId,
+                                  label: `${test.code} - ${test.name} (Rs. ${test.price?.toFixed(2)})`
+                                } : null
+                              }).filter(Boolean)}
+                            onChange={(option) => {
+                              setSelectedTestForNote(option)
+                              if (option) {
+                                // Auto-focus on the textarea
+                                setTimeout(() => {
+                                  const textarea = document.getElementById('new-test-note-input')
+                                  if (textarea) {
+                                    textarea.focus()
+                                  }
+                                }, 100)
+                              }
+                            }}
+                            placeholder="Select a test to add notes..."
+                            isClearable
+                            styles={{
+                              control: (base) => ({ ...base, fontSize: '0.9rem' }),
+                              menu: (base) => ({ ...base, fontSize: '0.9rem' })
+                            }}
+                          />
+                        </Form.Group>
+
+                        {/* Input field for new test note */}
+                        {selectedTestForNote && (
+                          <div className="mt-3">
+                            <Form.Label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#0891B2' }}>
+                              Add Note for {selectedTestForNote.label}
+                            </Form.Label>
+                            <Form.Control
+                              id="new-test-note-input"
+                              as="textarea"
+                              rows={3}
+                              placeholder={`Add notes for ${selectedTestForNote.label}...`}
+                              style={{ fontSize: '0.9rem' }}
+                              onKeyDown={(e) => {
+                                // Save on Ctrl+Enter or Cmd+Enter
+                                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                                  const value = e.target.value.trim()
+                                  if (value) {
+                                    handleTestNoteChange(selectedTestForNote.value, value)
+                                    setSelectedTestForNote(null)
+                                  }
+                                }
+                              }}
+                            />
+                            <div className="d-flex gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                style={{ backgroundColor: '#10b981', border: 'none' }}
+                                onClick={() => {
+                                  const textarea = document.getElementById('new-test-note-input')
+                                  const value = textarea?.value.trim()
+                                  if (value) {
+                                    handleTestNoteChange(selectedTestForNote.value, value)
+                                    setSelectedTestForNote(null)
+                                  }
+                                }}
+                              >
+                                <FaPlus className="me-1" />
+                                Add Note
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setSelectedTestForNote(null)}
+                              >
+                                <FaTimes className="me-1" />
+                                Cancel
+                              </Button>
+                            </div>
+                            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
+                              Press Ctrl+Enter to quickly add the note
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Only show test notes that have content or are being edited */}
+                    {checkup.tests
+                      .filter(testItem => editedTestNotes[testItem.testId] !== undefined && editedTestNotes[testItem.testId] !== '')
+                      .map((testItem) => {
+                        const test = tests.find(t => t.id === testItem.testId)
+                        return test ? (
+                          <div
+                            key={testItem.testId}
+                            id={`test-note-${testItem.testId}`}
+                            className="mb-3"
+                            style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.375rem', borderLeft: '4px solid #0891B2' }}
+                          >
+                            <div className="mb-2 d-flex justify-content-between align-items-center">
+                              <div>
+                                <strong style={{ color: '#0891B2', fontSize: '1rem' }}>{test.code}</strong>
+                                <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>- {test.name}</span>
+                                <span style={{ color: '#94a3b8', marginLeft: '0.5rem', fontSize: '0.85rem' }}>(Rs. {test.price?.toFixed(2)})</span>
+                              </div>
+                              {isEditing && (
+                                <Button
+                                  size="sm"
+                                  variant="outline-danger"
+                                  onClick={() => handleTestNoteChange(testItem.testId, '')}
+                                  title="Remove notes for this test"
+                                >
+                                  <FaTrash />
+                                </Button>
+                              )}
+                            </div>
+                            {isEditing ? (
+                              <Form.Control
+                                as="textarea"
+                                rows={3}
+                                value={editedTestNotes[testItem.testId] || ''}
+                                onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
+                                placeholder={`Add notes for ${test.name}...`}
+                                style={{ fontSize: '0.9rem' }}
+                              />
+                            ) : (
+                              <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                                {testItem.notes}
+                              </p>
+                            )}
+                          </div>
+                        ) : null
+                      })}
+                  </div>
+                )}
 
                 {isEditing && (
                   <div className="d-flex gap-2 justify-content-end mt-3">

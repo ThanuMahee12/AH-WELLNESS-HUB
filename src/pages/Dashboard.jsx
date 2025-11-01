@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Container, Row, Col, Card } from 'react-bootstrap'
-import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign } from 'react-icons/fa'
+import { Link } from 'react-router-dom'
+import { Container, Row, Col, Card, ButtonGroup, Button } from 'react-bootstrap'
+import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaFilter, FaEye } from 'react-icons/fa'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
@@ -21,6 +22,8 @@ function Dashboard() {
   const { loading: checkupsLoading } = useSelector(state => state.checkups)
   const { loading: usersLoading } = useSelector(state => state.users)
 
+  const [dateRange, setDateRange] = useState(7) // Default: Past 7 days
+
   useEffect(() => {
     dispatch(fetchPatients())
     dispatch(fetchTests())
@@ -34,12 +37,26 @@ function Dashboard() {
     return <LoadingSpinner text="Loading dashboard..." />
   }
 
-  const totalRevenue = checkups.reduce((sum, c) => sum + (c.total || 0), 0)
+  // Filter checkups by date range
+  const getFilteredCheckups = () => {
+    const now = new Date()
+    const startDate = new Date()
+    startDate.setDate(now.getDate() - dateRange)
 
-  // Prepare chart data
-  const getLast7DaysData = () => {
-    const last7Days = []
-    for (let i = 6; i >= 0; i--) {
+    return checkups.filter(c => {
+      const checkupDate = new Date(c.timestamp)
+      return checkupDate >= startDate && checkupDate <= now
+    })
+  }
+
+  const filteredCheckups = getFilteredCheckups()
+  const totalRevenue = checkups.reduce((sum, c) => sum + (c.total || 0), 0)
+  const filteredRevenue = filteredCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
+
+  // Prepare chart data based on selected date range
+  const getDateRangeData = () => {
+    const data = []
+    for (let i = dateRange - 1; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
       const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -49,18 +66,18 @@ function Dashboard() {
         return checkupDate.toDateString() === date.toDateString()
       })
 
-      last7Days.push({
+      data.push({
         date: dateStr,
         checkups: dayCheckups.length,
         revenue: dayCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
       })
     }
-    return last7Days
+    return data
   }
 
   const getTestDistribution = () => {
     const testCounts = {}
-    checkups.forEach(checkup => {
+    filteredCheckups.forEach(checkup => {
       checkup.tests?.forEach(testItem => {
         const test = tests.find(t => t.id === testItem.testId)
         if (test) {
@@ -76,20 +93,32 @@ function Dashboard() {
   }
 
   const getMonthlyRevenue = () => {
-    const months = {}
-    checkups.forEach(checkup => {
+    // Create array for all 12 months
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const currentYear = new Date().getFullYear()
+
+    // Initialize all months with 0 revenue
+    const monthlyData = monthNames.map(month => ({
+      month,
+      revenue: 0
+    }))
+
+    // Fill in actual revenue data
+    filteredCheckups.forEach(checkup => {
       const date = new Date(checkup.timestamp)
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-      months[monthKey] = (months[monthKey] || 0) + (checkup.total || 0)
+      if (date.getFullYear() === currentYear) {
+        const monthIndex = date.getMonth()
+        monthlyData[monthIndex].revenue += checkup.total || 0
+      }
     })
 
-    return Object.entries(months).map(([month, revenue]) => ({
-      month,
-      revenue: Math.round(revenue)
-    })).slice(-6)
+    return monthlyData.map(data => ({
+      month: data.month,
+      revenue: Math.round(data.revenue)
+    }))
   }
 
-  const chartData = getLast7DaysData()
+  const chartData = getDateRangeData()
   const testDistribution = getTestDistribution()
   const monthlyRevenue = getMonthlyRevenue()
 
@@ -179,7 +208,64 @@ function Dashboard() {
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaChartLine className="me-2" />Checkups & Revenue Trend</h5>
+              <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <h5 className="mb-0">
+                  <FaChartLine className="me-2" />
+                  Checkups & Revenue Trend
+                </h5>
+                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+                  <ButtonGroup size="sm">
+                    <Button
+                      variant={dateRange === 7 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(7)}
+                      style={{
+                        backgroundColor: dateRange === 7 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 7 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 7 ? '600' : 'normal'
+                      }}
+                    >
+                      7 Days
+                    </Button>
+                    <Button
+                      variant={dateRange === 30 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(30)}
+                      style={{
+                        backgroundColor: dateRange === 30 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 30 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 30 ? '600' : 'normal'
+                      }}
+                    >
+                      30 Days
+                    </Button>
+                    <Button
+                      variant={dateRange === 60 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(60)}
+                      style={{
+                        backgroundColor: dateRange === 60 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 60 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 60 ? '600' : 'normal'
+                      }}
+                    >
+                      60 Days
+                    </Button>
+                    <Button
+                      variant={dateRange === 90 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(90)}
+                      style={{
+                        backgroundColor: dateRange === 90 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 90 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 90 ? '600' : 'normal'
+                      }}
+                    >
+                      90 Days
+                    </Button>
+                  </ButtonGroup>
+                </div>
+              </div>
             </Card.Header>
             <Card.Body>
               {checkups.length === 0 ? (
@@ -256,11 +342,15 @@ function Dashboard() {
         </Col>
       </Row>
 
+      {/* Monthly Revenue and Quick Stats Row */}
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaRupeeSign className="me-2" />Monthly Revenue</h5>
+              <h5 className="mb-0">
+                <FaRupeeSign className="me-2" />
+                Monthly Revenue <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>(Filtered)</span>
+              </h5>
             </Card.Header>
             <Card.Body>
               {monthlyRevenue.length === 0 ? (
@@ -328,86 +418,12 @@ function Dashboard() {
         </Col>
       </Row>
 
-      {/* Today's Checkups Section */}
-      <Row className="g-3 g-md-4 mb-4">
-        <Col xs={12}>
-          <Card className="shadow-sm border-0">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <div className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0"><FaCalendarAlt className="me-2" />Today's Checkups</h5>
-                <span className="badge bg-light text-dark">
-                  {checkups.filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString()).length} checkups
-                </span>
-              </div>
-            </Card.Header>
-            <Card.Body>
-              {checkups.filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString()).length === 0 ? (
-                <div className="text-center p-5">
-                  <FaClipboardCheck size={50} className="text-muted mb-3" />
-                  <p className="text-muted">No checkups today</p>
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle">
-                    <thead className="table-light">
-                      <tr>
-                        <th>ID</th>
-                        <th>Patient</th>
-                        <th>Time</th>
-                        <th>Tests</th>
-                        <th className="text-end">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {checkups
-                        .filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString())
-                        .reverse()
-                        .map(checkup => {
-                          const patient = patients.find(p => p.id === checkup.patientId)
-                          return (
-                            <tr key={checkup.id}>
-                              <td><span className="badge bg-primary">#{checkup.id}</span></td>
-                              <td><strong>{patient?.name || 'Unknown'}</strong></td>
-                              <td>
-                                <small className="text-muted">
-                                  {new Date(checkup.timestamp).toLocaleTimeString('en-LK', { hour: '2-digit', minute: '2-digit' })}
-                                </small>
-                              </td>
-                              <td><span className="badge bg-info">{checkup.tests?.length || 0} tests</span></td>
-                              <td className="text-end">
-                                <strong className="text-success">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                    </tbody>
-                    <tfoot className="table-light">
-                      <tr>
-                        <td colSpan="4" className="text-end"><strong>Total Revenue Today:</strong></td>
-                        <td className="text-end">
-                          <strong className="text-success fs-5">
-                            Rs. {checkups
-                              .filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString())
-                              .reduce((sum, c) => sum + c.total, 0)
-                              .toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </strong>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
       {/* Recent Checkups Section */}
       <Row className="g-3 g-md-4">
         <Col xs={12}>
           <Card className="shadow-sm border-0">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 5)</h5>
+            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
+              <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 10)</h5>
             </Card.Header>
             <Card.Body>
               {checkups.length === 0 ? (
@@ -417,15 +433,14 @@ function Dashboard() {
                 </div>
               ) : (
                 <div className="list-group list-group-flush">
-                  {checkups.slice(-5).reverse().map(checkup => {
+                  {checkups.slice(-10).reverse().map(checkup => {
                     const patient = patients.find(p => p.id === checkup.patientId)
                     const isToday = new Date(checkup.timestamp).toDateString() === new Date().toDateString()
                     return (
                       <div key={checkup.id} className={`list-group-item px-0 ${isToday ? 'bg-light' : ''}`}>
                         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
                           <div className="flex-grow-1">
-                            <div>
-                              <span className="badge bg-primary me-2">#{checkup.id}</span>
+                            <div className="mb-1">
                               <strong>{patient?.name || 'Unknown'}</strong>
                               {isToday && <span className="badge bg-success ms-2">Today</span>}
                             </div>
@@ -434,9 +449,18 @@ function Dashboard() {
                               {new Date(checkup.timestamp).toLocaleString('en-LK')}
                             </small>
                           </div>
-                          <div className="text-start text-sm-end">
-                            <div className="text-success fw-bold fs-5">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                            <small className="text-muted">{checkup.tests?.length || 0} tests</small>
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="text-start text-sm-end">
+                              <div className="text-success fw-bold fs-5">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                              <small className="text-muted">{checkup.tests?.length || 0} tests</small>
+                            </div>
+                            <Link
+                              to={`/checkups/${checkup.id}`}
+                              className="btn btn-sm btn-outline-primary"
+                              title="View Details"
+                            >
+                              <FaEye />
+                            </Link>
                           </div>
                         </div>
                       </div>
