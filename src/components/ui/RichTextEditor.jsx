@@ -54,7 +54,7 @@ const RichTextEditor = ({
     'blockquote', 'code-block'
   ]
 
-  // Initialize Quill
+  // Initialize Quill only once
   useEffect(() => {
     if (editorRef.current && !quillRef.current) {
       quillRef.current = new Quill(editorRef.current, {
@@ -75,12 +75,19 @@ const RichTextEditor = ({
       })
     }
 
+    // Cleanup function to properly destroy Quill instance
     return () => {
       if (quillRef.current) {
+        const toolbar = quillRef.current.getModule('toolbar')
+        if (toolbar && toolbar.container) {
+          toolbar.container.remove()
+        }
         quillRef.current = null
       }
     }
-  }, [modules, formats, placeholder, onChange])
+    // Only initialize once - no dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Update editor content when value prop changes
   useEffect(() => {
