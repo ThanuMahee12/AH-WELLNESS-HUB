@@ -92,17 +92,29 @@ function Dashboard() {
   }
 
   const getMonthlyRevenue = () => {
-    const months = {}
+    // Create array for all 12 months
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const currentYear = new Date().getFullYear()
+
+    // Initialize all months with 0 revenue
+    const monthlyData = monthNames.map(month => ({
+      month,
+      revenue: 0
+    }))
+
+    // Fill in actual revenue data
     filteredCheckups.forEach(checkup => {
       const date = new Date(checkup.timestamp)
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-      months[monthKey] = (months[monthKey] || 0) + (checkup.total || 0)
+      if (date.getFullYear() === currentYear) {
+        const monthIndex = date.getMonth()
+        monthlyData[monthIndex].revenue += checkup.total || 0
+      }
     })
 
-    return Object.entries(months).map(([month, revenue]) => ({
-      month,
-      revenue: Math.round(revenue)
-    })).slice(-6)
+    return monthlyData.map(data => ({
+      month: data.month,
+      revenue: Math.round(data.revenue)
+    }))
   }
 
   const chartData = getDateRangeData()
@@ -130,77 +142,10 @@ function Dashboard() {
 
   return (
     <Container fluid className="p-3 p-md-4">
-      <Row className="mb-3">
+      <Row className="mb-4">
         <Col>
           <h2>Dashboard</h2>
           <p className="text-muted">Welcome back, <strong>{user?.username}</strong>!</p>
-        </Col>
-      </Row>
-
-      {/* Date Range Filter */}
-      <Row className="mb-4">
-        <Col>
-          <Card className="shadow-sm border-0" style={{ backgroundColor: '#f8fafc' }}>
-            <Card.Body className="py-2">
-              <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
-                <div className="d-flex align-items-center">
-                  <FaFilter className="me-2" style={{ color: '#0891B2' }} />
-                  <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#64748b' }}>
-                    Date Range Filter:
-                  </span>
-                </div>
-                <ButtonGroup size="sm">
-                  <Button
-                    variant={dateRange === 7 ? 'primary' : 'outline-primary'}
-                    onClick={() => setDateRange(7)}
-                    style={{
-                      backgroundColor: dateRange === 7 ? '#0891B2' : 'transparent',
-                      borderColor: '#0891B2',
-                      color: dateRange === 7 ? 'white' : '#0891B2'
-                    }}
-                  >
-                    Past 7 Days
-                  </Button>
-                  <Button
-                    variant={dateRange === 30 ? 'primary' : 'outline-primary'}
-                    onClick={() => setDateRange(30)}
-                    style={{
-                      backgroundColor: dateRange === 30 ? '#0891B2' : 'transparent',
-                      borderColor: '#0891B2',
-                      color: dateRange === 30 ? 'white' : '#0891B2'
-                    }}
-                  >
-                    Past 30 Days
-                  </Button>
-                  <Button
-                    variant={dateRange === 60 ? 'primary' : 'outline-primary'}
-                    onClick={() => setDateRange(60)}
-                    style={{
-                      backgroundColor: dateRange === 60 ? '#0891B2' : 'transparent',
-                      borderColor: '#0891B2',
-                      color: dateRange === 60 ? 'white' : '#0891B2'
-                    }}
-                  >
-                    Past 60 Days
-                  </Button>
-                  <Button
-                    variant={dateRange === 90 ? 'primary' : 'outline-primary'}
-                    onClick={() => setDateRange(90)}
-                    style={{
-                      backgroundColor: dateRange === 90 ? '#0891B2' : 'transparent',
-                      borderColor: '#0891B2',
-                      color: dateRange === 90 ? 'white' : '#0891B2'
-                    }}
-                  >
-                    Past 90 Days
-                  </Button>
-                </ButtonGroup>
-                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                  Showing data for <strong style={{ color: '#0891B2' }}>Past {dateRange} Days</strong>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
         </Col>
       </Row>
 
@@ -262,10 +207,64 @@ function Dashboard() {
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0">
-                <FaChartLine className="me-2" />
-                Checkups & Revenue Trend <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>({dateRange} Days)</span>
-              </h5>
+              <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <h5 className="mb-0">
+                  <FaChartLine className="me-2" />
+                  Checkups & Revenue Trend
+                </h5>
+                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+                  <ButtonGroup size="sm">
+                    <Button
+                      variant={dateRange === 7 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(7)}
+                      style={{
+                        backgroundColor: dateRange === 7 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 7 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 7 ? '600' : 'normal'
+                      }}
+                    >
+                      7 Days
+                    </Button>
+                    <Button
+                      variant={dateRange === 30 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(30)}
+                      style={{
+                        backgroundColor: dateRange === 30 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 30 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 30 ? '600' : 'normal'
+                      }}
+                    >
+                      30 Days
+                    </Button>
+                    <Button
+                      variant={dateRange === 60 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(60)}
+                      style={{
+                        backgroundColor: dateRange === 60 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 60 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 60 ? '600' : 'normal'
+                      }}
+                    >
+                      60 Days
+                    </Button>
+                    <Button
+                      variant={dateRange === 90 ? 'light' : 'outline-light'}
+                      onClick={() => setDateRange(90)}
+                      style={{
+                        backgroundColor: dateRange === 90 ? 'white' : 'transparent',
+                        borderColor: 'white',
+                        color: dateRange === 90 ? '#0891B2' : 'white',
+                        fontWeight: dateRange === 90 ? '600' : 'normal'
+                      }}
+                    >
+                      90 Days
+                    </Button>
+                  </ButtonGroup>
+                </div>
+              </div>
             </Card.Header>
             <Card.Body>
               {checkups.length === 0 ? (
