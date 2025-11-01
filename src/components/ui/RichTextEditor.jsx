@@ -48,7 +48,7 @@ const RichTextEditor = ({
   const formats = [
     'header',
     'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
+    'list',
     'align',
     'link',
     'blockquote', 'code-block'
