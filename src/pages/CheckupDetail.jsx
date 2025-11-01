@@ -931,15 +931,105 @@ function CheckupDetail() {
                   Checkup Notes
                 </h5>
 
-                {/* Test-Related Notes */}
+                {/* Common Notes - Moved to Top */}
                 <div className="mb-4">
                   <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                    Test-Related Notes
+                    Common Notes
                   </h6>
+                  {isEditing ? (
+                    <RichTextEditor
+                      label=""
+                      value={editedCommonNotes}
+                      onChange={(value) => setEditedCommonNotes(value)}
+                      placeholder="Add common notes for this checkup..."
+                      height="250px"
+                    />
+                  ) : (
+                    <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', minHeight: '100px' }}>
+                      {checkup.commonNotes ? (
+                        <div dangerouslySetInnerHTML={{ __html: checkup.commonNotes }} />
+                      ) : (
+                        <em style={{ color: '#94a3b8' }}>No common notes added</em>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Test-Related Notes */}
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-3" style={{ borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem' }}>
+                    <h6 style={{ color: '#0891B2', marginBottom: 0 }}>
+                      Test Notes
+                    </h6>
+                    {isEditing && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const testSelect = document.getElementById('test-notes-dropdown')
+                          if (testSelect) {
+                            testSelect.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                            testSelect.focus()
+                          }
+                        }}
+                        style={{ backgroundColor: '#10b981', border: 'none' }}
+                      >
+                        <FaPlus className="me-1" />
+                        Add Notes for Test
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Dropdown to select test for adding notes */}
+                  {isEditing && (
+                    <div className="mb-3 p-3" style={{ backgroundColor: '#f0f9ff', borderRadius: '0.375rem', border: '1px solid #bae6fd' }}>
+                      <Form.Group>
+                        <Form.Label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#0891B2' }}>
+                          Select Test to Add/Edit Notes
+                        </Form.Label>
+                        <Select
+                          id="test-notes-dropdown"
+                          options={checkup.tests.map(testItem => {
+                            const test = tests.find(t => t.id === testItem.testId)
+                            return test ? {
+                              value: testItem.testId,
+                              label: `${test.code} - ${test.name} (Rs. ${test.price?.toFixed(2)})`
+                            } : null
+                          }).filter(Boolean)}
+                          onChange={(option) => {
+                            if (option) {
+                              const element = document.getElementById(`test-note-${option.value}`)
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                const textarea = element.querySelector('textarea')
+                                if (textarea) {
+                                  setTimeout(() => textarea.focus(), 300)
+                                }
+                              }
+                            }
+                          }}
+                          placeholder="Select a test to add/edit notes..."
+                          isClearable
+                          styles={{
+                            control: (base) => ({ ...base, fontSize: '0.9rem' }),
+                            menu: (base) => ({ ...base, fontSize: '0.9rem' })
+                          }}
+                        />
+                      </Form.Group>
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
+                        Select a test from the dropdown above to quickly navigate to its notes section
+                      </p>
+                    </div>
+                  )}
+
                   {checkup.tests.map((testItem) => {
                     const test = tests.find(t => t.id === testItem.testId)
                     return test ? (
-                      <div key={testItem.testId} className="mb-3" style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.375rem', borderLeft: '4px solid #0891B2' }}>
+                      <div
+                        key={testItem.testId}
+                        id={`test-note-${testItem.testId}`}
+                        className="mb-3"
+                        style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.375rem', borderLeft: '4px solid #0891B2' }}
+                      >
                         <div className="mb-2">
                           <strong style={{ color: '#0891B2', fontSize: '1rem' }}>{test.code}</strong>
                           <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>- {test.name}</span>
@@ -962,30 +1052,6 @@ function CheckupDetail() {
                       </div>
                     ) : null
                   })}
-                </div>
-
-                {/* Common Notes */}
-                <div className="mb-3">
-                  <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                    Common Notes
-                  </h6>
-                  {isEditing ? (
-                    <RichTextEditor
-                      label=""
-                      value={editedCommonNotes}
-                      onChange={(value) => setEditedCommonNotes(value)}
-                      placeholder="Add common notes for this checkup..."
-                      height="250px"
-                    />
-                  ) : (
-                    <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', minHeight: '100px' }}>
-                      {checkup.commonNotes ? (
-                        <div dangerouslySetInnerHTML={{ __html: checkup.commonNotes }} />
-                      ) : (
-                        <em style={{ color: '#94a3b8' }}>No common notes added</em>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {isEditing && (
