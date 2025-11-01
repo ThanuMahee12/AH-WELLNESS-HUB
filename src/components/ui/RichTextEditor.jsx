@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react'
-import { useQuill } from 'react-quilljs'
+import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
 import { Form } from 'react-bootstrap'
 
@@ -27,7 +27,9 @@ const RichTextEditor = ({
   height = '200px',
   id
 }) => {
-  const theme = 'snow'
+  const editorRef = useRef(null)
+  const quillRef = useRef(null)
+  const isUpdating = useRef(false)
 
   // Custom toolbar configuration
   const modules = useMemo(() => ({
@@ -52,37 +54,47 @@ const RichTextEditor = ({
     'blockquote', 'code-block'
   ]
 
-  const { quill, quillRef } = useQuill({ theme, modules, formats, placeholder })
-
-  const isUpdating = useRef(false)
-
-  // Update editor content when value prop changes
+  // Initialize Quill
   useEffect(() => {
-    if (quill && !isUpdating.current) {
-      const currentContent = quill.root.innerHTML
-      if (currentContent !== value) {
-        const selection = quill.getSelection()
-        quill.root.innerHTML = value || ''
-        if (selection) {
-          quill.setSelection(selection)
-        }
-      }
-    }
-  }, [quill, value])
+    if (editorRef.current && !quillRef.current) {
+      quillRef.current = new Quill(editorRef.current, {
+        theme: 'snow',
+        modules,
+        formats,
+        placeholder
+      })
 
-  // Handle editor changes
-  useEffect(() => {
-    if (quill) {
-      quill.on('text-change', () => {
+      // Handle text changes
+      quillRef.current.on('text-change', () => {
         isUpdating.current = true
-        const content = quill.root.innerHTML
+        const content = quillRef.current.root.innerHTML
         onChange(content === '<p><br></p>' ? '' : content)
         setTimeout(() => {
           isUpdating.current = false
         }, 0)
       })
     }
-  }, [quill, onChange])
+
+    return () => {
+      if (quillRef.current) {
+        quillRef.current = null
+      }
+    }
+  }, [modules, formats, placeholder, onChange])
+
+  // Update editor content when value prop changes
+  useEffect(() => {
+    if (quillRef.current && !isUpdating.current) {
+      const currentContent = quillRef.current.root.innerHTML
+      if (currentContent !== value) {
+        const selection = quillRef.current.getSelection()
+        quillRef.current.root.innerHTML = value || ''
+        if (selection) {
+          quillRef.current.setSelection(selection)
+        }
+      }
+    }
+  }, [value])
 
   return (
     <Form.Group className="mb-3" controlId={id}>
@@ -93,7 +105,7 @@ const RichTextEditor = ({
         </Form.Label>
       )}
       <div className={`rich-text-editor-wrapper ${error ? 'is-invalid' : ''}`}>
-        <div ref={quillRef} style={{ height: height }} />
+        <div ref={editorRef} style={{ height: height }} />
       </div>
       {error && <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>{error}</Form.Control.Feedback>}
 
