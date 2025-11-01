@@ -341,6 +341,7 @@ function Dashboard() {
         </Col>
       </Row>
 
+      {/* Monthly Revenue and Quick Stats Row */}
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
@@ -371,10 +372,7 @@ function Dashboard() {
             </Card.Body>
           </Card>
         </Col>
-      </Row>
 
-      {/* Quick Stats Row */}
-      <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
