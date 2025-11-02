@@ -1,6 +1,0 @@
-[submodule "custom-hooks-jsx"]
-	path = custom-hooks-jsx
-	url = git@gitlab.com:shared5444626/reactlib/jsx/custom-hooks-jsx.git
-[submodule "custom-contexts-jsx"]
-	path = custom-contexts-jsx
-	url = git@gitlab.com:shared5444626/reactlib/jsx/custom-contexts-jsx.git
