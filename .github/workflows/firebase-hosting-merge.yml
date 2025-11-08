@@ -58,9 +58,9 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BLOOD_LAB_MANAGER }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AH_WELLNESS_HUB }}
           channelId: live
-          projectId: blood-lab-manager
+          projectId: ah-wellness-hub
         env:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
 
@@ -71,6 +71,6 @@ jobs:
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${GITHUB_SHA::7}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${GITHUB_REF_NAME}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployed to:** https://blood-lab-manager.web.app" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed to:** https://ah-wellness-hub.web.app" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ✅ Successfully deployed" >> $GITHUB_STEP_SUMMARY
