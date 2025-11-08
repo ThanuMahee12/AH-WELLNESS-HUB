@@ -53,6 +53,23 @@ function Dashboard() {
   const totalRevenue = checkups.reduce((sum, c) => sum + (c.total || 0), 0)
   const filteredRevenue = filteredCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
 
+  // Calculate commission revenue
+  const calculateCommission = (checkup) => {
+    return checkup.tests?.reduce((sum, testItem) => {
+      const test = tests.find(t => t.id === testItem.testId)
+      if (test) {
+        const testPrice = test.price || 0
+        const testPercentage = test.percentage || 20
+        const commission = (testPrice * testPercentage) / 100
+        return sum + commission
+      }
+      return sum
+    }, 0) || 0
+  }
+
+  const totalCommission = checkups.reduce((sum, c) => sum + calculateCommission(c), 0)
+  const filteredCommission = filteredCheckups.reduce((sum, c) => sum + calculateCommission(c), 0)
+
   // Prepare chart data based on selected date range
   const getDateRangeData = () => {
     const data = []
@@ -66,10 +83,14 @@ function Dashboard() {
         return checkupDate.toDateString() === date.toDateString()
       })
 
+      const dayRevenue = dayCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
+      const dayCommission = dayCheckups.reduce((sum, c) => sum + calculateCommission(c), 0)
+
       data.push({
         date: dateStr,
         checkups: dayCheckups.length,
-        revenue: dayCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
+        revenue: dayRevenue,
+        commission: dayCommission
       })
     }
     return data
@@ -189,6 +210,18 @@ function Dashboard() {
         </Col>
       </Row>
 
+      <Row className="g-3 g-md-4 mb-4">
+        <Col xs={12} sm={6} lg={3}>
+          <StatCard
+            icon={FaRupeeSign}
+            title="Total Commission"
+            value={`Rs. ${totalCommission.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            color="text-success"
+            bgColor="bg-success bg-opacity-10"
+          />
+        </Col>
+      </Row>
+
       {user?.role === 'admin' && (
         <Row className="mb-4">
           <Col xs={12} md={6} lg={3}>
@@ -296,7 +329,15 @@ function Dashboard() {
                       dataKey="revenue"
                       stroke="#14B8A6"
                       strokeWidth={2}
-                      name="Revenue (Rs.)"
+                      name="Total Revenue (Rs.)"
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="commission"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      name="Commission (Rs.)"
                     />
                   </LineChart>
                 </ResponsiveContainer>
