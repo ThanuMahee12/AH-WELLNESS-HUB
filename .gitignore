@@ -24,6 +24,14 @@ firestore-debug.log
 ui-debug.log
 .runtimeconfig.json
 
+# Firebase service account keys (IMPORTANT - never commit these!)
+*service-account*.json
+old-service-account.json
+new-service-account.json
+
+# Firestore backup
+firestore-backup/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

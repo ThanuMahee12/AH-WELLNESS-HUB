@@ -4,8 +4,9 @@ import { authService } from '../services/authService'
 const initialState = {
   user: null,
   isAuthenticated: false,
-  loading: false,
+  loading: true, // Start as true to wait for auth check
   error: null,
+  authChecked: false, // Track if initial auth check is complete
 }
 
 // Async thunks for Firebase authentication
@@ -53,6 +54,7 @@ const authSlice = createSlice({
       state.user = action.payload
       state.isAuthenticated = !!action.payload
       state.loading = false
+      state.authChecked = true // Mark auth check as complete
     },
     clearError: (state) => {
       state.error = null

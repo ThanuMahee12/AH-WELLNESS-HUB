@@ -13,6 +13,7 @@ const TEST_FIELDS = [
   { name: 'code', label: 'Test Code', type: 'text', required: true, colSize: 6, placeholder: 'e.g., S108' },
   { name: 'name', label: 'Test Name', type: 'text', required: true, colSize: 6 },
   { name: 'price', label: 'Price (Rs.)', type: 'number', required: true, colSize: 6, props: { step: '0.01' } },
+  { name: 'percentage', label: 'Commission (%)', type: 'number', required: true, colSize: 6, props: { step: '1', min: '0', max: '100' }, placeholder: '20' },
   { name: 'details', label: 'Test Details', type: 'textarea', required: false, colSize: 6, rows: 3 },
   { name: 'rules', label: 'Test Rules/Instructions', type: 'textarea', required: false, colSize: 6, rows: 3 },
 ];
@@ -51,6 +52,16 @@ const TABLE_COLUMNS = [
     render: (value) => (
       <span style={{ whiteSpace: 'nowrap' }}>
         Rs. {parseFloat(value).toFixed(2)}
+      </span>
+    )
+  },
+  {
+    key: 'percentage',
+    label: 'Commission',
+    align: 'center',
+    render: (value) => (
+      <span style={{ whiteSpace: 'nowrap', color: '#0891B2', fontWeight: '500' }}>
+        {value || 20}%
       </span>
     )
   },
@@ -126,12 +137,14 @@ function Tests() {
       code: '',
       name: '',
       price: '',
+      percentage: '20',
       details: '',
       rules: '',
     },
     transformData: (data) => ({
       ...data,
       price: parseFloat(data.price),
+      percentage: parseInt(data.percentage) || 20,
     }),
     customValidation: validateForm,
     onSuccess: (action) => {
