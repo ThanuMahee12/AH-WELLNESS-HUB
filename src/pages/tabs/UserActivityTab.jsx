@@ -52,7 +52,7 @@ function UserActivityTab() {
     }
   }
 
-  // Prepare scatter plot data - individual activities as separate points
+  // Prepare scatter plot data - individual activities as separate points with 30-min precision
   const prepareScatterData = () => {
     if (!recentActivities || recentActivities.length === 0) {
       return []
@@ -71,6 +71,10 @@ function UserActivityTab() {
       const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
       const dateKey = date.toISOString().split('T')[0]
       const hour = date.getHours()
+      const minute = date.getMinutes()
+
+      // Convert to decimal time (e.g., 14:30 = 14.5)
+      const timeValue = hour + (minute / 60)
 
       const d = new Date(dateKey)
       const displayDate = `${d.getMonth() + 1}/${d.getDate()}`
@@ -85,8 +89,9 @@ function UserActivityTab() {
       userScatterData[username].push({
         date: displayDate,
         fullDate: dateKey,
-        time: hour,
+        time: timeValue,
         hour: hour,
+        minute: minute,
         activityType: activity.activityType,
         description: activity.description
       })
@@ -308,9 +313,18 @@ function UserActivityTab() {
                         type="number"
                         dataKey="time"
                         name="Time"
-                        domain={[0, 23]}
-                        ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]}
-                        tickFormatter={(hour) => `${Math.floor(hour).toString().padStart(2, '0')}:00`}
+                        domain={[0, 24]}
+                        ticks={[
+                          0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5,
+                          6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5,
+                          12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5,
+                          18, 18.5, 19, 19.5, 20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24
+                        ]}
+                        tickFormatter={(value) => {
+                          const hours = Math.floor(value)
+                          const minutes = (value % 1) * 60
+                          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+                        }}
                         label={{ value: 'Time (24-hour)', angle: -90, position: 'insideLeft' }}
                       />
                       <ZAxis range={[50, 50]} />
@@ -322,7 +336,7 @@ function UserActivityTab() {
                             return (
                               <div style={{ backgroundColor: '#fff', border: '1px solid #ccc', padding: '10px', borderRadius: '5px' }}>
                                 <p style={{ margin: 0 }}><strong>Date:</strong> {data.date}</p>
-                                <p style={{ margin: 0 }}><strong>Time:</strong> {`${data.hour.toString().padStart(2, '0')}:00`}</p>
+                                <p style={{ margin: 0 }}><strong>Time:</strong> {`${data.hour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')}`}</p>
                                 <p style={{ margin: 0 }}><strong>User:</strong> {payload[0].name}</p>
                                 <p style={{ margin: 0 }}><strong>Action:</strong> {data.activityType?.replace(/_/g, ' ')}</p>
                               </div>
