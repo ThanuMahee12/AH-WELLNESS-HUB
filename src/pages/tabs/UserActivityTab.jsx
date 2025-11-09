@@ -490,102 +490,49 @@ function UserActivityTab() {
         </Col>
       </Row>
 
-      {/* Recent Activity Feed - Prominent */}
+      {/* Activity Logs - Minimal */}
       <Row>
         <Col>
-          <Card className="shadow-sm" style={{ border: '2px solid #0891B2' }}>
-            <Card.Header style={{ backgroundColor: '#0891B2', color: 'white' }}>
+          <Card className="shadow-sm">
+            <Card.Header className="py-2 px-3">
               <div className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">
-                  <FaHistory className="me-2" />
-                  Activity Logs
-                </h5>
-                <Badge bg="light" text="dark" style={{ fontSize: '0.9rem' }}>
-                  {totalActivities} Total Activities
-                </Badge>
+                <small className="fw-bold text-muted">ACTIVITY LOGS ({totalActivities})</small>
               </div>
             </Card.Header>
-            <Card.Body style={{ padding: 0 }}>
+            <Card.Body className="p-0">
               {recentActivities.length === 0 ? (
-                <Alert variant="info" className="m-3 text-center">
-                  No recent activities found.
-                </Alert>
+                <div className="text-center text-muted py-3">
+                  <small>No activities found</small>
+                </div>
               ) : (
-                <div style={{
-                  maxHeight: '600px',
-                  overflowY: 'auto',
-                  backgroundColor: '#f8f9fa'
-                }}>
-                  {recentActivities.map((activity, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        padding: '15px 20px',
-                        borderBottom: '1px solid #dee2e6',
-                        backgroundColor: index % 2 === 0 ? 'white' : '#f8f9fa',
-                        transition: 'background-color 0.2s',
-                        cursor: 'default'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e3f2fd'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f8f9fa'}
-                    >
-                      <div className="d-flex align-items-start">
-                        <div style={{
-                          fontSize: '1.5rem',
-                          marginRight: '15px',
-                          minWidth: '30px',
-                          textAlign: 'center'
-                        }}>
-                          {getActivityIcon(activity.activityType)}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div className="d-flex justify-content-between align-items-start mb-1">
-                            <div>
-                              <strong style={{ fontSize: '1rem', color: '#0891B2' }}>
-                                {activity.username}
-                              </strong>
-                              <Badge
-                                className="ms-2"
-                                style={{
-                                  backgroundColor: '#06B6D4',
-                                  color: 'white',
-                                  fontSize: '0.75rem'
-                                }}
-                              >
-                                {activity.userRole}
-                              </Badge>
-                            </div>
-                            <span className="text-muted" style={{ fontSize: '0.875rem' }}>
-                              {formatTimestamp(activity.timestamp)}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.95rem', marginTop: '5px' }}>
-                            <Badge
-                              style={{
-                                backgroundColor: '#e3f2fd',
-                                color: '#0891B2',
-                                fontWeight: 'normal',
-                                marginRight: '10px'
-                              }}
-                            >
-                              {activity.activityType.replace(/_/g, ' ')}
-                            </Badge>
-                            <span>{activity.description}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                  <Table size="sm" hover className="mb-0">
+                    <tbody>
+                      {recentActivities.map((activity, index) => (
+                        <tr key={index} style={{ fontSize: '0.85rem' }}>
+                          <td style={{ width: '140px', padding: '6px 10px' }} className="text-muted">
+                            {formatTimestamp(activity.timestamp)}
+                          </td>
+                          <td style={{ width: '100px', padding: '6px 10px' }}>
+                            <strong>{activity.username}</strong>
+                          </td>
+                          <td style={{ padding: '6px 10px' }}>
+                            {activity.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
                 </div>
               )}
             </Card.Body>
             {totalPages > 1 && (
-              <Card.Footer style={{ backgroundColor: '#f8f9fa', padding: '15px' }}>
+              <Card.Footer className="py-2 px-3">
                 <div className="d-flex justify-content-between align-items-center">
-                  <div className="text-muted" style={{ fontSize: '0.9rem' }}>
-                    Showing {((currentPage - 1) * activitiesPerPage) + 1} to {Math.min(currentPage * activitiesPerPage, totalActivities)} of {totalActivities} activities
-                  </div>
-                  <Pagination className="mb-0">
+                  <small className="text-muted">
+                    {((currentPage - 1) * activitiesPerPage) + 1}-{Math.min(currentPage * activitiesPerPage, totalActivities)} of {totalActivities}
+                  </small>
+                  <Pagination size="sm" className="mb-0">
                     <Pagination.First
                       onClick={() => handlePageChange(1)}
                       disabled={currentPage === 1}
@@ -594,20 +541,15 @@ function UserActivityTab() {
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
                     />
-
-                    {/* Show page numbers */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter(page => {
-                        // Show first page, last page, current page, and 2 pages around current
                         return page === 1 ||
                           page === totalPages ||
                           (page >= currentPage - 2 && page <= currentPage + 2)
                       })
                       .map((page, index, array) => {
-                        // Add ellipsis if there's a gap
                         const prevPage = array[index - 1]
                         const showEllipsis = prevPage && page - prevPage > 1
-
                         return (
                           <span key={page}>
                             {showEllipsis && <Pagination.Ellipsis disabled />}
@@ -620,7 +562,6 @@ function UserActivityTab() {
                           </span>
                         )
                       })}
-
                     <Pagination.Next
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
