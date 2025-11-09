@@ -1,85 +1,171 @@
-/* Global Print Styles - Show ONLY bill content */
+/* Global Print Styles - Show ONLY bill/prescription content */
 @media print {
-  /* Hide EVERYTHING first */
-  body * {
-    visibility: hidden !important;
+  /* Page setup */
+  @page {
+    margin: 10mm;
+    size: A4;
   }
 
-  /* Only show bill content and its children */
-  .bill-content,
-  .bill-content * {
+  /* Hide elements marked as no-print */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Hide navigation and UI elements */
+  nav,
+  .navbar,
+  .sidebar,
+  aside,
+  button,
+  .btn,
+  header,
+  footer:not(.bill-content footer):not(.prescription-preview footer) {
+    display: none !important;
+  }
+
+  /* Reset body and html */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Hide everything in root except printable content */
+  #root > *:not(.container):not(.container-fluid) {
+    display: none !important;
+  }
+
+  /* Ensure container hierarchy is visible */
+  .container,
+  .container-fluid {
+    display: block !important;
     visibility: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
   }
 
-  /* Position bill content at top of page */
-  .bill-content {
-    position: absolute !important;
+  .container > *:not(.bill-content):not(.prescription-preview):not(:has(.bill-content)):not(:has(.prescription-preview)),
+  .container-fluid > *:not(.bill-content):not(.prescription-preview):not(:has(.bill-content)):not(:has(.prescription-preview)) {
+    display: none !important;
+  }
+
+  /* Show bill content */
+  .bill-content,
+  .prescription-preview {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    margin: 0 !important;
+    padding: 15px !important;
     overflow: visible !important;
-    word-wrap: break-word !important;
-    white-space: normal !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
-  /* Ensure proper text wrapping */
-  .bill-content * {
-    word-wrap: break-word !important;
-    word-break: break-word !important;
-    white-space: normal !important;
-    overflow-wrap: break-word !important;
+  /* Ensure all children are visible */
+  .bill-content *,
+  .prescription-preview * {
+    visibility: visible !important;
+    display: inherit !important;
   }
 
-  /* Fix table wrapping */
-  .bill-content table {
+  /* Proper table display */
+  .bill-content table,
+  .prescription-preview table {
+    display: table !important;
     width: 100% !important;
     table-layout: auto !important;
+    page-break-inside: avoid !important;
   }
 
+  .bill-content thead,
+  .prescription-preview thead {
+    display: table-header-group !important;
+  }
+
+  .bill-content tbody,
+  .prescription-preview tbody {
+    display: table-row-group !important;
+  }
+
+  .bill-content tr,
+  .prescription-preview tr {
+    display: table-row !important;
+    page-break-inside: avoid !important;
+  }
+
+  .bill-content th,
   .bill-content td,
-  .bill-content th {
+  .prescription-preview th,
+  .prescription-preview td {
+    display: table-cell !important;
     word-wrap: break-word !important;
     white-space: normal !important;
   }
 
-  /* Ensure rows and columns wrap properly */
-  .bill-content .row {
+  /* Ensure images print with colors */
+  .bill-content img,
+  .prescription-preview img {
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Print colors and backgrounds */
+  .bill-content *,
+  .prescription-preview * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Ensure Bootstrap rows/cols work properly */
+  .bill-content .row,
+  .prescription-preview .row {
     display: flex !important;
     flex-wrap: wrap !important;
     width: 100% !important;
   }
 
   .bill-content .col,
-  .bill-content [class*="col-"] {
+  .bill-content [class*="col-"],
+  .prescription-preview .col,
+  .prescription-preview [class*="col-"] {
     flex-shrink: 1 !important;
     word-wrap: break-word !important;
+    display: block !important;
   }
 
-  /* Reset body and root container */
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-    overflow: visible !important;
+  /* Remove shadows and borders for clean print */
+  .card,
+  .shadow-sm,
+  .shadow {
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
   }
 
-  /* Remove all margins from layout containers */
-  #root,
-  #root > div,
-  .container-fluid {
-    margin: 0 !important;
-    padding: 0 !important;
-    margin-top: 0 !important;
-    padding-left: 0 !important;
-  }
-
-  /* Hide navbar, sidebar explicitly */
-  nav,
-  .navbar,
-  .sidebar,
-  aside {
-    display: none !important;
+  /* Prevent page breaks in important sections */
+  .bill-content .header-section,
+  .bill-content .footer-section,
+  .prescription-preview .prescription-header,
+  .prescription-preview table {
+    page-break-inside: avoid !important;
   }
 
   /* Hide "Bill #:" label to save space */
