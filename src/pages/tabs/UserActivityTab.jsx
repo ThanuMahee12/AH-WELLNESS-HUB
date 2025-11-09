@@ -5,12 +5,15 @@ import { FaHistory, FaCalendarAlt } from 'react-icons/fa'
 import {
   LineChart,
   Line,
+  ScatterChart,
+  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ZAxis
 } from 'recharts'
 import { getActivityStats, getUserActivities } from '../../services/activityService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -49,14 +52,18 @@ function UserActivityTab() {
     }
   }
 
-  // Prepare chart data for Recharts - showing time of day activities
-  const prepareChartData = () => {
+  // Prepare scatter plot data - individual activities with date and time
+  const prepareScatterData = () => {
     if (!recentActivities || recentActivities.length === 0) {
       return []
     }
 
-    // Group activities by date and time
-    const activityMap = new Map()
+    // Create scatter plot data grouped by user
+    const userScatterData = {}
+
+    stats?.userStats?.forEach(userStat => {
+      userScatterData[userStat.username] = []
+    })
 
     recentActivities.forEach(activity => {
       if (!activity.timestamp) return
@@ -64,54 +71,77 @@ function UserActivityTab() {
       const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
       const dateKey = date.toISOString().split('T')[0]
       const hour = date.getHours()
-      const time = `${hour.toString().padStart(2, '0')}:00`
+      const minute = date.getMinutes()
+      const timeValue = hour + (minute / 60) // Convert to decimal hours (e.g., 14.5 for 14:30)
 
-      const key = `${dateKey}_${time}`
+      const d = new Date(dateKey)
+      const displayDate = `${d.getMonth() + 1}/${d.getDate()}`
 
-      if (!activityMap.has(key)) {
-        activityMap.set(key, {
-          date: dateKey,
-          displayDate: `${date.getMonth() + 1}/${date.getDate()}`,
-          time: time,
-          hour: hour,
-          activities: []
-        })
+      // Find the user's data array
+      const username = activity.username || 'Unknown'
+      if (!userScatterData[username]) {
+        userScatterData[username] = []
       }
 
-      activityMap.get(key).activities.push(activity)
+      userScatterData[username].push({
+        date: displayDate,
+        fullDate: dateKey,
+        time: timeValue,
+        hour: hour,
+        minute: minute,
+        activityType: activity.activityType,
+        description: activity.description
+      })
     })
 
-    // Convert map to array and create data points
-    const chartData = Array.from(activityMap.values()).map(item => {
+    return userScatterData
+  }
+
+  // Prepare line chart data - activity counts per day
+  const prepareLineChartData = () => {
+    if (!stats || !stats.dailyStats) {
+      return []
+    }
+
+    // Get dates from dailyStats
+    let dates = Object.keys(stats.dailyStats).sort()
+
+    // If timeRange is not 'all', filter dates to the range
+    if (timeRange !== 'all') {
+      const endDate = new Date()
+      const dateRange = []
+      for (let i = timeRange - 1; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(endDate.getDate() - i)
+        dateRange.push(date.toISOString().split('T')[0])
+      }
+      dates = dateRange
+    }
+
+    // Create chart data with activity counts
+    const chartData = dates.map(date => {
+      const d = new Date(date)
       const dataPoint = {
-        date: item.displayDate,
-        fullDate: item.date,
-        time: item.time,
-        hour: item.hour
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        fullDate: date,
+        total: 0
       }
 
-      // Count activities per user at this date/time
-      stats?.userStats?.forEach(userStat => {
-        const userActivities = item.activities.filter(a => a.userId === userStat.userId)
-        // Y-axis shows the hour (time) when activity occurred
-        if (userActivities.length > 0) {
-          dataPoint[userStat.username] = item.hour
-        }
+      // Add each user's activity count for this date
+      stats.userStats.forEach(userStat => {
+        const count = stats.dailyStats[date]?.[userStat.userId] || 0
+        dataPoint[userStat.username] = count
+        dataPoint.total += count
       })
 
       return dataPoint
     })
 
-    // Sort by date and then by hour
-    return chartData.sort((a, b) => {
-      if (a.fullDate !== b.fullDate) {
-        return a.fullDate.localeCompare(b.fullDate)
-      }
-      return a.hour - b.hour
-    })
+    return chartData
   }
 
-  const chartData = prepareChartData()
+  const scatterData = prepareScatterData()
+  const lineChartData = prepareLineChartData()
 
   // Color palette for different users
   const colorPalette = [
@@ -251,20 +281,95 @@ function UserActivityTab() {
         </Col>
       </Row>
 
-      {/* Activity Line Chart */}
+      {/* Scatter Plot - Activity Time Pattern */}
       <Row className="mb-4">
         <Col>
           <Card className="shadow-sm">
             <Card.Header style={{ backgroundColor: '#f8f9fa' }}>
               <h5 className="mb-0">
-                User Activity {timeRange === 'all' ? '- All History' : `Over Past ${timeRange} Days`}
+                Activity Time Pattern {timeRange === 'all' ? '- All History' : `Over Past ${timeRange} Days`}
               </h5>
+              <small className="text-muted">Shows when users were active throughout the day</small>
             </Card.Header>
             <Card.Body>
               <div style={{ height: '400px' }}>
-                {chartData.length > 0 && stats?.userStats?.length > 0 ? (
+                {Object.keys(scatterData).length > 0 && stats?.userStats?.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        type="category"
+                        dataKey="date"
+                        name="Date"
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        allowDuplicatedCategory={false}
+                      />
+                      <YAxis
+                        type="number"
+                        dataKey="time"
+                        name="Time"
+                        domain={[0, 24]}
+                        ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]}
+                        tickFormatter={(hour) => `${Math.floor(hour).toString().padStart(2, '0')}:00`}
+                        label={{ value: 'Time (24-hour)', angle: -90, position: 'insideLeft' }}
+                      />
+                      <ZAxis range={[50, 50]} />
+                      <Tooltip
+                        cursor={{ strokeDasharray: '3 3' }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload
+                            return (
+                              <div style={{ backgroundColor: '#fff', border: '1px solid #ccc', padding: '10px', borderRadius: '5px' }}>
+                                <p style={{ margin: 0 }}><strong>Date:</strong> {data.date}</p>
+                                <p style={{ margin: 0 }}><strong>Time:</strong> {`${data.hour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')}`}</p>
+                                <p style={{ margin: 0 }}><strong>User:</strong> {payload[0].name}</p>
+                                <p style={{ margin: 0 }}><strong>Action:</strong> {data.activityType?.replace(/_/g, ' ')}</p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      {stats.userStats.map((userStat, index) => (
+                        scatterData[userStat.username]?.length > 0 && (
+                          <Scatter
+                            key={userStat.userId}
+                            name={userStat.username}
+                            data={scatterData[userStat.username]}
+                            fill={colorPalette[index % colorPalette.length]}
+                          />
+                        )
+                      ))}
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Alert variant="info">No activity data available for the selected time range.</Alert>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Line Chart - Activity Count Over Time */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="shadow-sm">
+            <Card.Header style={{ backgroundColor: '#f8f9fa' }}>
+              <h5 className="mb-0">
+                Activity Count Trend {timeRange === 'all' ? '- All History' : `Over Past ${timeRange} Days`}
+              </h5>
+              <small className="text-muted">Shows the number of activities per day for each user</small>
+            </Card.Header>
+            <Card.Body>
+              <div style={{ height: '400px' }}>
+                {lineChartData.length > 0 && stats?.userStats?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lineChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
                         dataKey="date"
@@ -274,21 +379,12 @@ function UserActivityTab() {
                         label={{ value: 'Date', position: 'insideBottom', offset: -10 }}
                       />
                       <YAxis
-                        domain={[0, 23]}
-                        ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]}
-                        tickFormatter={(hour) => `${hour.toString().padStart(2, '0')}:00`}
-                        label={{ value: 'Time (24-hour)', angle: -90, position: 'insideLeft' }}
+                        label={{ value: 'Number of Activities', angle: -90, position: 'insideLeft' }}
                         allowDecimals={false}
                       />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
                         labelFormatter={(label) => `Date: ${label}`}
-                        formatter={(value, name) => {
-                          if (value !== undefined && value !== null) {
-                            return [`${value.toString().padStart(2, '0')}:00`, name]
-                          }
-                          return [null, name]
-                        }}
                       />
                       <Legend wrapperStyle={{ paddingTop: '20px' }} />
                       {stats.userStats.map((userStat, index) => (
@@ -300,7 +396,6 @@ function UserActivityTab() {
                           strokeWidth={2}
                           dot={{ r: 4 }}
                           activeDot={{ r: 6 }}
-                          connectNulls={false}
                         />
                       ))}
                     </LineChart>
