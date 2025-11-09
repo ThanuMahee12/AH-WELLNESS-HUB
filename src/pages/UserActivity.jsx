@@ -13,7 +13,6 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import { getActivityStats, getUserActivities } from '../services/activityService'
-import { generateDummyActivities } from '../utils/generateDummyActivities'
 import { PageHeader } from '../components/ui'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
@@ -23,35 +22,12 @@ function UserActivity() {
   const [timeRange, setTimeRange] = useState('all') // Default: All history
   const [stats, setStats] = useState(null)
   const [recentActivities, setRecentActivities] = useState([])
-  const [isGenerating, setIsGenerating] = useState(false)
 
   const isSuperAdmin = currentUser?.role === 'superadmin'
 
   useEffect(() => {
     loadActivityData()
   }, [timeRange])
-
-  const handleGenerateDummyData = async () => {
-    if (!window.confirm('This will create 90 days of dummy activity data. Continue?')) {
-      return
-    }
-
-    setIsGenerating(true)
-    try {
-      const result = await generateDummyActivities(90)
-      if (result.success) {
-        alert(`Successfully created ${result.count} dummy activities!`)
-        // Reload data
-        await loadActivityData()
-      } else {
-        alert(`Error: ${result.error}`)
-      }
-    } catch (error) {
-      alert(`Error: ${error.message}`)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
 
   const loadActivityData = async () => {
     setLoading(true)
@@ -182,25 +158,6 @@ function UserActivity() {
         icon={FaChartLine}
         title="User Activity"
       />
-
-      {/* Generate Dummy Data Button */}
-      <Row className="mb-3">
-        <Col>
-          <Alert variant="warning" className="d-flex justify-content-between align-items-center">
-            <span>
-              <strong>Testing Mode:</strong> Generate dummy activity data for the past 90 days to test the dashboard.
-            </span>
-            <Button
-              variant="warning"
-              onClick={handleGenerateDummyData}
-              disabled={isGenerating}
-              style={{ minWidth: '200px' }}
-            >
-              {isGenerating ? 'Generating...' : '🎲 Generate Dummy Data'}
-            </Button>
-          </Alert>
-        </Col>
-      </Row>
 
       {/* Time Range Filter */}
       <Row className="mb-4">

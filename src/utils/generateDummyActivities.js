@@ -48,16 +48,36 @@ const generateActivity = (user, date, activityType) => {
     ? descriptions[Math.floor(Math.random() * descriptions.length)]
     : descriptions
 
+  // Build metadata object, only including defined values
+  const metadata = {}
+
+  if (activityType.includes('test') && description.includes(': ')) {
+    metadata.testName = description.split(': ')[1]
+  }
+
+  if (activityType.includes('patient') && description.includes(': ')) {
+    metadata.patientName = description.split(': ')[1]
+  }
+
+  if (activityType.includes('checkup') && description.includes(': ')) {
+    metadata.patientName = description.split(': ')[1]
+  }
+
+  if (activityType.includes('medicine') && description.includes(': ')) {
+    metadata.medicineName = description.split(': ')[1]
+  }
+
+  if (activityType.includes('user') && description.includes(': ')) {
+    metadata.username = description.split(': ')[1]
+  }
+
   return {
     userId: user.uid,
     username: user.username,
     userRole: user.role,
     activityType: activityType,
     description: description,
-    metadata: {
-      testName: activityType.includes('test') ? description.split(': ')[1] : undefined,
-      patientName: activityType.includes('patient') ? description.split(': ')[1] : undefined,
-    },
+    metadata: metadata,
     timestamp: Timestamp.fromDate(date),
     createdAt: Timestamp.fromDate(date),
   }
