@@ -52,7 +52,7 @@ function UserActivityTab() {
     }
   }
 
-  // Prepare scatter plot data - individual activities with date and time
+  // Prepare scatter plot data - individual activities as separate points
   const prepareScatterData = () => {
     if (!recentActivities || recentActivities.length === 0) {
       return []
@@ -71,8 +71,6 @@ function UserActivityTab() {
       const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
       const dateKey = date.toISOString().split('T')[0]
       const hour = date.getHours()
-      const minute = date.getMinutes()
-      const timeValue = hour + (minute / 60) // Convert to decimal hours (e.g., 14.5 for 14:30)
 
       const d = new Date(dateKey)
       const displayDate = `${d.getMonth() + 1}/${d.getDate()}`
@@ -83,12 +81,12 @@ function UserActivityTab() {
         userScatterData[username] = []
       }
 
+      // Add each activity as individual point
       userScatterData[username].push({
         date: displayDate,
         fullDate: dateKey,
-        time: timeValue,
+        time: hour,
         hour: hour,
-        minute: minute,
         activityType: activity.activityType,
         description: activity.description
       })
@@ -310,8 +308,8 @@ function UserActivityTab() {
                         type="number"
                         dataKey="time"
                         name="Time"
-                        domain={[0, 24]}
-                        ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]}
+                        domain={[0, 23]}
+                        ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]}
                         tickFormatter={(hour) => `${Math.floor(hour).toString().padStart(2, '0')}:00`}
                         label={{ value: 'Time (24-hour)', angle: -90, position: 'insideLeft' }}
                       />
@@ -324,7 +322,7 @@ function UserActivityTab() {
                             return (
                               <div style={{ backgroundColor: '#fff', border: '1px solid #ccc', padding: '10px', borderRadius: '5px' }}>
                                 <p style={{ margin: 0 }}><strong>Date:</strong> {data.date}</p>
-                                <p style={{ margin: 0 }}><strong>Time:</strong> {`${data.hour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')}`}</p>
+                                <p style={{ margin: 0 }}><strong>Time:</strong> {`${data.hour.toString().padStart(2, '0')}:00`}</p>
                                 <p style={{ margin: 0 }}><strong>User:</strong> {payload[0].name}</p>
                                 <p style={{ margin: 0 }}><strong>Action:</strong> {data.activityType?.replace(/_/g, ' ')}</p>
                               </div>
