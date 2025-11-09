@@ -83,6 +83,13 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    sessionExpired: (state) => {
+      // Handle session expiry without logging activity (already handled in App.jsx)
+      state.user = null
+      state.isAuthenticated = false
+      state.loading = false
+      state.error = 'Session expired due to inactivity'
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -132,5 +139,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { setUser, clearError } = authSlice.actions
+export const { setUser, clearError, sessionExpired } = authSlice.actions
 export default authSlice.reducer

@@ -1,9 +1,10 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { setUser } from './store/authSlice'
+import { setUser, logoutUser } from './store/authSlice'
 import { authService } from './services/authService'
-import { NotificationProvider } from './context'
+import { sessionTimeoutService } from './services/sessionTimeoutService'
+import { NotificationProvider, useNotification } from './context'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -22,10 +23,12 @@ const Medicines = lazy(() => import('./pages/Medicines'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 
-function App() {
+// Create a wrapper component to access notification context
+function AppContent() {
   const dispatch = useDispatch()
   const location = useLocation()
-  const { isAuthenticated } = useSelector(state => state.auth)
+  const { isAuthenticated, user } = useSelector(state => state.auth)
+  const { showNotification } = useNotification()
 
   // Pages that shouldn't show sidebar
   const noSidebarPages = ['/', '/login']
@@ -45,106 +48,136 @@ function App() {
     return () => unsubscribe()
   }, [dispatch])
 
+  // Handle session timeout
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Start session timeout monitoring
+      sessionTimeoutService.start(user.role, () => {
+        // Show notification before logout
+        showNotification('Session expired due to inactivity. Please login again.', 'warning')
+
+        // Logout user after a short delay to show the notification
+        setTimeout(() => {
+          dispatch(logoutUser())
+        }, 1000)
+      })
+
+      // Cleanup on logout or unmount
+      return () => {
+        sessionTimeoutService.stop()
+      }
+    } else {
+      // Stop session timeout if user is not authenticated
+      sessionTimeoutService.stop()
+    }
+  }, [isAuthenticated, user, dispatch, showNotification])
+
   return (
-    <NotificationProvider>
-      <div className="d-flex flex-column min-vh-100" style={{ overflow: 'hidden', width: '100%' }}>
-        {showNavbar && <Navbar />}
-        <div className="d-flex flex-grow-1" style={{ marginTop: showNavbar ? '60px' : '0', overflow: 'hidden', width: '100%' }}>
-          {showSidebar && <Sidebar />}
-          <div
-            className="flex-grow-1"
-            style={{
-              marginLeft: 0,
-              paddingLeft: showSidebar ? '250px' : '0',
-              width: '100%',
-              maxWidth: '100vw',
-              overflow: 'auto'
-            }}
-          >
-            <Suspense fallback={<LoadingSpinner text="Loading page..." />}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route
-                  path="/login"
-                  element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/patients"
-                  element={
-                    <ProtectedRoute>
-                      <Patients />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/patients/:id"
-                  element={
-                    <ProtectedRoute>
-                      <PatientDetail />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/checkups"
-                  element={
-                    <ProtectedRoute>
-                      <Checkups />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/checkups/:id"
-                  element={
-                    <ProtectedRoute>
-                      <CheckupDetail />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/tests"
-                  element={
-                    <ProtectedRoute>
-                      <Tests />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/medicines"
-                  element={
-                    <ProtectedRoute>
-                      <Medicines />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/users"
-                  element={
-                    <ProtectedRoute adminOnly={true}>
-                      <UserManagement />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin-setup"
-                  element={
-                    <ProtectedRoute>
-                      <AdminSetup />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </Suspense>
-          </div>
+    <div className="d-flex flex-column min-vh-100" style={{ overflow: 'hidden', width: '100%' }}>
+      {showNavbar && <Navbar />}
+      <div className="d-flex flex-grow-1" style={{ marginTop: showNavbar ? '60px' : '0', overflow: 'hidden', width: '100%' }}>
+        {showSidebar && <Sidebar />}
+        <div
+          className="flex-grow-1"
+          style={{
+            marginLeft: 0,
+            paddingLeft: showSidebar ? '250px' : '0',
+            width: '100%',
+            maxWidth: '100vw',
+            overflow: 'auto'
+          }}
+        >
+          <Suspense fallback={<LoadingSpinner text="Loading page..." />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route
+                path="/login"
+                element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/patients"
+                element={
+                  <ProtectedRoute>
+                    <Patients />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/patients/:id"
+                element={
+                  <ProtectedRoute>
+                    <PatientDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkups"
+                element={
+                  <ProtectedRoute>
+                    <Checkups />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkups/:id"
+                element={
+                  <ProtectedRoute>
+                    <CheckupDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tests"
+                element={
+                  <ProtectedRoute>
+                    <Tests />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/medicines"
+                element={
+                  <ProtectedRoute>
+                    <Medicines />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin-setup"
+                element={
+                  <ProtectedRoute>
+                    <AdminSetup />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
         </div>
       </div>
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <NotificationProvider>
+      <AppContent />
     </NotificationProvider>
   )
 }
