@@ -362,55 +362,63 @@ function Dashboard() {
                   <FaChartLine className="me-2" />
                   Checkups & Revenue Trend
                 </h5>
-                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-                  <ButtonGroup size="sm">
+                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 w-100 w-lg-auto">
+                  <ButtonGroup size="sm" className="w-100 w-sm-auto">
                     <Button
                       variant={dateRange === 7 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(7)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 7 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 7 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 7 ? '600' : 'normal'
+                        fontWeight: dateRange === 7 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      7 Days
+                      7d
                     </Button>
                     <Button
                       variant={dateRange === 30 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(30)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 30 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 30 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 30 ? '600' : 'normal'
+                        fontWeight: dateRange === 30 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      30 Days
+                      30d
                     </Button>
                     <Button
                       variant={dateRange === 60 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(60)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 60 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 60 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 60 ? '600' : 'normal'
+                        fontWeight: dateRange === 60 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      60 Days
+                      60d
                     </Button>
                     <Button
                       variant={dateRange === 90 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(90)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 90 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 90 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 90 ? '600' : 'normal'
+                        fontWeight: dateRange === 90 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      90 Days
+                      90d
                     </Button>
                   </ButtonGroup>
                 </div>
@@ -478,7 +486,7 @@ function Dashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={320}>
-                  <PieChart margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
+                  <PieChart margin={{ top: 10, right: window.innerWidth < 576 ? 10 : 80, bottom: 10, left: window.innerWidth < 576 ? 10 : 80 }}>
                     <Pie
                       data={testDistribution}
                       cx="50%"
@@ -486,11 +494,12 @@ function Dashboard() {
                       labelLine={{
                         stroke: '#666',
                         strokeWidth: 1,
-                        length: 20
+                        length: window.innerWidth < 576 ? 10 : 20
                       }}
                       label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
                         const RADIAN = Math.PI / 180;
-                        const radius = outerRadius + 35;
+                        const isMobile = window.innerWidth < 576;
+                        const radius = outerRadius + (isMobile ? 20 : 35);
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         return (
@@ -500,7 +509,7 @@ function Dashboard() {
                             fill="#333"
                             textAnchor={x > cx ? 'start' : 'end'}
                             dominantBaseline="central"
-                            style={{ fontSize: '12px', fontWeight: '500' }}
+                            style={{ fontSize: isMobile ? '10px' : '12px', fontWeight: '500' }}
                           >
                             {`${name} (${(percent * 100).toFixed(0)}%)`}
                           </text>

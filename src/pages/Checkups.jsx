@@ -264,7 +264,7 @@ function Checkups() {
                           <td data-label="Tests">
                             <div
                               style={{
-                                maxWidth: '300px',
+                                maxWidth: window.innerWidth < 768 ? '150px' : '300px',
                                 maxHeight: '80px',
                                 overflowY: 'auto',
                                 overflowX: 'hidden',
@@ -323,7 +323,7 @@ function Checkups() {
         </Col>
       </Row>
 
-      <Modal show={showModal} onHide={handleClose} size="lg">
+      <Modal show={showModal} onHide={handleClose} size="lg" fullscreen="md-down">
         <Modal.Header closeButton>
           <Modal.Title>
             {editingCheckup ? 'Edit Checkup' : 'New Checkup / Bill'}

@@ -39,7 +39,7 @@ const TABLE_COLUMNS = [
       <strong style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '250px',
+        maxWidth: window.innerWidth < 768 ? '150px' : '250px',
         display: 'inline-block'
       }}>
         {value}
@@ -72,7 +72,7 @@ const TABLE_COLUMNS = [
       <div style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '200px'
+        maxWidth: window.innerWidth < 768 ? '120px' : '200px'
       }}>
         {value}
       </div>
@@ -85,7 +85,7 @@ const TABLE_COLUMNS = [
       <div style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '200px'
+        maxWidth: window.innerWidth < 768 ? '120px' : '200px'
       }}>
         {value}
       </div>
