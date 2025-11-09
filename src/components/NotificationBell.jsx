@@ -92,12 +92,19 @@ function NotificationBell() {
               options: {
                 offset: [0, 8]
               }
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                padding: 8
+              }
             }
           ]
         }}
         style={{
-          width: '350px',
-          maxHeight: '500px',
+          width: window.innerWidth < 576 ? 'calc(100vw - 16px)' : '350px',
+          maxWidth: '350px',
+          maxHeight: window.innerWidth < 576 ? 'calc(100vh - 80px)' : '500px',
           padding: 0,
           border: '1px solid #dee2e6',
           borderRadius: '0.5rem',
@@ -128,7 +135,11 @@ function NotificationBell() {
         </div>
 
         {/* Scrollable Content */}
-        <div style={{ maxHeight: '440px', overflowY: 'auto', overflowX: 'hidden' }}>
+        <div style={{
+          maxHeight: window.innerWidth < 576 ? 'calc(100vh - 140px)' : '440px',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}>
           {notifications.length === 0 ? (
             <div className="text-center text-muted py-4">
               <FaBell size={30} className="mb-2 opacity-25" />
@@ -138,39 +149,57 @@ function NotificationBell() {
             notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`px-3 py-2 ${!notification.read ? 'bg-light' : ''}`}
+                className={`${!notification.read ? 'bg-light' : ''}`}
                 style={{
                   cursor: 'pointer',
                   transition: 'background-color 0.2s',
-                  borderBottom: '1px solid #f0f0f0'
+                  borderBottom: '1px solid #f0f0f0',
+                  padding: window.innerWidth < 576 ? '8px 12px' : '12px 16px'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f9ff'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = notification.read ? 'white' : '#f8f9fa'}
               >
                 <div className="d-flex align-items-start">
-                  <div style={{ fontSize: '1.5rem', marginRight: '10px', minWidth: '30px' }}>
+                  <div style={{
+                    fontSize: window.innerWidth < 576 ? '1.2rem' : '1.5rem',
+                    marginRight: window.innerWidth < 576 ? '8px' : '10px',
+                    minWidth: window.innerWidth < 576 ? '24px' : '30px'
+                  }}>
                     {getNotificationIcon(notification.type)}
                   </div>
-                  <div style={{ flex: 1, fontSize: '0.85rem' }}>
+                  <div style={{ flex: 1, fontSize: window.innerWidth < 576 ? '0.8rem' : '0.85rem' }}>
                     <div className="d-flex justify-content-between align-items-start mb-1">
-                      <strong style={{ fontSize: '0.9rem', color: '#0891B2' }}>
+                      <strong style={{
+                        fontSize: window.innerWidth < 576 ? '0.85rem' : '0.9rem',
+                        color: '#0891B2'
+                      }}>
                         {notification.title}
                       </strong>
                       {!notification.read && (
                         <button
                           className="btn btn-link btn-sm p-0 ms-2"
                           onClick={(e) => handleMarkAsRead(notification.id, e)}
-                          style={{ fontSize: '0.75rem', color: '#0891B2' }}
+                          style={{
+                            fontSize: '0.75rem',
+                            color: '#0891B2',
+                            minWidth: '44px',
+                            minHeight: '44px'
+                          }}
                           title="Mark as read"
                         >
                           <FaCheck />
                         </button>
                       )}
                     </div>
-                    <p className="mb-1" style={{ fontSize: '0.85rem', color: '#333' }}>
+                    <p className="mb-1" style={{
+                      fontSize: window.innerWidth < 576 ? '0.8rem' : '0.85rem',
+                      color: '#333'
+                    }}>
                       {notification.message}
                     </p>
-                    <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                    <small className="text-muted" style={{
+                      fontSize: window.innerWidth < 576 ? '0.7rem' : '0.75rem'
+                    }}>
                       {formatTimestamp(notification.createdAt)}
                     </small>
                   </div>
