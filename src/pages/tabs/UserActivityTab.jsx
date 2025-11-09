@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert } from 'react-bootstrap'
+import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert, Pagination } from 'react-bootstrap'
 import { FaHistory, FaCalendarAlt } from 'react-icons/fa'
 import {
   LineChart,
@@ -24,11 +24,19 @@ function UserActivityTab() {
   const [timeRange, setTimeRange] = useState('all') // Default: All history
   const [stats, setStats] = useState(null)
   const [recentActivities, setRecentActivities] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalActivities, setTotalActivities] = useState(0)
+  const activitiesPerPage = 20
 
   const isSuperAdmin = currentUser?.role === 'superadmin'
 
   useEffect(() => {
     loadActivityData()
+  }, [timeRange, currentPage])
+
+  // Reset to page 1 when time range changes
+  useEffect(() => {
+    setCurrentPage(1)
   }, [timeRange])
 
   const loadActivityData = async () => {
@@ -40,16 +48,29 @@ function UserActivityTab() {
         setStats(statsResult.data)
       }
 
-      // Get recent activities (limit to 20)
-      const activitiesResult = await getUserActivities({ days: timeRange, limit: 20 })
+      // Get all activities for pagination
+      const activitiesResult = await getUserActivities({ days: timeRange })
       if (activitiesResult.success) {
-        setRecentActivities(activitiesResult.data)
+        setTotalActivities(activitiesResult.data.length)
+
+        // Calculate pagination
+        const startIndex = (currentPage - 1) * activitiesPerPage
+        const endIndex = startIndex + activitiesPerPage
+        setRecentActivities(activitiesResult.data.slice(startIndex, endIndex))
       }
     } catch (error) {
       console.error('Error loading activity data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalActivities / activitiesPerPage)
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber)
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
 
   // Prepare scatter plot data - individual activities as separate points with 30-min precision
@@ -474,10 +495,15 @@ function UserActivityTab() {
         <Col>
           <Card className="shadow-sm" style={{ border: '2px solid #0891B2' }}>
             <Card.Header style={{ backgroundColor: '#0891B2', color: 'white' }}>
-              <h5 className="mb-0">
-                <FaHistory className="me-2" />
-                Recent Activity Logs (Last 20)
-              </h5>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <FaHistory className="me-2" />
+                  Activity Logs
+                </h5>
+                <Badge bg="light" text="dark" style={{ fontSize: '0.9rem' }}>
+                  {totalActivities} Total Activities
+                </Badge>
+              </div>
             </Card.Header>
             <Card.Body style={{ padding: 0 }}>
               {recentActivities.length === 0 ? (
@@ -553,6 +579,60 @@ function UserActivityTab() {
                 </div>
               )}
             </Card.Body>
+            {totalPages > 1 && (
+              <Card.Footer style={{ backgroundColor: '#f8f9fa', padding: '15px' }}>
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="text-muted" style={{ fontSize: '0.9rem' }}>
+                    Showing {((currentPage - 1) * activitiesPerPage) + 1} to {Math.min(currentPage * activitiesPerPage, totalActivities)} of {totalActivities} activities
+                  </div>
+                  <Pagination className="mb-0">
+                    <Pagination.First
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
+                    />
+                    <Pagination.Prev
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    />
+
+                    {/* Show page numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first page, last page, current page, and 2 pages around current
+                        return page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 2 && page <= currentPage + 2)
+                      })
+                      .map((page, index, array) => {
+                        // Add ellipsis if there's a gap
+                        const prevPage = array[index - 1]
+                        const showEllipsis = prevPage && page - prevPage > 1
+
+                        return (
+                          <span key={page}>
+                            {showEllipsis && <Pagination.Ellipsis disabled />}
+                            <Pagination.Item
+                              active={page === currentPage}
+                              onClick={() => handlePageChange(page)}
+                            >
+                              {page}
+                            </Pagination.Item>
+                          </span>
+                        )
+                      })}
+
+                    <Pagination.Next
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    />
+                    <Pagination.Last
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                    />
+                  </Pagination>
+                </div>
+              </Card.Footer>
+            )}
           </Card>
         </Col>
       </Row>
