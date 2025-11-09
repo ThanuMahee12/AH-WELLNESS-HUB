@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
-import { Dropdown, Badge, ListGroup } from 'react-bootstrap'
+import { Dropdown, Badge } from 'react-bootstrap'
 import { FaBell, FaCheck, FaCheckDouble } from 'react-icons/fa'
 import { subscribeToNotifications, markAsRead, markAllAsRead } from '../services/notificationService'
 import { formatDistanceToNow } from 'date-fns'
@@ -61,7 +61,7 @@ function NotificationBell() {
   }
 
   return (
-    <Dropdown align="end" className="d-inline-block">
+    <Dropdown align="end" className="d-inline-block" autoClose="outside" style={{ position: 'static' }}>
       <Dropdown.Toggle
         variant="link"
         id="notification-dropdown"
@@ -82,42 +82,67 @@ function NotificationBell() {
       </Dropdown.Toggle>
 
       <Dropdown.Menu
+        className="shadow-lg"
+        renderOnMount
+        popperConfig={{
+          strategy: 'fixed',
+          modifiers: [
+            {
+              name: 'offset',
+              options: {
+                offset: [0, 8]
+              }
+            }
+          ]
+        }}
         style={{
           width: '350px',
           maxHeight: '500px',
-          overflowY: 'auto',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          padding: 0,
+          border: '1px solid #dee2e6',
+          borderRadius: '0.5rem',
+          zIndex: 9999
         }}
       >
-        <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-          <strong style={{ fontSize: '0.95rem' }}>Notifications</strong>
-          {unreadCount > 0 && (
-            <button
-              className="btn btn-link btn-sm text-decoration-none p-0"
-              onClick={handleMarkAllAsRead}
-              style={{ fontSize: '0.8rem', color: '#0891B2' }}
-            >
-              <FaCheckDouble className="me-1" />
-              Mark all read
-            </button>
-          )}
+        {/* Sticky Header */}
+        <div
+          className="px-3 py-2 border-bottom bg-white"
+          style={{
+            borderTopLeftRadius: '0.5rem',
+            borderTopRightRadius: '0.5rem'
+          }}
+        >
+          <div className="d-flex justify-content-between align-items-center">
+            <strong style={{ fontSize: '0.95rem' }}>Notifications</strong>
+            {unreadCount > 0 && (
+              <button
+                className="btn btn-link btn-sm text-decoration-none p-0"
+                onClick={handleMarkAllAsRead}
+                style={{ fontSize: '0.8rem', color: '#0891B2' }}
+              >
+                <FaCheckDouble className="me-1" />
+                Mark all read
+              </button>
+            )}
+          </div>
         </div>
 
-        {notifications.length === 0 ? (
-          <div className="text-center text-muted py-4">
-            <FaBell size={30} className="mb-2 opacity-25" />
-            <p className="mb-0" style={{ fontSize: '0.85rem' }}>No notifications</p>
-          </div>
-        ) : (
-          <ListGroup variant="flush">
-            {notifications.map((notification) => (
-              <ListGroup.Item
+        {/* Scrollable Content */}
+        <div style={{ maxHeight: '440px', overflowY: 'auto', overflowX: 'hidden' }}>
+          {notifications.length === 0 ? (
+            <div className="text-center text-muted py-4">
+              <FaBell size={30} className="mb-2 opacity-25" />
+              <p className="mb-0" style={{ fontSize: '0.85rem' }}>No notifications</p>
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <div
                 key={notification.id}
-                className={`border-0 ${!notification.read ? 'bg-light' : ''}`}
+                className={`px-3 py-2 ${!notification.read ? 'bg-light' : ''}`}
                 style={{
                   cursor: 'pointer',
                   transition: 'background-color 0.2s',
-                  borderBottom: '1px solid #dee2e6'
+                  borderBottom: '1px solid #f0f0f0'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f9ff'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = notification.read ? 'white' : '#f8f9fa'}
@@ -150,10 +175,10 @@ function NotificationBell() {
                     </small>
                   </div>
                 </div>
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        )}
+              </div>
+            ))
+          )}
+        </div>
       </Dropdown.Menu>
     </Dropdown>
   )
