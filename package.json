@@ -15,6 +15,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
     "bootstrap": "^5.3.8",
+    "date-fns": "^4.1.0",
     "firebase": "^12.4.0",
     "framer-motion": "^12.23.24",
     "html2canvas": "^1.4.1",

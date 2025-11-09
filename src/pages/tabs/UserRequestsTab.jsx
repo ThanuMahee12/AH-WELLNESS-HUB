@@ -12,6 +12,7 @@ import { registerUser } from '../../store/authSlice'
 import { fetchUsers } from '../../store/usersSlice'
 import { useNotification } from '../../context'
 import { generateRandomPassword, copyToClipboard } from '../../utils/passwordUtils'
+import { notifyRoleRequestApproved, notifyRoleRequestRejected } from '../../services/notificationService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 function UserRequestsTab() {
@@ -60,6 +61,15 @@ function UserRequestsTab() {
           dispatch(fetchUsers())
           setGeneratedPassword(randomPassword)
           setShowPasswordModal(true)
+
+          // Send notification to requester with generated password
+          await notifyRoleRequestApproved({
+            id: request.id,
+            userId: request.requestedBy,
+            requestedRole: request.data.role,
+            processedBy: currentUser.username || currentUser.email
+          }, randomPassword)
+
           success('User created and request approved!')
         } else {
           showError('Failed to create user')
@@ -72,6 +82,15 @@ function UserRequestsTab() {
             requestId: request.id,
             approvedBy: currentUser.uid
           }))
+
+          // Send notification to requester
+          await notifyRoleRequestApproved({
+            id: request.id,
+            userId: request.requestedBy,
+            requestedRole: request.data.role,
+            processedBy: currentUser.username || currentUser.email
+          })
+
           success('User updated and request approved!')
         } else {
           showError('Failed to update user')
@@ -97,6 +116,16 @@ function UserRequestsTab() {
         rejectedBy: currentUser.uid,
         reason: rejectionReason || 'Not approved'
       }))
+
+      // Send notification to requester
+      await notifyRoleRequestRejected({
+        id: rejectingRequest.id,
+        userId: rejectingRequest.requestedBy,
+        currentRole: rejectingRequest.currentRole || 'user',
+        requestedRole: rejectingRequest.data?.role || 'unknown',
+        processedBy: currentUser.username || currentUser.email
+      }, rejectionReason || 'Not approved')
+
       success('Request rejected')
       setShowRejectModal(false)
       setRejectingRequest(null)

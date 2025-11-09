@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { FaUser, FaSignOutAlt } from 'react-icons/fa'
 import { logoutUser } from '../store/authSlice'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
+import NotificationBell from './NotificationBell'
 import '../styles/navbar.css'
 
 function Navbar() {
@@ -38,6 +39,7 @@ function Navbar() {
                 <Badge bg="warning" text="dark" className="ms-1 ms-md-2" style={{ fontSize: 'clamp(0.7rem, 1.5vw, 0.75rem)' }}>Admin</Badge>
               )}
             </div>
+            <NotificationBell />
             <Button
               variant="outline-light"
               size="sm"
