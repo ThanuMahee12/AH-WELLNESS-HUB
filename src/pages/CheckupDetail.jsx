@@ -714,116 +714,13 @@ function CheckupDetail() {
           <style>{`
             /* Print styles */
             @media print {
-              /* Reset page setup */
+              /* Page setup */
               @page {
                 size: ${pdfSettings.format === 'a4' ? 'A4' :
                        pdfSettings.format === 'a5' ? 'A5' :
                        pdfSettings.format === 'letter' ? 'letter' :
                        `${pdfSettings.width}mm ${pdfSettings.height}mm`};
                 margin: 10mm;
-              }
-
-              /* Hide elements with no-print class */
-              .no-print {
-                display: none !important;
-              }
-
-              /* Hide everything except the bill content container */
-              body > *:not(.bill-content):not(script):not(style) {
-                display: none !important;
-              }
-
-              /* Ensure container hierarchy is visible */
-              html, body, .container, .container-fluid, .row, .col {
-                display: block !important;
-                visibility: visible !important;
-              }
-
-              /* Show only bill content */
-              .bill-content {
-                display: block !important;
-                visibility: visible !important;
-                position: relative !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                height: auto !important;
-                margin: 0 !important;
-                padding: 15px !important;
-                box-shadow: none !important;
-                border: none !important;
-                background: white !important;
-                page-break-after: avoid !important;
-                page-break-inside: avoid !important;
-                overflow: visible !important;
-              }
-
-              /* Ensure all children are visible */
-              .bill-content,
-              .bill-content * {
-                visibility: visible !important;
-                display: inherit !important;
-              }
-
-              /* Hide card shadows and borders for clean print */
-              .card, .shadow-sm {
-                box-shadow: none !important;
-                border: none !important;
-                background: transparent !important;
-              }
-
-              /* Ensure images print with colors */
-              .bill-content img {
-                display: block !important;
-                max-width: 100% !important;
-                height: auto !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-              }
-
-              /* Ensure tables print properly */
-              .bill-content table {
-                display: table !important;
-                width: 100% !important;
-              }
-
-              .bill-content thead {
-                display: table-header-group !important;
-              }
-
-              .bill-content tbody {
-                display: table-row-group !important;
-              }
-
-              .bill-content tr {
-                display: table-row !important;
-              }
-
-              .bill-content th,
-              .bill-content td {
-                display: table-cell !important;
-              }
-
-              /* Print colors and backgrounds */
-              .bill-content * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-              }
-
-              /* Prevent extra pages */
-              .bill-content .header-section,
-              .bill-content .footer-section,
-              .bill-content table {
-                page-break-inside: avoid !important;
-              }
-
-              /* Force single page */
-              html, body {
-                height: auto !important;
-                overflow: visible !important;
               }
             }
 
