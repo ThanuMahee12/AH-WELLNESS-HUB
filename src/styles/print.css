@@ -6,32 +6,7 @@
     size: A4;
   }
 
-  /* Simple approach: Hide everything, then show what we need */
-  * {
-    visibility: hidden;
-  }
-
-  /* Show the printable content and all its parents */
-  .bill-content,
-  .bill-content *,
-  .prescription-preview,
-  .prescription-preview * {
-    visibility: visible !important;
-  }
-
-  /* Make sure parent containers are visible */
-  html,
-  body,
-  #root,
-  .container,
-  .container-fluid,
-  .row,
-  .col,
-  [class*="col-"] {
-    visibility: visible !important;
-  }
-
-  /* Hide UI elements */
+  /* Hide UI elements first */
   .no-print,
   nav,
   .navbar,
@@ -39,10 +14,9 @@
   aside,
   button,
   .btn,
-  .tabs,
-  .nav-tabs {
+  .nav-tabs,
+  .tabs {
     display: none !important;
-    visibility: hidden !important;
   }
 
   /* Reset body and html */
@@ -53,12 +27,37 @@
     background: white !important;
     width: 100% !important;
     height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Position bill content */
+  /* Make sure all containers and tabs are visible */
+  #root,
+  .container,
+  .container-fluid,
+  .tab-content,
+  .tab-pane {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Force show active tab content */
+  .tab-pane {
+    display: block !important;
+    height: auto !important;
+  }
+
+  /* Show bill and prescription content */
   .bill-content,
   .prescription-preview {
-    position: absolute !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
@@ -67,13 +66,11 @@
     background: white !important;
   }
 
-  /* Clean up containers */
-  .container,
-  .container-fluid {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
+  /* Show all content inside */
+  .bill-content *,
+  .prescription-preview * {
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   /* Remove card styling */
@@ -103,8 +100,31 @@
   /* Table styling */
   .bill-content table,
   .prescription-preview table {
+    display: table !important;
     width: 100% !important;
     page-break-inside: avoid !important;
+  }
+
+  .bill-content thead,
+  .prescription-preview thead {
+    display: table-header-group !important;
+  }
+
+  .bill-content tbody,
+  .prescription-preview tbody {
+    display: table-row-group !important;
+  }
+
+  .bill-content tr,
+  .prescription-preview tr {
+    display: table-row !important;
+  }
+
+  .bill-content th,
+  .bill-content td,
+  .prescription-preview th,
+  .prescription-preview td {
+    display: table-cell !important;
   }
 
   /* Prevent page breaks */
