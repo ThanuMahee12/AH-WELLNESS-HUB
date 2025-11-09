@@ -49,44 +49,66 @@ function UserActivityTab() {
     }
   }
 
-  // Prepare chart data for Recharts
+  // Prepare chart data for Recharts - showing time of day activities
   const prepareChartData = () => {
-    if (!stats || !stats.dailyStats) {
+    if (!recentActivities || recentActivities.length === 0) {
       return []
     }
 
-    // Get dates from dailyStats
-    let dates = Object.keys(stats.dailyStats).sort()
+    // Group activities by date and time
+    const activityMap = new Map()
 
-    // If timeRange is not 'all', filter dates to the range
-    if (timeRange !== 'all') {
-      const endDate = new Date()
-      const dateRange = []
-      for (let i = timeRange - 1; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(endDate.getDate() - i)
-        dateRange.push(date.toISOString().split('T')[0])
+    recentActivities.forEach(activity => {
+      if (!activity.timestamp) return
+
+      const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
+      const dateKey = date.toISOString().split('T')[0]
+      const hour = date.getHours()
+      const time = `${hour.toString().padStart(2, '0')}:00`
+
+      const key = `${dateKey}_${time}`
+
+      if (!activityMap.has(key)) {
+        activityMap.set(key, {
+          date: dateKey,
+          displayDate: `${date.getMonth() + 1}/${date.getDate()}`,
+          time: time,
+          hour: hour,
+          activities: []
+        })
       }
-      dates = dateRange
-    }
 
-    // Create chart data
-    const chartData = dates.map(date => {
-      const d = new Date(date)
+      activityMap.get(key).activities.push(activity)
+    })
+
+    // Convert map to array and create data points
+    const chartData = Array.from(activityMap.values()).map(item => {
       const dataPoint = {
-        date: `${d.getMonth() + 1}/${d.getDate()}`,
-        fullDate: date
+        date: item.displayDate,
+        fullDate: item.date,
+        time: item.time,
+        hour: item.hour
       }
 
-      // Add each user's activity count for this date
-      stats.userStats.forEach(userStat => {
-        dataPoint[userStat.username] = stats.dailyStats[date]?.[userStat.userId] || 0
+      // Count activities per user at this date/time
+      stats?.userStats?.forEach(userStat => {
+        const userActivities = item.activities.filter(a => a.userId === userStat.userId)
+        // Y-axis shows the hour (time) when activity occurred
+        if (userActivities.length > 0) {
+          dataPoint[userStat.username] = item.hour
+        }
       })
 
       return dataPoint
     })
 
-    return chartData
+    // Sort by date and then by hour
+    return chartData.sort((a, b) => {
+      if (a.fullDate !== b.fullDate) {
+        return a.fullDate.localeCompare(b.fullDate)
+      }
+      return a.hour - b.hour
+    })
   }
 
   const chartData = prepareChartData()
@@ -252,11 +274,21 @@ function UserActivityTab() {
                         label={{ value: 'Date', position: 'insideBottom', offset: -10 }}
                       />
                       <YAxis
-                        label={{ value: 'Number of Activities', angle: -90, position: 'insideLeft' }}
+                        domain={[0, 23]}
+                        ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]}
+                        tickFormatter={(hour) => `${hour.toString().padStart(2, '0')}:00`}
+                        label={{ value: 'Time (24-hour)', angle: -90, position: 'insideLeft' }}
                         allowDecimals={false}
                       />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
+                        labelFormatter={(label) => `Date: ${label}`}
+                        formatter={(value, name) => {
+                          if (value !== undefined && value !== null) {
+                            return [`${value.toString().padStart(2, '0')}:00`, name]
+                          }
+                          return [null, name]
+                        }}
                       />
                       <Legend wrapperStyle={{ paddingTop: '20px' }} />
                       {stats.userStats.map((userStat, index) => (
@@ -268,6 +300,7 @@ function UserActivityTab() {
                           strokeWidth={2}
                           dot={{ r: 4 }}
                           activeDot={{ r: 6 }}
+                          connectNulls={false}
                         />
                       ))}
                     </LineChart>
