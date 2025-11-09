@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 const COLLECTION = 'tests'
 
@@ -29,9 +30,21 @@ export const fetchTests = createAsyncThunk(
 
 export const addTest = createAsyncThunk(
   'tests/add',
-  async (testData, { rejectWithValue }) => {
+  async (testData, { rejectWithValue, getState }) => {
     const result = await firestoreService.create(COLLECTION, testData)
     if (result.success) {
+      // Log activity
+      const { user } = getState().auth
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.TEST_CREATE,
+          description: createActivityDescription(ACTIVITY_TYPES.TEST_CREATE, { testName: testData.name }),
+          metadata: { testId: result.id, testName: testData.name }
+        })
+      }
       return { id: result.id, ...testData }
     } else {
       return rejectWithValue(result.error)
@@ -41,9 +54,21 @@ export const addTest = createAsyncThunk(
 
 export const updateTest = createAsyncThunk(
   'tests/update',
-  async ({ id, ...testData }, { rejectWithValue }) => {
+  async ({ id, ...testData }, { rejectWithValue, getState }) => {
     const result = await firestoreService.update(COLLECTION, id, testData)
     if (result.success) {
+      // Log activity
+      const { user } = getState().auth
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.TEST_UPDATE,
+          description: createActivityDescription(ACTIVITY_TYPES.TEST_UPDATE, { testName: testData.name }),
+          metadata: { testId: id, testName: testData.name }
+        })
+      }
       return { id, ...testData }
     } else {
       return rejectWithValue(result.error)
@@ -53,9 +78,21 @@ export const updateTest = createAsyncThunk(
 
 export const deleteTest = createAsyncThunk(
   'tests/delete',
-  async (id, { rejectWithValue }) => {
+  async ({ id, testName }, { rejectWithValue, getState }) => {
     const result = await firestoreService.delete(COLLECTION, id)
     if (result.success) {
+      // Log activity
+      const { user } = getState().auth
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.TEST_DELETE,
+          description: createActivityDescription(ACTIVITY_TYPES.TEST_DELETE, { testName }),
+          metadata: { testId: id, testName }
+        })
+      }
       return id
     } else {
       return rejectWithValue(result.error)

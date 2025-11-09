@@ -192,7 +192,6 @@ function CheckupDetail() {
         allowTaint: true,
         backgroundColor: '#ffffff',
         windowWidth: 794,
-        windowHeight: 1123
       })
 
       document.body.removeChild(prescriptionClone)
@@ -210,14 +209,22 @@ function CheckupDetail() {
       const imgWidth = canvas.width
       const imgHeight = canvas.height
 
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      // Calculate dimensions to fit content on ONE page with margins
+      const marginTop = 10
+      const marginBottom = 10
+      const availableHeight = pdfHeight - marginTop - marginBottom
+      const availableWidth = pdfWidth - 10 // 5mm margin on each side
+
+      // Scale to fit within page bounds (prefer fitting height to prevent page overflow)
+      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
       const imgScaledWidth = imgWidth * ratio
       const imgScaledHeight = imgHeight * ratio
 
+      // Center the content horizontally
       const marginX = (pdfWidth - imgScaledWidth) / 2
-      const marginY = 5
 
-      pdf.addImage(imgData, 'PNG', marginX, marginY, imgScaledWidth, imgScaledHeight)
+      // Add image to PDF - ensure it fits on one page
+      pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
       pdf.save(`Prescription_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
 
     } catch (error) {
@@ -292,7 +299,6 @@ function CheckupDetail() {
         allowTaint: true,
         backgroundColor: '#ffffff',
         windowWidth: 794, // A4 width in pixels at 96 DPI
-        windowHeight: 1123 // A4 height in pixels at 96 DPI
       })
 
       // Remove the clone
@@ -312,16 +318,22 @@ function CheckupDetail() {
       const imgWidth = canvas.width
       const imgHeight = canvas.height
 
-      // Calculate dimensions to fit content properly
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      // Calculate dimensions to fit content on ONE page with margins
+      const marginTop = 10
+      const marginBottom = 10
+      const availableHeight = pdfHeight - marginTop - marginBottom
+      const availableWidth = pdfWidth - 10 // 5mm margin on each side
+
+      // Scale to fit within page bounds (prefer fitting height to prevent page overflow)
+      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
       const imgScaledWidth = imgWidth * ratio
       const imgScaledHeight = imgHeight * ratio
 
-      // Center the content
+      // Center the content horizontally
       const marginX = (pdfWidth - imgScaledWidth) / 2
-      const marginY = 5
 
-      pdf.addImage(imgData, 'PNG', marginX, marginY, imgScaledWidth, imgScaledHeight)
+      // Add image to PDF - ensure it fits on one page
+      pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
       pdf.save(`Bill_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
 
     } catch (error) {
@@ -641,18 +653,32 @@ function CheckupDetail() {
                 margin: 10mm;
               }
 
+              /* Hide everything except bill content */
+              body * {
+                visibility: hidden !important;
+              }
+
+              .bill-content,
+              .bill-content * {
+                visibility: visible !important;
+              }
+
               /* Position bill content properly */
               .bill-content {
-                position: relative !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 height: auto !important;
                 margin: 0 !important;
-                padding: 25px !important;
+                padding: 15px !important;
                 box-shadow: none !important;
                 border: none !important;
                 background: white !important;
-                page-break-inside: avoid;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                overflow: hidden !important;
               }
 
               /* Hide card shadows and borders for clean print */
@@ -671,8 +697,15 @@ function CheckupDetail() {
 
               /* Prevent extra pages */
               .bill-content .header-section,
-              .bill-content .footer-section {
-                page-break-inside: avoid;
+              .bill-content .footer-section,
+              .bill-content table {
+                page-break-inside: avoid !important;
+              }
+
+              /* Force single page */
+              html, body {
+                height: auto !important;
+                overflow: hidden !important;
               }
             }
 

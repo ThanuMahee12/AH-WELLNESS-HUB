@@ -9,6 +9,8 @@ import {
   FaFlask,
   FaPills,
   FaUsers,
+  FaClipboardList,
+  FaChartLine,
   FaBars,
   FaTimes
 } from 'react-icons/fa'
@@ -26,6 +28,8 @@ function Sidebar() {
     { path: '/tests', icon: FaFlask, label: 'Tests' },
     { path: '/medicines', icon: FaPills, label: 'Medicines', roles: ['superadmin', 'maintainer', 'editor'] },
     { path: '/users', icon: FaUsers, label: 'Users', roles: ['superadmin', 'maintainer', 'admin'] },
+    { path: '/user-requests', icon: FaClipboardList, label: 'User Requests', roles: ['superadmin', 'maintainer'] },
+    { path: '/user-activity', icon: FaChartLine, label: 'User Activity', roles: ['superadmin'] },
   ]
 
   // Filter menu items based on user role

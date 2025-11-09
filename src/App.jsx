@@ -20,6 +20,8 @@ const CheckupDetail = lazy(() => import('./pages/CheckupDetail'))
 const Tests = lazy(() => import('./pages/Tests'))
 const Medicines = lazy(() => import('./pages/Medicines'))
 const Users = lazy(() => import('./pages/UsersEnhanced'))
+const UserRequests = lazy(() => import('./pages/UserRequests'))
+const UserActivity = lazy(() => import('./pages/UserActivity'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 
 function App() {
@@ -129,6 +131,22 @@ function App() {
                   element={
                     <ProtectedRoute adminOnly={true}>
                       <Users />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/user-requests"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <UserRequests />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/user-activity"
+                  element={
+                    <ProtectedRoute roles={['superadmin']}>
+                      <UserActivity />
                     </ProtectedRoute>
                   }
                 />

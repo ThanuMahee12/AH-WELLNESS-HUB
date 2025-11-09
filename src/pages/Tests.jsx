@@ -176,7 +176,7 @@ function Tests() {
       <PermissionGate resource="tests" action="delete">
         <Button
           size="sm"
-          onClick={() => handleDelete(item.id, 'Are you sure you want to delete this test?')}
+          onClick={() => handleDelete({ id: item.id, testName: item.name }, 'Are you sure you want to delete this test?')}
           style={{
             backgroundColor: 'transparent',
             border: '2px solid #0aa2c0',

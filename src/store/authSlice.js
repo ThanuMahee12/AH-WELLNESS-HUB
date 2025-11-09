@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { authService } from '../services/authService'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 const initialState = {
   user: null,
@@ -15,6 +16,15 @@ export const loginUser = createAsyncThunk(
   async ({ email, password }, { rejectWithValue }) => {
     const result = await authService.login(email, password)
     if (result.success) {
+      // Log login activity
+      await logActivity({
+        userId: result.user.uid,
+        username: result.user.username || result.user.email,
+        userRole: result.user.role,
+        activityType: ACTIVITY_TYPES.LOGIN,
+        description: createActivityDescription(ACTIVITY_TYPES.LOGIN),
+        metadata: { email: result.user.email }
+      })
       return result.user
     } else {
       return rejectWithValue(result.error)
@@ -36,7 +46,21 @@ export const registerUser = createAsyncThunk(
 
 export const logoutUser = createAsyncThunk(
   'auth/logout',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
+    const { user } = getState().auth
+
+    // Log logout activity before logging out
+    if (user) {
+      await logActivity({
+        userId: user.uid,
+        username: user.username || user.email,
+        userRole: user.role,
+        activityType: ACTIVITY_TYPES.LOGOUT,
+        description: createActivityDescription(ACTIVITY_TYPES.LOGOUT),
+        metadata: { email: user.email }
+      })
+    }
+
     const result = await authService.logout()
     if (result.success) {
       return null
