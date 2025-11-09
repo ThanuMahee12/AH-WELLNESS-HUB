@@ -29,15 +29,70 @@ function UserActivityTab() {
   const activitiesPerPage = 20
 
   const isSuperAdmin = currentUser?.role === 'superadmin'
+  const isMaintainer = currentUser?.role === 'maintainer'
+  const isEditorOrUser = currentUser?.role === 'editor' || currentUser?.role === 'user'
+
+  // Check if user has permission to view activity logs
+  const hasPermission = isSuperAdmin || isMaintainer || isEditorOrUser
 
   useEffect(() => {
-    loadActivityData()
-  }, [timeRange, currentPage])
+    if (hasPermission) {
+      loadActivityData()
+    }
+  }, [timeRange, currentPage, hasPermission])
 
   // Reset to page 1 when time range changes
   useEffect(() => {
     setCurrentPage(1)
   }, [timeRange])
+
+  // Filter activities based on role
+  const filterActivitiesByRole = (activities) => {
+    if (isSuperAdmin) {
+      // SuperAdmin can see all activities
+      return activities
+    } else if (isMaintainer) {
+      // Maintainer can see their own activities + editor and user activities
+      // Cannot see other maintainers or superadmin activities
+      return activities.filter(activity =>
+        activity.userId === currentUser.uid ||
+        (activity.userRole !== 'maintainer' && activity.userRole !== 'superadmin')
+      )
+    } else if (isEditorOrUser) {
+      // Editors and Users can only see their own activities
+      return activities.filter(activity => activity.userId === currentUser.uid)
+    }
+    return []
+  }
+
+  // Filter stats based on role
+  const filterStatsByRole = (statsData) => {
+    if (!statsData) return null
+
+    if (isSuperAdmin) {
+      return statsData
+    } else if (isMaintainer) {
+      // Filter out maintainers and superadmins from user stats
+      const filteredUserStats = statsData.userStats?.filter(user =>
+        user.userId === currentUser.uid ||
+        (user.userRole !== 'maintainer' && user.userRole !== 'superadmin')
+      ) || []
+
+      return {
+        ...statsData,
+        userStats: filteredUserStats
+      }
+    } else if (isEditorOrUser) {
+      // Only show their own stats
+      const ownStats = statsData.userStats?.filter(user => user.userId === currentUser.uid) || []
+
+      return {
+        ...statsData,
+        userStats: ownStats
+      }
+    }
+    return statsData
+  }
 
   const loadActivityData = async () => {
     setLoading(true)
@@ -45,18 +100,21 @@ function UserActivityTab() {
       // Get stats
       const statsResult = await getActivityStats(timeRange)
       if (statsResult.success) {
-        setStats(statsResult.data)
+        const filteredStats = filterStatsByRole(statsResult.data)
+        setStats(filteredStats)
       }
 
       // Get all activities for pagination
       const activitiesResult = await getUserActivities({ days: timeRange })
       if (activitiesResult.success) {
-        setTotalActivities(activitiesResult.data.length)
+        // Filter activities based on role
+        const filteredActivities = filterActivitiesByRole(activitiesResult.data)
+        setTotalActivities(filteredActivities.length)
 
         // Calculate pagination
         const startIndex = (currentPage - 1) * activitiesPerPage
         const endIndex = startIndex + activitiesPerPage
-        setRecentActivities(activitiesResult.data.slice(startIndex, endIndex))
+        setRecentActivities(filteredActivities.slice(startIndex, endIndex))
       }
     } catch (error) {
       console.error('Error loading activity data:', error)
@@ -213,10 +271,10 @@ function UserActivityTab() {
     })
   }
 
-  if (!isSuperAdmin) {
+  if (!hasPermission) {
     return (
       <Alert variant="warning">
-        You don't have permission to view user activity. This page is only accessible to SuperAdmins.
+        You don't have permission to view user activity.
       </Alert>
     )
   }
