@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert } from 'react-bootstrap'
+import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert, Pagination } from 'react-bootstrap'
 import { FaHistory, FaCalendarAlt } from 'react-icons/fa'
 import {
   LineChart,
   Line,
+  ScatterChart,
+  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ZAxis
 } from 'recharts'
 import { getActivityStats, getUserActivities } from '../../services/activityService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -21,12 +24,75 @@ function UserActivityTab() {
   const [timeRange, setTimeRange] = useState('all') // Default: All history
   const [stats, setStats] = useState(null)
   const [recentActivities, setRecentActivities] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalActivities, setTotalActivities] = useState(0)
+  const activitiesPerPage = 20
 
   const isSuperAdmin = currentUser?.role === 'superadmin'
+  const isMaintainer = currentUser?.role === 'maintainer'
+  const isEditorOrUser = currentUser?.role === 'editor' || currentUser?.role === 'user'
+
+  // Check if user has permission to view activity logs
+  const hasPermission = isSuperAdmin || isMaintainer || isEditorOrUser
 
   useEffect(() => {
-    loadActivityData()
+    if (hasPermission) {
+      loadActivityData()
+    }
+  }, [timeRange, currentPage, hasPermission])
+
+  // Reset to page 1 when time range changes
+  useEffect(() => {
+    setCurrentPage(1)
   }, [timeRange])
+
+  // Filter activities based on role
+  const filterActivitiesByRole = (activities) => {
+    if (isSuperAdmin) {
+      // SuperAdmin can see all activities
+      return activities
+    } else if (isMaintainer) {
+      // Maintainer can see their own activities + editor and user activities
+      // Cannot see other maintainers or superadmin activities
+      return activities.filter(activity =>
+        activity.userId === currentUser.uid ||
+        (activity.userRole !== 'maintainer' && activity.userRole !== 'superadmin')
+      )
+    } else if (isEditorOrUser) {
+      // Editors and Users can only see their own activities
+      return activities.filter(activity => activity.userId === currentUser.uid)
+    }
+    return []
+  }
+
+  // Filter stats based on role
+  const filterStatsByRole = (statsData) => {
+    if (!statsData) return null
+
+    if (isSuperAdmin) {
+      return statsData
+    } else if (isMaintainer) {
+      // Filter out maintainers and superadmins from user stats
+      const filteredUserStats = statsData.userStats?.filter(user =>
+        user.userId === currentUser.uid ||
+        (user.userRole !== 'maintainer' && user.userRole !== 'superadmin')
+      ) || []
+
+      return {
+        ...statsData,
+        userStats: filteredUserStats
+      }
+    } else if (isEditorOrUser) {
+      // Only show their own stats
+      const ownStats = statsData.userStats?.filter(user => user.userId === currentUser.uid) || []
+
+      return {
+        ...statsData,
+        userStats: ownStats
+      }
+    }
+    return statsData
+  }
 
   const loadActivityData = async () => {
     setLoading(true)
@@ -34,13 +100,21 @@ function UserActivityTab() {
       // Get stats
       const statsResult = await getActivityStats(timeRange)
       if (statsResult.success) {
-        setStats(statsResult.data)
+        const filteredStats = filterStatsByRole(statsResult.data)
+        setStats(filteredStats)
       }
 
-      // Get recent activities (limit to 20)
-      const activitiesResult = await getUserActivities({ days: timeRange, limit: 20 })
+      // Get all activities for pagination
+      const activitiesResult = await getUserActivities({ days: timeRange })
       if (activitiesResult.success) {
-        setRecentActivities(activitiesResult.data)
+        // Filter activities based on role
+        const filteredActivities = filterActivitiesByRole(activitiesResult.data)
+        setTotalActivities(filteredActivities.length)
+
+        // Calculate pagination
+        const startIndex = (currentPage - 1) * activitiesPerPage
+        const endIndex = startIndex + activitiesPerPage
+        setRecentActivities(filteredActivities.slice(startIndex, endIndex))
       }
     } catch (error) {
       console.error('Error loading activity data:', error)
@@ -49,8 +123,64 @@ function UserActivityTab() {
     }
   }
 
-  // Prepare chart data for Recharts
-  const prepareChartData = () => {
+  // Calculate total pages
+  const totalPages = Math.ceil(totalActivities / activitiesPerPage)
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber)
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  }
+
+  // Prepare scatter plot data - individual activities as separate points with 30-min precision
+  const prepareScatterData = () => {
+    if (!recentActivities || recentActivities.length === 0) {
+      return []
+    }
+
+    // Create scatter plot data grouped by user
+    const userScatterData = {}
+
+    stats?.userStats?.forEach(userStat => {
+      userScatterData[userStat.username] = []
+    })
+
+    recentActivities.forEach(activity => {
+      if (!activity.timestamp) return
+
+      const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
+      const dateKey = date.toISOString().split('T')[0]
+      const hour = date.getHours()
+      const minute = date.getMinutes()
+
+      // Convert to decimal time (e.g., 14:30 = 14.5)
+      const timeValue = hour + (minute / 60)
+
+      const d = new Date(dateKey)
+      const displayDate = `${d.getMonth() + 1}/${d.getDate()}`
+
+      // Find the user's data array
+      const username = activity.username || 'Unknown'
+      if (!userScatterData[username]) {
+        userScatterData[username] = []
+      }
+
+      // Add each activity as individual point
+      userScatterData[username].push({
+        date: displayDate,
+        fullDate: dateKey,
+        time: timeValue,
+        hour: hour,
+        minute: minute,
+        activityType: activity.activityType,
+        description: activity.description
+      })
+    })
+
+    return userScatterData
+  }
+
+  // Prepare line chart data - activity counts per day
+  const prepareLineChartData = () => {
     if (!stats || !stats.dailyStats) {
       return []
     }
@@ -70,17 +200,20 @@ function UserActivityTab() {
       dates = dateRange
     }
 
-    // Create chart data
+    // Create chart data with activity counts
     const chartData = dates.map(date => {
       const d = new Date(date)
       const dataPoint = {
         date: `${d.getMonth() + 1}/${d.getDate()}`,
-        fullDate: date
+        fullDate: date,
+        total: 0
       }
 
       // Add each user's activity count for this date
       stats.userStats.forEach(userStat => {
-        dataPoint[userStat.username] = stats.dailyStats[date]?.[userStat.userId] || 0
+        const count = stats.dailyStats[date]?.[userStat.userId] || 0
+        dataPoint[userStat.username] = count
+        dataPoint.total += count
       })
 
       return dataPoint
@@ -89,7 +222,8 @@ function UserActivityTab() {
     return chartData
   }
 
-  const chartData = prepareChartData()
+  const scatterData = prepareScatterData()
+  const lineChartData = prepareLineChartData()
 
   // Color palette for different users
   const colorPalette = [
@@ -137,10 +271,10 @@ function UserActivityTab() {
     })
   }
 
-  if (!isSuperAdmin) {
+  if (!hasPermission) {
     return (
       <Alert variant="warning">
-        You don't have permission to view user activity. This page is only accessible to SuperAdmins.
+        You don't have permission to view user activity.
       </Alert>
     )
   }
@@ -229,20 +363,104 @@ function UserActivityTab() {
         </Col>
       </Row>
 
-      {/* Activity Line Chart */}
+      {/* Scatter Plot - Activity Time Pattern */}
       <Row className="mb-4">
         <Col>
           <Card className="shadow-sm">
             <Card.Header style={{ backgroundColor: '#f8f9fa' }}>
               <h5 className="mb-0">
-                User Activity {timeRange === 'all' ? '- All History' : `Over Past ${timeRange} Days`}
+                Activity Time Pattern {timeRange === 'all' ? '- All History' : `Over Past ${timeRange} Days`}
               </h5>
+              <small className="text-muted">Shows when users were active throughout the day</small>
             </Card.Header>
             <Card.Body>
               <div style={{ height: '400px' }}>
-                {chartData.length > 0 && stats?.userStats?.length > 0 ? (
+                {Object.keys(scatterData).length > 0 && stats?.userStats?.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        type="category"
+                        dataKey="date"
+                        name="Date"
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        allowDuplicatedCategory={false}
+                      />
+                      <YAxis
+                        type="number"
+                        dataKey="time"
+                        name="Time"
+                        domain={[0, 24]}
+                        ticks={[
+                          0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5,
+                          6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5,
+                          12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5,
+                          18, 18.5, 19, 19.5, 20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24
+                        ]}
+                        tickFormatter={(value) => {
+                          const hours = Math.floor(value)
+                          const minutes = (value % 1) * 60
+                          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+                        }}
+                        label={{ value: 'Time (24-hour)', angle: -90, position: 'insideLeft' }}
+                      />
+                      <ZAxis range={[50, 50]} />
+                      <Tooltip
+                        cursor={{ strokeDasharray: '3 3' }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload
+                            return (
+                              <div style={{ backgroundColor: '#fff', border: '1px solid #ccc', padding: '10px', borderRadius: '5px' }}>
+                                <p style={{ margin: 0 }}><strong>Date:</strong> {data.date}</p>
+                                <p style={{ margin: 0 }}><strong>Time:</strong> {`${data.hour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')}`}</p>
+                                <p style={{ margin: 0 }}><strong>User:</strong> {payload[0].name}</p>
+                                <p style={{ margin: 0 }}><strong>Action:</strong> {data.activityType?.replace(/_/g, ' ')}</p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      {stats.userStats.map((userStat, index) => (
+                        scatterData[userStat.username]?.length > 0 && (
+                          <Scatter
+                            key={userStat.userId}
+                            name={userStat.username}
+                            data={scatterData[userStat.username]}
+                            fill={colorPalette[index % colorPalette.length]}
+                          />
+                        )
+                      ))}
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Alert variant="info">No activity data available for the selected time range.</Alert>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Line Chart - Activity Count Over Time */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="shadow-sm">
+            <Card.Header style={{ backgroundColor: '#f8f9fa' }}>
+              <h5 className="mb-0">
+                Activity Count Trend {timeRange === 'all' ? '- All History' : `Over Past ${timeRange} Days`}
+              </h5>
+              <small className="text-muted">Shows the number of activities per day for each user</small>
+            </Card.Header>
+            <Card.Body>
+              <div style={{ height: '400px' }}>
+                {lineChartData.length > 0 && stats?.userStats?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lineChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
                         dataKey="date"
@@ -257,6 +475,7 @@ function UserActivityTab() {
                       />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
+                        labelFormatter={(label) => `Date: ${label}`}
                       />
                       <Legend wrapperStyle={{ paddingTop: '20px' }} />
                       {stats.userStats.map((userStat, index) => (
@@ -329,90 +548,90 @@ function UserActivityTab() {
         </Col>
       </Row>
 
-      {/* Recent Activity Feed - Prominent */}
+      {/* Activity Logs - Minimal */}
       <Row>
         <Col>
-          <Card className="shadow-sm" style={{ border: '2px solid #0891B2' }}>
-            <Card.Header style={{ backgroundColor: '#0891B2', color: 'white' }}>
-              <h5 className="mb-0">
-                <FaHistory className="me-2" />
-                Recent Activity Logs (Last 20)
-              </h5>
+          <Card className="shadow-sm">
+            <Card.Header className="py-2 px-3">
+              <div className="d-flex justify-content-between align-items-center">
+                <small className="fw-bold text-muted">ACTIVITY LOGS ({totalActivities})</small>
+              </div>
             </Card.Header>
-            <Card.Body style={{ padding: 0 }}>
+            <Card.Body className="p-0">
               {recentActivities.length === 0 ? (
-                <Alert variant="info" className="m-3 text-center">
-                  No recent activities found.
-                </Alert>
+                <div className="text-center text-muted py-3">
+                  <small>No activities found</small>
+                </div>
               ) : (
-                <div style={{
-                  maxHeight: '600px',
-                  overflowY: 'auto',
-                  backgroundColor: '#f8f9fa'
-                }}>
-                  {recentActivities.map((activity, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        padding: '15px 20px',
-                        borderBottom: '1px solid #dee2e6',
-                        backgroundColor: index % 2 === 0 ? 'white' : '#f8f9fa',
-                        transition: 'background-color 0.2s',
-                        cursor: 'default'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e3f2fd'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f8f9fa'}
-                    >
-                      <div className="d-flex align-items-start">
-                        <div style={{
-                          fontSize: '1.5rem',
-                          marginRight: '15px',
-                          minWidth: '30px',
-                          textAlign: 'center'
-                        }}>
-                          {getActivityIcon(activity.activityType)}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div className="d-flex justify-content-between align-items-start mb-1">
-                            <div>
-                              <strong style={{ fontSize: '1rem', color: '#0891B2' }}>
-                                {activity.username}
-                              </strong>
-                              <Badge
-                                className="ms-2"
-                                style={{
-                                  backgroundColor: '#06B6D4',
-                                  color: 'white',
-                                  fontSize: '0.75rem'
-                                }}
-                              >
-                                {activity.userRole}
-                              </Badge>
-                            </div>
-                            <span className="text-muted" style={{ fontSize: '0.875rem' }}>
-                              {formatTimestamp(activity.timestamp)}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.95rem', marginTop: '5px' }}>
-                            <Badge
-                              style={{
-                                backgroundColor: '#e3f2fd',
-                                color: '#0891B2',
-                                fontWeight: 'normal',
-                                marginRight: '10px'
-                              }}
-                            >
-                              {activity.activityType.replace(/_/g, ' ')}
-                            </Badge>
-                            <span>{activity.description}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                  <Table size="sm" hover className="mb-0">
+                    <tbody>
+                      {recentActivities.map((activity, index) => (
+                        <tr key={index} style={{ fontSize: '0.85rem' }}>
+                          <td style={{ width: '140px', padding: '6px 10px' }} className="text-muted">
+                            {formatTimestamp(activity.timestamp)}
+                          </td>
+                          <td style={{ width: '100px', padding: '6px 10px' }}>
+                            <strong>{activity.username}</strong>
+                          </td>
+                          <td style={{ padding: '6px 10px' }}>
+                            {activity.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
                 </div>
               )}
             </Card.Body>
+            {totalPages > 1 && (
+              <Card.Footer className="py-2 px-3">
+                <div className="d-flex justify-content-between align-items-center">
+                  <small className="text-muted">
+                    {((currentPage - 1) * activitiesPerPage) + 1}-{Math.min(currentPage * activitiesPerPage, totalActivities)} of {totalActivities}
+                  </small>
+                  <Pagination size="sm" className="mb-0">
+                    <Pagination.First
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
+                    />
+                    <Pagination.Prev
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    />
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        return page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 2 && page <= currentPage + 2)
+                      })
+                      .map((page, index, array) => {
+                        const prevPage = array[index - 1]
+                        const showEllipsis = prevPage && page - prevPage > 1
+                        return (
+                          <span key={page}>
+                            {showEllipsis && <Pagination.Ellipsis disabled />}
+                            <Pagination.Item
+                              active={page === currentPage}
+                              onClick={() => handlePageChange(page)}
+                            >
+                              {page}
+                            </Pagination.Item>
+                          </span>
+                        )
+                      })}
+                    <Pagination.Next
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    />
+                    <Pagination.Last
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                    />
+                  </Pagination>
+                </div>
+              </Card.Footer>
+            )}
           </Card>
         </Col>
       </Row>

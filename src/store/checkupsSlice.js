@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
 import { generateCheckupSerialNumber } from '../utils/serialNumberGenerator'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 const COLLECTION = 'checkups'
 
@@ -31,6 +32,9 @@ export const fetchCheckups = createAsyncThunk(
 export const addCheckup = createAsyncThunk(
   'checkups/add',
   async (checkupData, { rejectWithValue, getState }) => {
+    const state = getState()
+    const user = state.auth.user
+
     // Generate unique serial number
     const serialNumber = generateCheckupSerialNumber()
 
@@ -49,11 +53,33 @@ export const addCheckup = createAsyncThunk(
       serialNumber, // Add 12-digit serial number
       billNo, // Add bill number (YYYYMMDDHHMMSS format)
       timestamp: new Date().toISOString(),
-      createdBy: getState().auth.user?.id || 'system',
-      createdByName: getState().auth.user?.username || 'System',
+      createdBy: user?.uid || 'system',
+      createdByName: user?.username || 'System',
     }
     const result = await firestoreService.create(COLLECTION, dataWithMetadata)
     if (result.success) {
+      // Log activity
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.CHECKUP_CREATE,
+          description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_CREATE, {
+            patientName: checkupData.patientName,
+            billNo: billNo
+          }),
+          metadata: {
+            checkupId: result.id,
+            billNo: billNo,
+            patientId: checkupData.patientId,
+            patientName: checkupData.patientName,
+            total: checkupData.total,
+            testsCount: checkupData.tests?.length || 0,
+            medicinesCount: checkupData.medicines?.length || 0
+          }
+        })
+      }
       return { id: result.id, ...dataWithMetadata }
     } else {
       return rejectWithValue(result.error)
@@ -63,9 +89,32 @@ export const addCheckup = createAsyncThunk(
 
 export const updateCheckup = createAsyncThunk(
   'checkups/update',
-  async ({ id, ...checkupData }, { rejectWithValue }) => {
+  async ({ id, ...checkupData }, { rejectWithValue, getState }) => {
+    const state = getState()
+    const user = state.auth.user
+
     const result = await firestoreService.update(COLLECTION, id, checkupData)
     if (result.success) {
+      // Log activity
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.CHECKUP_UPDATE,
+          description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_UPDATE, {
+            billNo: checkupData.billNo,
+            checkupId: id
+          }),
+          metadata: {
+            checkupId: id,
+            billNo: checkupData.billNo,
+            patientId: checkupData.patientId,
+            patientName: checkupData.patientName,
+            updatedFields: Object.keys(checkupData)
+          }
+        })
+      }
       return { id, ...checkupData }
     } else {
       return rejectWithValue(result.error)
@@ -75,9 +124,32 @@ export const updateCheckup = createAsyncThunk(
 
 export const deleteCheckup = createAsyncThunk(
   'checkups/delete',
-  async (id, { rejectWithValue }) => {
+  async (id, { rejectWithValue, getState }) => {
+    const state = getState()
+    const user = state.auth.user
+    const checkup = state.checkups.entities[id]
+
     const result = await firestoreService.delete(COLLECTION, id)
     if (result.success) {
+      // Log activity
+      if (user && checkup) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.CHECKUP_DELETE,
+          description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_DELETE, {
+            billNo: checkup.billNo,
+            checkupId: id
+          }),
+          metadata: {
+            checkupId: id,
+            billNo: checkup.billNo,
+            patientId: checkup.patientId,
+            patientName: checkup.patientName
+          }
+        })
+      }
       return id
     } else {
       return rejectWithValue(result.error)

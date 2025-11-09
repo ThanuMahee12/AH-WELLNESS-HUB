@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { notifyRoleRequestSubmitted, notifyRoleRequestApproved, notifyRoleRequestRejected } from '../services/notificationService'
 
 const userChangeRequestsAdapter = createEntityAdapter()
 
@@ -26,6 +27,20 @@ export const fetchUserChangeRequests = createAsyncThunk(
   }
 )
 
+// Helper function to get superadmin ID
+const getSuperadminId = async () => {
+  try {
+    const usersSnapshot = await getDocs(query(collection(db, 'users'), where('role', '==', 'superadmin')))
+    if (!usersSnapshot.empty) {
+      return usersSnapshot.docs[0].id
+    }
+    return null
+  } catch (error) {
+    console.error('Error getting superadmin:', error)
+    return null
+  }
+}
+
 // Create a change request (for maintainer)
 export const createUserChangeRequest = createAsyncThunk(
   'userChangeRequests/create',
@@ -36,7 +51,16 @@ export const createUserChangeRequest = createAsyncThunk(
         status: 'pending',
         createdAt: serverTimestamp(),
       })
-      return { id: docRef.id, ...requestData, status: 'pending' }
+
+      const newRequest = { id: docRef.id, ...requestData, status: 'pending' }
+
+      // Send notification to superadmin
+      const superadminId = await getSuperadminId()
+      if (superadminId) {
+        await notifyRoleRequestSubmitted(newRequest, superadminId)
+      }
+
+      return newRequest
     } catch (error) {
       return rejectWithValue(error.message)
     }

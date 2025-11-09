@@ -9,6 +9,7 @@ import { selectAllPatients } from '../store/patientsSlice'
 import { selectAllTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
 import { RichTextEditor } from '../components/ui'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import asiriLogo from '../assets/asiri-logo.png'
 import jsPDF from 'jspdf'
@@ -24,6 +25,7 @@ function CheckupDetail() {
   const patients = useSelector(selectAllPatients)
   const tests = useSelector(selectAllTests)
   const medicines = useSelector(selectAllMedicines)
+  const user = useSelector(state => state.auth.user)
 
   const [checkup, setCheckup] = useState(null)
   const [patient, setPatient] = useState(null)
@@ -260,6 +262,30 @@ function CheckupDetail() {
       pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
       pdf.save(`Prescription_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
 
+      // Log PDF generation activity
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.CHECKUP_PDF_PRESCRIPTION,
+          description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_PDF_PRESCRIPTION, {
+            billNo: checkup.billNo,
+            patientName: patient?.name
+          }),
+          metadata: {
+            checkupId: checkup.id,
+            billNo: checkup.billNo,
+            patientId: checkup.patientId,
+            patientName: patient?.name,
+            pdfType: 'prescription',
+            medicinesCount: prescriptionMedicines.length,
+            format: prescriptionPdfSettings.format,
+            orientation: prescriptionPdfSettings.orientation
+          }
+        })
+      }
+
     } catch (error) {
       console.error('Error generating PDF:', error)
       alert(`Failed to generate PDF.\n\nError: ${error.message}\n\nPlease try:\n1. Refreshing the page\n2. Using the Print button instead\n3. Taking a screenshot of the prescription`)
@@ -405,6 +431,29 @@ function CheckupDetail() {
       // Add image to PDF
       pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
       pdf.save(`Bill_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
+
+      // Log PDF generation activity
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.CHECKUP_PDF_INVOICE,
+          description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_PDF_INVOICE, {
+            billNo: checkup.billNo,
+            patientName: patient?.name
+          }),
+          metadata: {
+            checkupId: checkup.id,
+            billNo: checkup.billNo,
+            patientId: checkup.patientId,
+            patientName: patient?.name,
+            pdfType: 'invoice',
+            format: pdfSettings.format,
+            orientation: pdfSettings.orientation
+          }
+        })
+      }
 
     } catch (error) {
       console.error('Error generating PDF:', error)
