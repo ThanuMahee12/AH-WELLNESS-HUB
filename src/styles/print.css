@@ -133,4 +133,24 @@
   .prescription-preview table {
     page-break-inside: avoid !important;
   }
+
+  /* Footer adjustments for print */
+  .bill-content .footer-section .text-center .d-flex,
+  .prescription-preview .footer-section .text-center .d-flex {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+  }
+
+  .bill-content .footer-section img,
+  .prescription-preview .footer-section img {
+    height: 12px !important;
+    margin-top: 0.25rem !important;
+  }
+
+  .bill-content .footer-section .text-center p,
+  .prescription-preview .footer-section .text-center p {
+    text-align: center !important;
+    margin-bottom: 0.25rem !important;
+  }
 }
