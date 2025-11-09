@@ -171,32 +171,69 @@ function CheckupDetail() {
   }
 
   const handleGeneratePrescriptionPDF = async () => {
-    if (!prescriptionRef.current) return
+    if (!prescriptionRef.current) {
+      alert('Prescription content not found. Please refresh the page and try again.')
+      return
+    }
 
     setIsGenerating(true)
 
     try {
-      const prescriptionClone = prescriptionRef.current.cloneNode(true)
+      // Ensure the element is visible and has content
+      const element = prescriptionRef.current
+      if (!element.offsetParent && element.offsetHeight === 0) {
+        throw new Error('Prescription element is not visible')
+      }
+
+      const prescriptionClone = element.cloneNode(true)
       prescriptionClone.style.position = 'absolute'
       prescriptionClone.style.left = '-9999px'
       prescriptionClone.style.top = '0'
       prescriptionClone.style.width = '210mm'
       prescriptionClone.style.padding = '25px'
       prescriptionClone.style.backgroundColor = '#ffffff'
+      prescriptionClone.style.display = 'block'
+      prescriptionClone.style.visibility = 'visible'
       document.body.appendChild(prescriptionClone)
+
+      // Wait for images to load
+      const images = prescriptionClone.getElementsByTagName('img')
+      await Promise.all(
+        Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve()
+          return new Promise((resolve) => {
+            img.onload = resolve
+            img.onerror = () => {
+              console.warn('Image failed to load:', img.src)
+              resolve()
+            }
+            setTimeout(resolve, 3000)
+          })
+        })
+      )
 
       const canvas = await html2canvas(prescriptionClone, {
         scale: 2,
         useCORS: true,
-        logging: false,
+        logging: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         windowWidth: 794,
+        width: prescriptionClone.scrollWidth,
+        height: prescriptionClone.scrollHeight,
       })
 
       document.body.removeChild(prescriptionClone)
 
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Failed to generate canvas from prescription')
+      }
+
       const imgData = canvas.toDataURL('image/png')
+
+      if (!imgData || imgData === 'data:,') {
+        throw new Error('Failed to convert canvas to image')
+      }
 
       const pdf = new jsPDF({
         orientation: prescriptionPdfSettings.orientation,
@@ -209,27 +246,23 @@ function CheckupDetail() {
       const imgWidth = canvas.width
       const imgHeight = canvas.height
 
-      // Calculate dimensions to fit content on ONE page with margins
       const marginTop = 10
       const marginBottom = 10
       const availableHeight = pdfHeight - marginTop - marginBottom
-      const availableWidth = pdfWidth - 10 // 5mm margin on each side
+      const availableWidth = pdfWidth - 10
 
-      // Scale to fit within page bounds (prefer fitting height to prevent page overflow)
       const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
       const imgScaledWidth = imgWidth * ratio
       const imgScaledHeight = imgHeight * ratio
 
-      // Center the content horizontally
       const marginX = (pdfWidth - imgScaledWidth) / 2
 
-      // Add image to PDF - ensure it fits on one page
       pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
       pdf.save(`Prescription_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
 
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Error: ' + error.message)
+      alert(`Failed to generate PDF.\n\nError: ${error.message}\n\nPlease try:\n1. Refreshing the page\n2. Using the Print button instead\n3. Taking a screenshot of the prescription`)
     } finally {
       setIsGenerating(false)
     }
@@ -276,35 +309,72 @@ function CheckupDetail() {
   }
 
   const handleGeneratePDF = async () => {
-    if (!billRef.current) return
+    if (!billRef.current) {
+      alert('Invoice content not found. Please refresh the page and try again.')
+      return
+    }
 
     setIsGenerating(true)
 
     try {
+      // Ensure the element is visible and has content
+      const element = billRef.current
+      if (!element.offsetParent && element.offsetHeight === 0) {
+        throw new Error('Invoice element is not visible')
+      }
+
       // Clone the bill content to avoid modifying the original
-      const billClone = billRef.current.cloneNode(true)
+      const billClone = element.cloneNode(true)
       billClone.style.position = 'absolute'
       billClone.style.left = '-9999px'
       billClone.style.top = '0'
       billClone.style.width = '210mm' // A4 width
-      billClone.style.padding = '25px' // Increased padding for better PDF layout
+      billClone.style.padding = '25px'
       billClone.style.backgroundColor = '#ffffff'
+      billClone.style.display = 'block'
+      billClone.style.visibility = 'visible'
       document.body.appendChild(billClone)
+
+      // Wait for images to load
+      const images = billClone.getElementsByTagName('img')
+      await Promise.all(
+        Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve()
+          return new Promise((resolve, reject) => {
+            img.onload = resolve
+            img.onerror = () => {
+              console.warn('Image failed to load:', img.src)
+              resolve() // Continue even if image fails
+            }
+            setTimeout(resolve, 3000) // Timeout after 3 seconds
+          })
+        })
+      )
 
       // Generate canvas from the clone
       const canvas = await html2canvas(billClone, {
         scale: 2,
         useCORS: true,
-        logging: false,
+        logging: true, // Enable logging for debugging
         allowTaint: true,
         backgroundColor: '#ffffff',
         windowWidth: 794, // A4 width in pixels at 96 DPI
+        width: billClone.scrollWidth,
+        height: billClone.scrollHeight,
       })
 
       // Remove the clone
       document.body.removeChild(billClone)
 
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Failed to generate canvas from invoice')
+      }
+
       const imgData = canvas.toDataURL('image/png')
+
+      if (!imgData || imgData === 'data:,') {
+        throw new Error('Failed to convert canvas to image')
+      }
 
       // Create PDF with selected dimensions
       const pdf = new jsPDF({
@@ -324,7 +394,7 @@ function CheckupDetail() {
       const availableHeight = pdfHeight - marginTop - marginBottom
       const availableWidth = pdfWidth - 10 // 5mm margin on each side
 
-      // Scale to fit within page bounds (prefer fitting height to prevent page overflow)
+      // Scale to fit within page bounds
       const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
       const imgScaledWidth = imgWidth * ratio
       const imgScaledHeight = imgHeight * ratio
@@ -332,13 +402,13 @@ function CheckupDetail() {
       // Center the content horizontally
       const marginX = (pdfWidth - imgScaledWidth) / 2
 
-      // Add image to PDF - ensure it fits on one page
+      // Add image to PDF
       pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
       pdf.save(`Bill_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
 
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Error: ' + error.message)
+      alert(`Failed to generate PDF.\n\nError: ${error.message}\n\nPlease try:\n1. Refreshing the page\n2. Using the Print button instead\n3. Taking a screenshot of the invoice`)
     } finally {
       setIsGenerating(false)
     }
