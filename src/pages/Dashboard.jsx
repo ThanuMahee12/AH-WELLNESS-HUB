@@ -23,6 +23,8 @@ function Dashboard() {
   const { loading: usersLoading } = useSelector(state => state.users)
 
   const [dateRange, setDateRange] = useState(7) // Default: Past 7 days
+  const [performanceRange, setPerformanceRange] = useState('today') // today, yesterday, week, month, year
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()) // Default: Current year
 
   useEffect(() => {
     dispatch(fetchPatients())
@@ -98,7 +100,8 @@ function Dashboard() {
 
   const getTestDistribution = () => {
     const testCounts = {}
-    filteredCheckups.forEach(checkup => {
+    // Use all checkups, not filtered
+    checkups.forEach(checkup => {
       checkup.tests?.forEach(testItem => {
         const test = tests.find(t => t.id === testItem.testId)
         if (test) {
@@ -113,10 +116,9 @@ function Dashboard() {
     })).slice(0, 5)
   }
 
-  const getMonthlyRevenue = () => {
+  const getMonthlyRevenue = (year) => {
     // Create array for all 12 months
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const currentYear = new Date().getFullYear()
 
     // Initialize all months with 0 revenue
     const monthlyData = monthNames.map(month => ({
@@ -124,10 +126,10 @@ function Dashboard() {
       revenue: 0
     }))
 
-    // Fill in actual revenue data
-    filteredCheckups.forEach(checkup => {
+    // Fill in actual revenue data - Use all checkups for the selected year
+    checkups.forEach(checkup => {
       const date = new Date(checkup.timestamp)
-      if (date.getFullYear() === currentYear) {
+      if (date.getFullYear() === year) {
         const monthIndex = date.getMonth()
         monthlyData[monthIndex].revenue += checkup.total || 0
       }
@@ -139,9 +141,116 @@ function Dashboard() {
     }))
   }
 
+  // Generate year options from 2025 to current year
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear()
+    const startYear = 2025
+    const years = []
+    for (let year = startYear; year <= currentYear; year++) {
+      years.push(year)
+    }
+    return years
+  }
+
   const chartData = getDateRangeData()
   const testDistribution = getTestDistribution()
-  const monthlyRevenue = getMonthlyRevenue()
+  const monthlyRevenue = getMonthlyRevenue(selectedYear)
+  const yearOptions = getYearOptions()
+
+  // Helper function to get date range for performance stats
+  const getPerformanceCheckups = (range) => {
+    const now = new Date()
+    let startDate = new Date()
+    let endDate = new Date()
+
+    switch (range) {
+      case 'today':
+        return checkups.filter(c => new Date(c.timestamp).toDateString() === now.toDateString())
+
+      case 'yesterday':
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
+        return checkups.filter(c => new Date(c.timestamp).toDateString() === yesterday.toDateString())
+
+      case 'week':
+        startDate.setDate(now.getDate() - now.getDay()) // Start of week (Sunday)
+        startDate.setHours(0, 0, 0, 0)
+        return checkups.filter(c => {
+          const checkupDate = new Date(c.timestamp)
+          return checkupDate >= startDate && checkupDate <= now
+        })
+
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        return checkups.filter(c => {
+          const checkupDate = new Date(c.timestamp)
+          return checkupDate >= startDate && checkupDate <= now
+        })
+
+      case 'year':
+        startDate = new Date(now.getFullYear(), 0, 1)
+        return checkups.filter(c => {
+          const checkupDate = new Date(c.timestamp)
+          return checkupDate >= startDate && checkupDate <= now
+        })
+
+      default:
+        return []
+    }
+  }
+
+  // Get comparison period checkups
+  const getComparisonCheckups = (range) => {
+    const now = new Date()
+
+    switch (range) {
+      case 'today':
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
+        return checkups.filter(c => new Date(c.timestamp).toDateString() === yesterday.toDateString())
+
+      case 'yesterday':
+        const dayBefore = new Date()
+        dayBefore.setDate(dayBefore.getDate() - 2)
+        return checkups.filter(c => new Date(c.timestamp).toDateString() === dayBefore.toDateString())
+
+      case 'week':
+        const lastWeekStart = new Date()
+        lastWeekStart.setDate(now.getDate() - now.getDay() - 7)
+        lastWeekStart.setHours(0, 0, 0, 0)
+        const lastWeekEnd = new Date()
+        lastWeekEnd.setDate(now.getDate() - now.getDay() - 1)
+        lastWeekEnd.setHours(23, 59, 59, 999)
+        return checkups.filter(c => {
+          const checkupDate = new Date(c.timestamp)
+          return checkupDate >= lastWeekStart && checkupDate <= lastWeekEnd
+        })
+
+      case 'month':
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+        return checkups.filter(c => {
+          const checkupDate = new Date(c.timestamp)
+          return checkupDate >= lastMonth && checkupDate <= lastMonthEnd
+        })
+
+      case 'year':
+        const lastYear = new Date(now.getFullYear() - 1, 0, 1)
+        const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31)
+        return checkups.filter(c => {
+          const checkupDate = new Date(c.timestamp)
+          return checkupDate >= lastYear && checkupDate <= lastYearEnd
+        })
+
+      default:
+        return []
+    }
+  }
+
+  const performanceCheckups = getPerformanceCheckups(performanceRange)
+  const comparisonCheckups = getComparisonCheckups(performanceRange)
+  const performanceRevenue = performanceCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
+  const performanceCommission = performanceCheckups.reduce((sum, c) => sum + calculateCommission(c), 0)
 
   const COLORS = ['#0891B2', '#06B6D4', '#22D3EE', '#F59E0B', '#14B8A6']
 
@@ -150,12 +259,19 @@ function Dashboard() {
     return (
       <Card className="h-100 shadow-sm">
         <Card.Body className="d-flex align-items-center">
-          <div className={`rounded-circle p-3 ${bgColor} me-3`}>
+          <div className={`rounded-circle p-3 ${bgColor} me-3 flex-shrink-0`}>
             <IconComponent className={`fs-2 ${color}`} />
-        </div>
-        <div>
-          <h6 className="text-muted mb-1">{title}</h6>
-          <h3 className="mb-0">{value}</h3>
+          </div>
+          <div className="flex-grow-1 overflow-hidden">
+            <h6 className="text-muted mb-1 text-nowrap text-truncate">{title}</h6>
+            <h3 className="mb-0 text-nowrap" style={{
+              fontSize: 'clamp(0.9rem, 2vw, 1.5rem)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {value}
+            </h3>
           </div>
         </Card.Body>
       </Card>
@@ -216,8 +332,8 @@ function Dashboard() {
             icon={FaRupeeSign}
             title="Total Commission"
             value={`Rs. ${totalCommission.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            color="text-success"
-            bgColor="bg-success bg-opacity-10"
+            color="text-primary"
+            bgColor="bg-primary bg-opacity-10"
           />
         </Col>
       </Row>
@@ -246,55 +362,63 @@ function Dashboard() {
                   <FaChartLine className="me-2" />
                   Checkups & Revenue Trend
                 </h5>
-                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-                  <ButtonGroup size="sm">
+                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 w-100 w-lg-auto">
+                  <ButtonGroup size="sm" className="w-100 w-sm-auto">
                     <Button
                       variant={dateRange === 7 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(7)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 7 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 7 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 7 ? '600' : 'normal'
+                        fontWeight: dateRange === 7 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      7 Days
+                      7d
                     </Button>
                     <Button
                       variant={dateRange === 30 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(30)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 30 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 30 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 30 ? '600' : 'normal'
+                        fontWeight: dateRange === 30 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      30 Days
+                      30d
                     </Button>
                     <Button
                       variant={dateRange === 60 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(60)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 60 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 60 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 60 ? '600' : 'normal'
+                        fontWeight: dateRange === 60 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      60 Days
+                      60d
                     </Button>
                     <Button
                       variant={dateRange === 90 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(90)}
+                      className="flex-grow-1 flex-sm-grow-0"
                       style={{
                         backgroundColor: dateRange === 90 ? 'white' : 'transparent',
                         borderColor: 'white',
                         color: dateRange === 90 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 90 ? '600' : 'normal'
+                        fontWeight: dateRange === 90 ? '600' : 'normal',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
                       }}
                     >
-                      90 Days
+                      90d
                     </Button>
                   </ButtonGroup>
                 </div>
@@ -349,7 +473,10 @@ function Dashboard() {
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaFlask className="me-2" />Popular Tests</h5>
+              <h5 className="mb-0">
+                <FaFlask className="me-2" />
+                Popular Tests
+              </h5>
             </Card.Header>
             <Card.Body>
               {testDistribution.length === 0 ? (
@@ -358,15 +485,37 @@ function Dashboard() {
                   <p className="text-muted">No tests performed yet</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
+                <ResponsiveContainer width="100%" height={320}>
+                  <PieChart margin={{ top: 10, right: window.innerWidth < 576 ? 10 : 80, bottom: 10, left: window.innerWidth < 576 ? 10 : 80 }}>
                     <Pie
                       data={testDistribution}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
+                      labelLine={{
+                        stroke: '#666',
+                        strokeWidth: 1,
+                        length: window.innerWidth < 576 ? 10 : 20
+                      }}
+                      label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
+                        const RADIAN = Math.PI / 180;
+                        const isMobile = window.innerWidth < 576;
+                        const radius = outerRadius + (isMobile ? 20 : 35);
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            fill="#333"
+                            textAnchor={x > cx ? 'start' : 'end'}
+                            dominantBaseline="central"
+                            style={{ fontSize: isMobile ? '10px' : '12px', fontWeight: '500' }}
+                          >
+                            {`${name} (${(percent * 100).toFixed(0)}%)`}
+                          </text>
+                        );
+                      }}
+                      outerRadius={70}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -388,10 +537,28 @@ function Dashboard() {
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0">
-                <FaRupeeSign className="me-2" />
-                Monthly Revenue <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>(Filtered)</span>
-              </h5>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <FaRupeeSign className="me-2" />
+                  Monthly Revenue
+                </h5>
+                <select
+                  className="form-select form-select-sm"
+                  style={{
+                    width: 'auto',
+                    backgroundColor: 'white',
+                    color: '#0891B2',
+                    fontWeight: '600',
+                    border: 'none'
+                  }}
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                >
+                  {yearOptions.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
             </Card.Header>
             <Card.Body>
               {monthlyRevenue.length === 0 ? (
@@ -416,43 +583,161 @@ function Dashboard() {
         </Col>
 
         <Col xs={12} lg={4}>
-          <Card className="h-100 shadow-sm">
+          <Card className="h-100 shadow-sm border-0">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0"><FaCalendarAlt className="me-2" />Quick Stats</h5>
+              <div className="d-flex flex-column gap-2">
+                <h5 className="mb-0"><FaCalendarAlt className="me-2" />Performance Stats</h5>
+                <ButtonGroup size="sm">
+                  <Button
+                    variant={performanceRange === 'today' ? 'light' : 'outline-light'}
+                    onClick={() => setPerformanceRange('today')}
+                    style={{
+                      backgroundColor: performanceRange === 'today' ? 'white' : 'transparent',
+                      borderColor: 'white',
+                      color: performanceRange === 'today' ? '#0891B2' : 'white',
+                      fontWeight: performanceRange === 'today' ? '600' : 'normal',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant={performanceRange === 'yesterday' ? 'light' : 'outline-light'}
+                    onClick={() => setPerformanceRange('yesterday')}
+                    style={{
+                      backgroundColor: performanceRange === 'yesterday' ? 'white' : 'transparent',
+                      borderColor: 'white',
+                      color: performanceRange === 'yesterday' ? '#0891B2' : 'white',
+                      fontWeight: performanceRange === 'yesterday' ? '600' : 'normal',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    Yesterday
+                  </Button>
+                  <Button
+                    variant={performanceRange === 'week' ? 'light' : 'outline-light'}
+                    onClick={() => setPerformanceRange('week')}
+                    style={{
+                      backgroundColor: performanceRange === 'week' ? 'white' : 'transparent',
+                      borderColor: 'white',
+                      color: performanceRange === 'week' ? '#0891B2' : 'white',
+                      fontWeight: performanceRange === 'week' ? '600' : 'normal',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    Week
+                  </Button>
+                  <Button
+                    variant={performanceRange === 'month' ? 'light' : 'outline-light'}
+                    onClick={() => setPerformanceRange('month')}
+                    style={{
+                      backgroundColor: performanceRange === 'month' ? 'white' : 'transparent',
+                      borderColor: 'white',
+                      color: performanceRange === 'month' ? '#0891B2' : 'white',
+                      fontWeight: performanceRange === 'month' ? '600' : 'normal',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    Month
+                  </Button>
+                  <Button
+                    variant={performanceRange === 'year' ? 'light' : 'outline-light'}
+                    onClick={() => setPerformanceRange('year')}
+                    style={{
+                      backgroundColor: performanceRange === 'year' ? 'white' : 'transparent',
+                      borderColor: 'white',
+                      color: performanceRange === 'year' ? '#0891B2' : 'white',
+                      fontWeight: performanceRange === 'year' ? '600' : 'normal',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    Year
+                  </Button>
+                </ButtonGroup>
+              </div>
             </Card.Header>
-            <Card.Body>
-              <div className="d-flex flex-column h-100 justify-content-around">
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <span className="text-muted">Checkups Today</span>
-                    <h4 className="mb-0 text-dark">
-                      {checkups.filter(c =>
-                        new Date(c.timestamp).toDateString() === new Date().toDateString()
-                      ).length}
-                    </h4>
-                  </div>
-                  <hr />
-                </div>
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <span className="text-muted">Revenue Today</span>
-                    <h4 className="mb-0 text-success">
-                      Rs. {checkups
-                        .filter(c => new Date(c.timestamp).toDateString() === new Date().toDateString())
-                        .reduce((sum, c) => sum + c.total, 0)
-                        .toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </h4>
-                  </div>
-                  <hr />
-                </div>
-                <div>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span className="text-muted">Avg. Bill Amount</span>
-                    <h4 className="mb-0 text-info">
-                      Rs. {checkups.length > 0 ? (totalRevenue / checkups.length).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                    </h4>
-                  </div>
-                </div>
+            <Card.Body className="p-0">
+              <div className="table-responsive">
+                <table className="table table-hover mb-0" style={{ fontSize: '0.95rem' }}>
+                  <tbody>
+                    {/* Checkups */}
+                    <tr style={{ borderLeft: '4px solid #0891B2' }}>
+                      <td className="py-3 px-4">
+                        <div className="d-flex align-items-center">
+                          <div className="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                            <FaClipboardCheck className="text-primary" size={20} />
+                          </div>
+                          <div>
+                            <div className="text-muted small">Checkups</div>
+                            <strong className="fs-5" style={{ color: '#0891B2' }}>
+                              {performanceCheckups.length}
+                            </strong>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-end">
+                        <div className="small text-muted">
+                          vs {performanceRange === 'today' ? 'Yesterday' :
+                             performanceRange === 'yesterday' ? 'Day Before' :
+                             performanceRange === 'week' ? 'Last Week' :
+                             performanceRange === 'month' ? 'Last Month' : 'Last Year'}
+                        </div>
+                        <div className={`badge ${performanceCheckups.length - comparisonCheckups.length >= 0 ? 'bg-success' : 'bg-danger'}`}>
+                          {(() => {
+                            const diff = performanceCheckups.length - comparisonCheckups.length;
+                            return diff >= 0 ? `+${diff}` : diff;
+                          })()}
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Revenue */}
+                    <tr style={{ borderLeft: '4px solid #22c55e' }}>
+                      <td className="py-3 px-4">
+                        <div className="d-flex align-items-center">
+                          <div className="rounded-circle bg-success bg-opacity-10 p-2 me-3">
+                            <FaRupeeSign className="text-success" size={20} />
+                          </div>
+                          <div>
+                            <div className="text-muted small">Revenue</div>
+                            <strong className="fs-5 text-success">
+                              Rs. {performanceRevenue.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </strong>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-end">
+                        <div className="small text-muted">Commission</div>
+                        <div className="fw-bold text-warning">
+                          Rs. {performanceCommission.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Average Bill */}
+                    <tr style={{ borderLeft: '4px solid #06B6D4' }}>
+                      <td className="py-3 px-4">
+                        <div className="d-flex align-items-center">
+                          <div className="rounded-circle bg-info bg-opacity-10 p-2 me-3">
+                            <FaChartLine className="text-info" size={20} />
+                          </div>
+                          <div>
+                            <div className="text-muted small">Avg. Bill Amount</div>
+                            <strong className="fs-5 text-info">
+                              Rs. {performanceCheckups.length > 0 ? (performanceRevenue / performanceCheckups.length).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                            </strong>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-end">
+                        <div className="small text-muted">Highest Bill</div>
+                        <div className="fw-bold" style={{ color: '#F59E0B' }}>
+                          Rs. {performanceCheckups.length > 0 ? Math.max(...performanceCheckups.map(c => c.total || 0)).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </Card.Body>
           </Card>

@@ -41,7 +41,7 @@ const TABLE_COLUMNS = [
       <strong style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '200px',
+        maxWidth: window.innerWidth < 768 ? '120px' : '200px',
         display: 'inline-block',
         fontSize: 'clamp(0.85rem, 2vw, 1rem)'
       }}>
@@ -94,7 +94,7 @@ const TABLE_COLUMNS = [
       <div style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '250px',
+        maxWidth: window.innerWidth < 768 ? '120px' : '250px',
         fontSize: 'clamp(0.85rem, 2vw, 0.95rem)',
         lineHeight: '1.4'
       }}>

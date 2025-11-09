@@ -71,6 +71,16 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
+    // User activities collection - for activity tracking and analytics
+    match /userActivities/{activityId} {
+      // All authenticated users can create activity logs
+      allow create: if isAuthenticated();
+      // Only superadmin can read activities (for analytics dashboard)
+      allow read: if isSuperAdmin();
+      // No one can update or delete activities (audit trail)
+      allow update, delete: if false;
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

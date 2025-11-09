@@ -19,7 +19,7 @@ const Checkups = lazy(() => import('./pages/Checkups'))
 const CheckupDetail = lazy(() => import('./pages/CheckupDetail'))
 const Tests = lazy(() => import('./pages/Tests'))
 const Medicines = lazy(() => import('./pages/Medicines'))
-const Users = lazy(() => import('./pages/UsersEnhanced'))
+const UserManagement = lazy(() => import('./pages/UserManagement'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 
 function App() {
@@ -128,7 +128,7 @@ function App() {
                   path="/users"
                   element={
                     <ProtectedRoute adminOnly={true}>
-                      <Users />
+                      <UserManagement />
                     </ProtectedRoute>
                   }
                 />

@@ -135,12 +135,13 @@ export const PERMISSIONS = {
     },
     users: {
       view: true, // Can see users, editors, and self
-      create: true, // Request to add user
-      edit: true, // Request to edit user
-      delete: true, // Request to remove user
+      create: true, // Request to add user (requires SuperAdmin approval)
+      edit: false, // Cannot edit users
+      delete: false, // Cannot delete users
       viewOwn: true,
-      resetPassword: true, // Can initiate password reset
+      resetPassword: false, // Cannot reset passwords
       viewRoles: [ROLES.USER, ROLES.EDITOR], // Can view these roles (excluding other maintainers and superadmins)
+      createRoles: [ROLES.USER, ROLES.EDITOR], // Can only create users with these roles
     },
     approvals: {
       view: true,

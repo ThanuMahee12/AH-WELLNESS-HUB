@@ -39,7 +39,7 @@ const TABLE_COLUMNS = [
       <strong style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '250px',
+        maxWidth: window.innerWidth < 768 ? '150px' : '250px',
         display: 'inline-block'
       }}>
         {value}
@@ -72,7 +72,7 @@ const TABLE_COLUMNS = [
       <div style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '200px'
+        maxWidth: window.innerWidth < 768 ? '120px' : '200px'
       }}>
         {value}
       </div>
@@ -85,7 +85,7 @@ const TABLE_COLUMNS = [
       <div style={{
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        maxWidth: '200px'
+        maxWidth: window.innerWidth < 768 ? '120px' : '200px'
       }}>
         {value}
       </div>
@@ -176,7 +176,7 @@ function Tests() {
       <PermissionGate resource="tests" action="delete">
         <Button
           size="sm"
-          onClick={() => handleDelete(item.id, 'Are you sure you want to delete this test?')}
+          onClick={() => handleDelete({ id: item.id, testName: item.name }, 'Are you sure you want to delete this test?')}
           style={{
             backgroundColor: 'transparent',
             border: '2px solid #0aa2c0',

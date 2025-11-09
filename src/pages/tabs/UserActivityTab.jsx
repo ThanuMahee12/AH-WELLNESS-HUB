@@ -1,0 +1,423 @@
+import { useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
+import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert } from 'react-bootstrap'
+import { FaHistory, FaCalendarAlt } from 'react-icons/fa'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts'
+import { getActivityStats, getUserActivities } from '../../services/activityService'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+
+function UserActivityTab() {
+  const { user: currentUser } = useSelector(state => state.auth)
+  const [loading, setLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState('all') // Default: All history
+  const [stats, setStats] = useState(null)
+  const [recentActivities, setRecentActivities] = useState([])
+
+  const isSuperAdmin = currentUser?.role === 'superadmin'
+
+  useEffect(() => {
+    loadActivityData()
+  }, [timeRange])
+
+  const loadActivityData = async () => {
+    setLoading(true)
+    try {
+      // Get stats
+      const statsResult = await getActivityStats(timeRange)
+      if (statsResult.success) {
+        setStats(statsResult.data)
+      }
+
+      // Get recent activities (limit to 20)
+      const activitiesResult = await getUserActivities({ days: timeRange, limit: 20 })
+      if (activitiesResult.success) {
+        setRecentActivities(activitiesResult.data)
+      }
+    } catch (error) {
+      console.error('Error loading activity data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Prepare chart data for Recharts
+  const prepareChartData = () => {
+    if (!stats || !stats.dailyStats) {
+      return []
+    }
+
+    // Get dates from dailyStats
+    let dates = Object.keys(stats.dailyStats).sort()
+
+    // If timeRange is not 'all', filter dates to the range
+    if (timeRange !== 'all') {
+      const endDate = new Date()
+      const dateRange = []
+      for (let i = timeRange - 1; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(endDate.getDate() - i)
+        dateRange.push(date.toISOString().split('T')[0])
+      }
+      dates = dateRange
+    }
+
+    // Create chart data
+    const chartData = dates.map(date => {
+      const d = new Date(date)
+      const dataPoint = {
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        fullDate: date
+      }
+
+      // Add each user's activity count for this date
+      stats.userStats.forEach(userStat => {
+        dataPoint[userStat.username] = stats.dailyStats[date]?.[userStat.userId] || 0
+      })
+
+      return dataPoint
+    })
+
+    return chartData
+  }
+
+  const chartData = prepareChartData()
+
+  // Color palette for different users
+  const colorPalette = [
+    '#0891B2',
+    '#06B6D4',
+    '#0aa2c0',
+    '#22c55e',
+    '#fb923c',
+    '#a855f7',
+    '#ec4899',
+  ]
+
+  const getActivityIcon = (activityType) => {
+    const iconMap = {
+      login: '🔐',
+      logout: '🚪',
+      test_create: '➕',
+      test_update: '✏️',
+      test_delete: '🗑️',
+      patient_create: '👤',
+      patient_update: '📝',
+      patient_delete: '❌',
+      checkup_create: '📋',
+      checkup_update: '🔄',
+      checkup_delete: '🗑️',
+      medicine_create: '💊',
+      medicine_update: '📝',
+      medicine_delete: '🗑️',
+      user_create: '👥',
+      user_request_create: '📨',
+      user_request_approve: '✅',
+      user_request_reject: '❌',
+    }
+    return iconMap[activityType] || '📌'
+  }
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return 'N/A'
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <Alert variant="warning">
+        You don't have permission to view user activity. This page is only accessible to SuperAdmins.
+      </Alert>
+    )
+  }
+
+  if (loading) {
+    return <LoadingSpinner text="Loading activity data..." />
+  }
+
+  return (
+    <>
+      {/* Time Range Filter */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="shadow-sm">
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <FaCalendarAlt className="me-2" style={{ color: '#0891B2' }} />
+                  <strong>Time Range:</strong>
+                </div>
+                <ButtonGroup>
+                  <Button
+                    variant={timeRange === 'all' ? 'primary' : 'outline-primary'}
+                    onClick={() => setTimeRange('all')}
+                    style={timeRange === 'all' ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                  >
+                    All History
+                  </Button>
+                  <Button
+                    variant={timeRange === 7 ? 'primary' : 'outline-primary'}
+                    onClick={() => setTimeRange(7)}
+                    style={timeRange === 7 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                  >
+                    Past 7 Days
+                  </Button>
+                  <Button
+                    variant={timeRange === 30 ? 'primary' : 'outline-primary'}
+                    onClick={() => setTimeRange(30)}
+                    style={timeRange === 30 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                  >
+                    Past 30 Days
+                  </Button>
+                  <Button
+                    variant={timeRange === 90 ? 'primary' : 'outline-primary'}
+                    onClick={() => setTimeRange(90)}
+                    style={timeRange === 90 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                  >
+                    Past 90 Days
+                  </Button>
+                </ButtonGroup>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Statistics Cards */}
+      <Row className="mb-4">
+        <Col md={4}>
+          <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #0891B2' }}>
+            <Card.Body>
+              <h3 className="mb-0" style={{ color: '#0891B2' }}>{stats?.totalActivities || 0}</h3>
+              <small className="text-muted">Total Activities</small>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #06B6D4' }}>
+            <Card.Body>
+              <h3 className="mb-0" style={{ color: '#06B6D4' }}>{stats?.userStats?.length || 0}</h3>
+              <small className="text-muted">Active Users</small>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #0aa2c0' }}>
+            <Card.Body>
+              <h3 className="mb-0" style={{ color: '#0aa2c0' }}>
+                {stats?.totalActivities && stats?.userStats?.length
+                  ? Math.round(stats.totalActivities / stats.userStats.length)
+                  : 0}
+              </h3>
+              <small className="text-muted">Avg Activities per User</small>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Activity Line Chart */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="shadow-sm">
+            <Card.Header style={{ backgroundColor: '#f8f9fa' }}>
+              <h5 className="mb-0">
+                User Activity {timeRange === 'all' ? '- All History' : `Over Past ${timeRange} Days`}
+              </h5>
+            </Card.Header>
+            <Card.Body>
+              <div style={{ height: '400px' }}>
+                {chartData.length > 0 && stats?.userStats?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="date"
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        label={{ value: 'Date', position: 'insideBottom', offset: -10 }}
+                      />
+                      <YAxis
+                        label={{ value: 'Number of Activities', angle: -90, position: 'insideLeft' }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      {stats.userStats.map((userStat, index) => (
+                        <Line
+                          key={userStat.userId}
+                          type="monotone"
+                          dataKey={userStat.username}
+                          stroke={colorPalette[index % colorPalette.length]}
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Alert variant="info">No activity data available for the selected time range.</Alert>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* User Activity Summary */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="shadow-sm">
+            <Card.Header style={{ backgroundColor: '#f8f9fa' }}>
+              <h5 className="mb-0">User Activity Summary</h5>
+            </Card.Header>
+            <Card.Body>
+              <Table responsive hover>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Total Activities</th>
+                    <th>Most Common Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats?.userStats?.map(userStat => {
+                    const mostCommon = Object.entries(userStat.activities)
+                      .sort((a, b) => b[1] - a[1])[0]
+
+                    return (
+                      <tr key={userStat.userId}>
+                        <td><strong>{userStat.username}</strong></td>
+                        <td>
+                          <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>
+                            {userStat.userRole}
+                          </Badge>
+                        </td>
+                        <td>{userStat.totalActivities}</td>
+                        <td>
+                          {mostCommon ? (
+                            <span>
+                              {getActivityIcon(mostCommon[0])} {mostCommon[0].replace(/_/g, ' ')} ({mostCommon[1]})
+                            </span>
+                          ) : 'N/A'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Recent Activity Feed - Prominent */}
+      <Row>
+        <Col>
+          <Card className="shadow-sm" style={{ border: '2px solid #0891B2' }}>
+            <Card.Header style={{ backgroundColor: '#0891B2', color: 'white' }}>
+              <h5 className="mb-0">
+                <FaHistory className="me-2" />
+                Recent Activity Logs (Last 20)
+              </h5>
+            </Card.Header>
+            <Card.Body style={{ padding: 0 }}>
+              {recentActivities.length === 0 ? (
+                <Alert variant="info" className="m-3 text-center">
+                  No recent activities found.
+                </Alert>
+              ) : (
+                <div style={{
+                  maxHeight: '600px',
+                  overflowY: 'auto',
+                  backgroundColor: '#f8f9fa'
+                }}>
+                  {recentActivities.map((activity, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: '15px 20px',
+                        borderBottom: '1px solid #dee2e6',
+                        backgroundColor: index % 2 === 0 ? 'white' : '#f8f9fa',
+                        transition: 'background-color 0.2s',
+                        cursor: 'default'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e3f2fd'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f8f9fa'}
+                    >
+                      <div className="d-flex align-items-start">
+                        <div style={{
+                          fontSize: '1.5rem',
+                          marginRight: '15px',
+                          minWidth: '30px',
+                          textAlign: 'center'
+                        }}>
+                          {getActivityIcon(activity.activityType)}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div className="d-flex justify-content-between align-items-start mb-1">
+                            <div>
+                              <strong style={{ fontSize: '1rem', color: '#0891B2' }}>
+                                {activity.username}
+                              </strong>
+                              <Badge
+                                className="ms-2"
+                                style={{
+                                  backgroundColor: '#06B6D4',
+                                  color: 'white',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                {activity.userRole}
+                              </Badge>
+                            </div>
+                            <span className="text-muted" style={{ fontSize: '0.875rem' }}>
+                              {formatTimestamp(activity.timestamp)}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.95rem', marginTop: '5px' }}>
+                            <Badge
+                              style={{
+                                backgroundColor: '#e3f2fd',
+                                color: '#0891B2',
+                                fontWeight: 'normal',
+                                marginRight: '10px'
+                              }}
+                            >
+                              {activity.activityType.replace(/_/g, ' ')}
+                            </Badge>
+                            <span>{activity.description}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </>
+  )
+}
+
+export default UserActivityTab

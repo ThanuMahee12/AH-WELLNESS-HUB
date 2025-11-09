@@ -37,10 +37,14 @@ const getUserFields = (currentUserRole) => [
           { value: 'maintainer', label: 'Maintainer' },
           { value: 'superadmin', label: 'Super Admin' },
         ]
+      : currentUserRole === 'maintainer'
+      ? [
+          { value: 'user', label: 'User' },
+          { value: 'editor', label: 'Editor' },
+        ]
       : [
           { value: 'user', label: 'User' },
           { value: 'editor', label: 'Editor' },
-          { value: 'maintainer', label: 'Maintainer' },
         ]
   },
 ]
@@ -69,6 +73,12 @@ function UsersEnhanced() {
     if (user.uid === currentUser?.uid || user.id === currentUser?.uid) return true
     // If no role specified, include the user
     if (!user.role) return true
+
+    // Maintainers should NOT see other maintainers
+    if (isMaintainer && user.role === 'maintainer') {
+      return false // Hide other maintainers
+    }
+
     // Check if current user can view this user's role
     return canViewRole(currentUser?.role, user.role)
   })
@@ -130,15 +140,11 @@ function UsersEnhanced() {
   const confirmResetPassword = async () => {
     if (!resetUserId) return
 
-    const newPassword = generateRandomPassword()
-
     try {
       // Send password reset email
       const result = await authService.resetPassword(resetUserId.email)
 
       if (result.success) {
-        setGeneratedPassword(newPassword)
-        setShowPasswordModal(true)
         setShowResetModal(false)
         success(`Password reset email sent to ${resetUserId.email}`)
       } else {
@@ -153,57 +159,27 @@ function UsersEnhanced() {
   const handleUserSubmit = async (formData, editingItem) => {
     setFormError('')
 
-    // If maintainer, can edit directly but only certain fields (not email)
+    // If maintainer, can only create user requests (no editing)
     if (isMaintainer) {
-      if (editingItem) {
-        // Maintainer can edit user details but not email
-        const updateData = {
-          username: formData.username,
-          mobile: formData.mobile,
-          role: formData.role
-          // Email excluded - maintainer cannot change email
-        }
+      // For new users, create a request (requires superadmin approval)
+      const requestData = {
+        type: 'create',
+        userId: null,
+        requestedBy: currentUser.uid,
+        requestedByName: currentUser.username,
+        data: formData,
+        originalData: null,
+      }
 
-        const userId = editingItem.uid || editingItem.id
-
-        if (!userId) {
-          const errorMsg = 'User ID not found'
-          setFormError(errorMsg)
-          showError(errorMsg)
-          throw new Error(errorMsg)
-        }
-
-        const result = await dispatch(updateUser({ id: userId, ...updateData }))
-        if (result.type.includes('fulfilled')) {
-          success('User updated successfully!')
-          return true
-        } else {
-          const errorMsg = result.payload || 'Failed to update user'
-          setFormError(errorMsg)
-          showError(errorMsg)
-          throw new Error(errorMsg)
-        }
+      const result = await dispatch(createUserChangeRequest(requestData))
+      if (result.type.includes('fulfilled')) {
+        success('New user request submitted for approval')
+        return true
       } else {
-        // For new users, create a request (requires superadmin approval)
-        const requestData = {
-          type: 'create',
-          userId: null,
-          requestedBy: currentUser.uid,
-          requestedByName: currentUser.username,
-          data: formData,
-          originalData: null,
-        }
-
-        const result = await dispatch(createUserChangeRequest(requestData))
-        if (result.type.includes('fulfilled')) {
-          success('New user request submitted for approval')
-          return true
-        } else {
-          const errorMsg = result.payload || 'Failed to create request'
-          setFormError(errorMsg)
-          showError(errorMsg)
-          throw new Error(errorMsg)
-        }
+        const errorMsg = result.payload || 'Failed to create request'
+        setFormError(errorMsg)
+        showError(errorMsg)
+        throw new Error(errorMsg)
       }
     }
 
@@ -387,34 +363,12 @@ function UsersEnhanced() {
           <EnhancedCRUDTable
             data={filteredUsers}
             columns={TABLE_COLUMNS}
-            onEdit={isMaintainer ? (user) => {
-              // Maintainer can only edit themselves
-              if (user.uid === currentUser.uid || user.id === currentUser.uid) {
-                handleOpen(user)
-              }
-            } : handleOpen}
+            onEdit={isMaintainer ? null : handleOpen}
             onDelete={isSuperAdmin ? (id) => handleDelete(id, 'Are you sure you want to delete this user?') : null}
             loading={loading}
             emptyMessage="No users found. Add your first user to get started."
             itemsPerPage={10}
             searchFields={['username', 'email', 'mobile', 'role']}
-            renderActions={isMaintainer ? (user) => {
-              // Maintainer can only edit self, show buttons conditionally
-              const isSelf = user.uid === currentUser.uid || user.id === currentUser.uid
-              return isSelf ? (
-                <Button
-                  size="sm"
-                  onClick={() => handleOpen(user)}
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: '2px solid #0891B2',
-                    color: '#0891B2'
-                  }}
-                >
-                  Edit Profile
-                </Button>
-              ) : null
-            } : undefined}
           />
         </Col>
       </Row>
@@ -426,7 +380,7 @@ function UsersEnhanced() {
       }} size="lg" backdrop="static">
         <Modal.Header closeButton>
           <Modal.Title>
-            {isEditing ? (isMaintainer ? 'Request User Edit' : 'Edit User') : (isMaintainer ? 'Request New User' : 'Add New User')}
+            {isMaintainer ? 'Request New User' : (isEditing ? 'Edit User' : 'Add New User')}
           </Modal.Title>
         </Modal.Header>
 
@@ -434,15 +388,9 @@ function UsersEnhanced() {
           <Modal.Body>
             {formError && <Alert variant="danger" className="mb-3">{formError}</Alert>}
 
-            {isMaintainer && !isEditing && (
+            {isMaintainer && (
               <Alert variant="info" className="mb-3">
-                New user creation requires superadmin approval.
-              </Alert>
-            )}
-
-            {isMaintainer && isEditing && (
-              <Alert variant="info" className="mb-3">
-                You are editing your own profile. You can update username and mobile. Email and role cannot be changed.
+                New user creation requires SuperAdmin approval. You can only add users with User or Editor roles.
               </Alert>
             )}
 
@@ -476,17 +424,11 @@ function UsersEnhanced() {
                         onChange={handleChange}
                         required={field.required}
                         placeholder={field.placeholder}
-                        disabled={isEditing && isMaintainer && (field.name === 'email' || field.name === 'role')}
                       />
                     )}
                     {isEditing && field.name === 'email' && isSuperAdmin && (
                       <Form.Text className="text-warning">
                         Note: Changing email here updates the display only. Login email remains the same.
-                      </Form.Text>
-                    )}
-                    {isEditing && field.name === 'email' && isMaintainer && (
-                      <Form.Text className="text-muted">
-                        Email cannot be changed by maintainers
                       </Form.Text>
                     )}
                     {formErrors[field.name] && (
@@ -508,7 +450,7 @@ function UsersEnhanced() {
               Cancel
             </Button>
             <Button variant="primary" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : isEditing ? 'Update' : (isMaintainer ? 'Submit Request' : 'Add')}
+              {isSubmitting ? 'Submitting...' : (isMaintainer ? 'Submit Request' : (isEditing ? 'Update' : 'Add'))}
             </Button>
           </Modal.Footer>
         </Form>
