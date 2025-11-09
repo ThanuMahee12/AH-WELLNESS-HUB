@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 const COLLECTION = 'medicines'
 
@@ -29,9 +30,30 @@ export const fetchMedicines = createAsyncThunk(
 
 export const addMedicine = createAsyncThunk(
   'medicines/add',
-  async (medicineData, { rejectWithValue }) => {
+  async (medicineData, { rejectWithValue, getState }) => {
+    const state = getState()
+    const user = state.auth.user
+
     const result = await firestoreService.create(COLLECTION, medicineData)
     if (result.success) {
+      // Log activity
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.MEDICINE_CREATE,
+          description: createActivityDescription(ACTIVITY_TYPES.MEDICINE_CREATE, {
+            medicineName: medicineData.name
+          }),
+          metadata: {
+            medicineId: result.id,
+            medicineName: medicineData.name,
+            brand: medicineData.brand,
+            dosage: medicineData.dosage
+          }
+        })
+      }
       return { id: result.id, ...medicineData }
     } else {
       return rejectWithValue(result.error)
@@ -41,9 +63,29 @@ export const addMedicine = createAsyncThunk(
 
 export const updateMedicine = createAsyncThunk(
   'medicines/update',
-  async ({ id, ...medicineData }, { rejectWithValue }) => {
+  async ({ id, ...medicineData }, { rejectWithValue, getState }) => {
+    const state = getState()
+    const user = state.auth.user
+
     const result = await firestoreService.update(COLLECTION, id, medicineData)
     if (result.success) {
+      // Log activity
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.MEDICINE_UPDATE,
+          description: createActivityDescription(ACTIVITY_TYPES.MEDICINE_UPDATE, {
+            medicineName: medicineData.name
+          }),
+          metadata: {
+            medicineId: id,
+            medicineName: medicineData.name,
+            updatedFields: Object.keys(medicineData)
+          }
+        })
+      }
       return { id, ...medicineData }
     } else {
       return rejectWithValue(result.error)
@@ -53,9 +95,29 @@ export const updateMedicine = createAsyncThunk(
 
 export const deleteMedicine = createAsyncThunk(
   'medicines/delete',
-  async (id, { rejectWithValue }) => {
+  async (id, { rejectWithValue, getState }) => {
+    const state = getState()
+    const user = state.auth.user
+    const medicine = state.medicines.entities[id]
+
     const result = await firestoreService.delete(COLLECTION, id)
     if (result.success) {
+      // Log activity
+      if (user && medicine) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.MEDICINE_DELETE,
+          description: createActivityDescription(ACTIVITY_TYPES.MEDICINE_DELETE, {
+            medicineName: medicine.name
+          }),
+          metadata: {
+            medicineId: id,
+            medicineName: medicine.name
+          }
+        })
+      }
       return id
     } else {
       return rejectWithValue(result.error)

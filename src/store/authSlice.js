@@ -34,9 +34,30 @@ export const loginUser = createAsyncThunk(
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async (userData, { rejectWithValue }) => {
+  async (userData, { rejectWithValue, getState }) => {
+    const state = getState()
+    const currentUser = state.auth.user
+
     const result = await authService.register(userData)
     if (result.success) {
+      // Log activity for user creation
+      if (currentUser) {
+        await logActivity({
+          userId: currentUser.uid,
+          username: currentUser.username || currentUser.email,
+          userRole: currentUser.role,
+          activityType: ACTIVITY_TYPES.USER_CREATE,
+          description: createActivityDescription(ACTIVITY_TYPES.USER_CREATE, {
+            username: userData.username
+          }),
+          metadata: {
+            newUserId: result.user.uid,
+            username: userData.username,
+            email: userData.email,
+            role: userData.role
+          }
+        })
+      }
       return result.user
     } else {
       return rejectWithValue(result.error)

@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/too
 import { firestoreService } from '../services/firestoreService'
 import { authService } from '../services/authService'
 import { registerUser } from './authSlice'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 const COLLECTION = 'users'
 
@@ -46,9 +47,30 @@ export const addUserToList = createAsyncThunk(
 
 export const updateUser = createAsyncThunk(
   'users/update',
-  async ({ id, ...userData }, { rejectWithValue }) => {
+  async ({ id, ...userData }, { rejectWithValue, getState }) => {
+    const state = getState()
+    const currentUser = state.auth.user
+
     const result = await firestoreService.update(COLLECTION, id, userData)
     if (result.success) {
+      // Log activity
+      if (currentUser) {
+        await logActivity({
+          userId: currentUser.uid,
+          username: currentUser.username || currentUser.email,
+          userRole: currentUser.role,
+          activityType: ACTIVITY_TYPES.USER_UPDATE,
+          description: createActivityDescription(ACTIVITY_TYPES.USER_UPDATE, {
+            username: userData.username || 'Unknown'
+          }),
+          metadata: {
+            targetUserId: id,
+            username: userData.username,
+            role: userData.role,
+            updatedFields: Object.keys(userData)
+          }
+        })
+      }
       return { id, ...userData }
     } else {
       return rejectWithValue(result.error)
@@ -58,10 +80,31 @@ export const updateUser = createAsyncThunk(
 
 export const deleteUser = createAsyncThunk(
   'users/delete',
-  async (id, { rejectWithValue }) => {
+  async (id, { rejectWithValue, getState }) => {
+    const state = getState()
+    const currentUser = state.auth.user
+    const targetUser = state.users.entities[id]
+
     // Use authService to mark user as deleted
     const result = await authService.deleteUser(id)
     if (result.success) {
+      // Log activity
+      if (currentUser && targetUser) {
+        await logActivity({
+          userId: currentUser.uid,
+          username: currentUser.username || currentUser.email,
+          userRole: currentUser.role,
+          activityType: ACTIVITY_TYPES.USER_DELETE,
+          description: createActivityDescription(ACTIVITY_TYPES.USER_DELETE, {
+            username: targetUser.username || 'Unknown'
+          }),
+          metadata: {
+            targetUserId: id,
+            username: targetUser.username,
+            role: targetUser.role
+          }
+        })
+      }
       return id
     } else {
       return rejectWithValue(result.error)

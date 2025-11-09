@@ -23,7 +23,8 @@ export const ACTIVITY_TYPES = {
   CHECKUP_UPDATE: 'checkup_update',
   CHECKUP_DELETE: 'checkup_delete',
   CHECKUP_VIEW: 'checkup_view',
-  CHECKUP_PDF_GENERATE: 'checkup_pdf_generate',
+  CHECKUP_PDF_INVOICE: 'checkup_pdf_invoice',
+  CHECKUP_PDF_PRESCRIPTION: 'checkup_pdf_prescription',
 
   // Tests
   TEST_CREATE: 'test_create',
@@ -255,10 +256,11 @@ export const createActivityDescription = (activityType, metadata = {}) => {
 
     // Checkups
     checkup_create: `Created checkup for patient: ${metadata.patientName || 'Unknown'}`,
-    checkup_update: `Updated checkup: ${metadata.checkupId || 'Unknown'}`,
-    checkup_delete: `Deleted checkup: ${metadata.checkupId || 'Unknown'}`,
-    checkup_view: `Viewed checkup: ${metadata.checkupId || 'Unknown'}`,
-    checkup_pdf_generate: `Generated PDF for checkup: ${metadata.checkupId || 'Unknown'}`,
+    checkup_update: `Updated checkup: ${metadata.billNo || metadata.checkupId || 'Unknown'}`,
+    checkup_delete: `Deleted checkup: ${metadata.billNo || metadata.checkupId || 'Unknown'}`,
+    checkup_view: `Viewed checkup: ${metadata.billNo || metadata.checkupId || 'Unknown'}`,
+    checkup_pdf_invoice: `Generated invoice PDF for Bill #${metadata.billNo || 'Unknown'} - Patient: ${metadata.patientName || 'Unknown'}`,
+    checkup_pdf_prescription: `Generated prescription PDF for Bill #${metadata.billNo || 'Unknown'} - Patient: ${metadata.patientName || 'Unknown'}`,
 
     // Tests
     test_create: `Created test: ${metadata.testName || 'Unknown'}`,
