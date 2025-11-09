@@ -26,7 +26,7 @@ function Navbar() {
             className="brand-logo"
             style={{ height: '50px', width: 'auto' }}
           />
-          <span className="brand-text ms-2">AWH</span>
+          <span className="brand-text ms-2">AH-WH</span>
         </BSNavbar.Brand>
 
         {isAuthenticated && (
