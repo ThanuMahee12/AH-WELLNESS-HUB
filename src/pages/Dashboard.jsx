@@ -24,6 +24,7 @@ function Dashboard() {
 
   const [dateRange, setDateRange] = useState(7) // Default: Past 7 days
   const [performanceRange, setPerformanceRange] = useState('today') // today, yesterday, week, month, year
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()) // Default: Current year
 
   useEffect(() => {
     dispatch(fetchPatients())
@@ -115,10 +116,9 @@ function Dashboard() {
     })).slice(0, 5)
   }
 
-  const getMonthlyRevenue = () => {
+  const getMonthlyRevenue = (year) => {
     // Create array for all 12 months
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const currentYear = new Date().getFullYear()
 
     // Initialize all months with 0 revenue
     const monthlyData = monthNames.map(month => ({
@@ -126,10 +126,10 @@ function Dashboard() {
       revenue: 0
     }))
 
-    // Fill in actual revenue data - Use all checkups, not filtered
+    // Fill in actual revenue data - Use all checkups for the selected year
     checkups.forEach(checkup => {
       const date = new Date(checkup.timestamp)
-      if (date.getFullYear() === currentYear) {
+      if (date.getFullYear() === year) {
         const monthIndex = date.getMonth()
         monthlyData[monthIndex].revenue += checkup.total || 0
       }
@@ -141,9 +141,21 @@ function Dashboard() {
     }))
   }
 
+  // Generate year options from 2025 to current year
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear()
+    const startYear = 2025
+    const years = []
+    for (let year = startYear; year <= currentYear; year++) {
+      years.push(year)
+    }
+    return years
+  }
+
   const chartData = getDateRangeData()
   const testDistribution = getTestDistribution()
-  const monthlyRevenue = getMonthlyRevenue()
+  const monthlyRevenue = getMonthlyRevenue(selectedYear)
+  const yearOptions = getYearOptions()
 
   // Helper function to get date range for performance stats
   const getPerformanceCheckups = (range) => {
@@ -516,10 +528,28 @@ function Dashboard() {
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
-              <h5 className="mb-0">
-                <FaRupeeSign className="me-2" />
-                Monthly Revenue
-              </h5>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <FaRupeeSign className="me-2" />
+                  Monthly Revenue
+                </h5>
+                <select
+                  className="form-select form-select-sm"
+                  style={{
+                    width: 'auto',
+                    backgroundColor: 'white',
+                    color: '#0891B2',
+                    fontWeight: '600',
+                    border: 'none'
+                  }}
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                >
+                  {yearOptions.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
             </Card.Header>
             <Card.Body>
               {monthlyRevenue.length === 0 ? (
