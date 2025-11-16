@@ -1,3 +1,0 @@
-[submodule "src/lib/hooks"]
-	path = src/lib/hooks
-	url = git@gitlab.com:shared5444626/reactlib/jsx/custom-hooks-jsx.git
