@@ -22,9 +22,9 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'maintainer';
     }
 
-    // Helper function to check if user is admin (superadmin or maintainer)
+    // Helper function to check if user is admin (superadmin, admin, or maintainer)
     function isAdmin() {
-      return isSuperAdmin() || isMaintainer();
+      return isSuperAdmin() || isMaintainer() || (isAuthenticated() && getUserRole() == 'admin');
     }
 
     // Users collection
@@ -79,6 +79,13 @@ service cloud.firestore {
       allow read: if isSuperAdmin();
       // No one can update or delete activities (audit trail)
       allow update, delete: if false;
+    }
+
+    // Notifications collection - users can read their own, authenticated can create
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
     }
 
     // Deny all other access

@@ -135,7 +135,7 @@ const FormField = React.memo(({
 
   if (type === 'checkbox' || type === 'radio') {
     return (
-      <Form.Group className="mb-3">
+      <Form.Group className="mb-3" controlId={name}>
         {type === 'radio' && label && (
           <Form.Label>
             {label}
@@ -149,7 +149,7 @@ const FormField = React.memo(({
   }
 
   return (
-    <Form.Group className="mb-3">
+    <Form.Group className="mb-3" controlId={name}>
       {label && (
         <Form.Label>
           {label}

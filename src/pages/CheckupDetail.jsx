@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
 import { FaArrowLeft, FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa'
 import Select from 'react-select'
-import { selectAllCheckups, updateCheckup } from '../store/checkupsSlice'
+import { selectAllCheckups, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
 import { selectAllPatients } from '../store/patientsSlice'
 import { selectAllTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
@@ -125,6 +125,17 @@ function CheckupDetail() {
     } catch (error) {
       console.error('Error updating checkup:', error)
       alert('Failed to update checkup')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this checkup?')) return
+    try {
+      await dispatch(deleteCheckup(id)).unwrap()
+      navigate('/checkups')
+    } catch (error) {
+      console.error('Error deleting checkup:', error)
+      alert('Failed to delete checkup')
     }
   }
 
@@ -1342,12 +1353,12 @@ function CheckupDetail() {
                                   <Select
                                     value={selectedMedicine ? {
                                       value: selectedMedicine.id,
-                                      label: `${selectedMedicine.name} - ${selectedMedicine.dosage} - ${selectedMedicine.brand}`
+                                      label: `${selectedMedicine.name} - ${Array.isArray(selectedMedicine.dosage) ? selectedMedicine.dosage.join(', ') : selectedMedicine.dosage} - ${selectedMedicine.brand}`
                                     } : null}
                                     onChange={(option) => handleMedicineChange(index, 'medicineId', option.value)}
                                     options={medicines.map(m => ({
                                       value: m.id,
-                                      label: `${m.name} - ${m.dosage} - ${m.brand}`
+                                      label: `${m.name} - ${Array.isArray(m.dosage) ? m.dosage.join(', ') : m.dosage} - ${m.brand}`
                                     }))}
                                     placeholder="Select medicine with dosage..."
                                     styles={{
@@ -1482,7 +1493,7 @@ function CheckupDetail() {
                                   <br />
                                   <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{medicine.brand}</span>
                                 </td>
-                                <td style={{ padding: '0.5rem', fontWeight: '600', color: '#059669' }}>{medicine.dosage || '-'}</td>
+                                <td style={{ padding: '0.5rem', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
                                 <td style={{ padding: '0.5rem' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
                                 <td style={{ padding: '0.5rem' }}>{med.instructions || '-'}</td>
                               </tr>
@@ -1608,6 +1619,42 @@ function CheckupDetail() {
             }
           `}</style>
         </>
+      )}
+
+      {/* Edit & Delete Buttons at Bottom */}
+      {!isEditing && (
+        <Row className="mt-4 no-print">
+          <Col>
+            <Card>
+              <Card.Body className="d-flex gap-2 flex-wrap justify-content-end">
+                <Button
+                  onClick={() => navigate(`/checkups/${id}/edit`)}
+                  style={{
+                    backgroundColor: '#06B6D4',
+                    border: 'none',
+                    color: 'white',
+                    padding: '0.5rem 1.5rem',
+                  }}
+                >
+                  <FaEdit className="me-2" />
+                  Edit Checkup
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  style={{
+                    backgroundColor: '#ef4444',
+                    border: 'none',
+                    color: 'white',
+                    padding: '0.5rem 1.5rem',
+                  }}
+                >
+                  <FaTrash className="me-2" />
+                  Delete Checkup
+                </Button>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
       )}
     </Container>
   )
