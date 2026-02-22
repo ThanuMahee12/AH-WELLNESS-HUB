@@ -18,8 +18,11 @@ const Patients = lazy(() => import('./pages/Patients'))
 const PatientDetail = lazy(() => import('./pages/PatientDetail'))
 const Checkups = lazy(() => import('./pages/Checkups'))
 const CheckupDetail = lazy(() => import('./pages/CheckupDetail'))
+const CheckupForm = lazy(() => import('./pages/CheckupForm'))
 const Tests = lazy(() => import('./pages/Tests'))
+const TestDetail = lazy(() => import('./pages/TestDetail'))
 const Medicines = lazy(() => import('./pages/Medicines'))
+const MedicineDetail = lazy(() => import('./pages/MedicineDetail'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 
@@ -127,6 +130,22 @@ function AppContent() {
                 }
               />
               <Route
+                path="/checkups/new"
+                element={
+                  <ProtectedRoute>
+                    <CheckupForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkups/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <CheckupForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/checkups/:id"
                 element={
                   <ProtectedRoute>
@@ -143,10 +162,26 @@ function AppContent() {
                 }
               />
               <Route
+                path="/tests/:id"
+                element={
+                  <ProtectedRoute>
+                    <TestDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/medicines"
                 element={
                   <ProtectedRoute>
                     <Medicines />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/medicines/:id"
+                element={
+                  <ProtectedRoute>
+                    <MedicineDetail />
                   </ProtectedRoute>
                 }
               />

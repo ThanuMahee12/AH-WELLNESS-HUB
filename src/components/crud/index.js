@@ -2,3 +2,4 @@
 export { default as CRUDTable } from './CRUDTable';
 export { default as EnhancedCRUDTable } from './EnhancedCRUDTable';
 export { default as CRUDModal } from './CRUDModal';
+export { default as EntityForm } from './EntityForm';

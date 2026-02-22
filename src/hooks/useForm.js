@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 /**
  * Custom hook for managing form state and validation
@@ -8,6 +8,12 @@ export const useForm = (initialValues = {}, onSubmit, validate) => {
   const [formData, setFormData] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Keep a ref to always have the latest formData in handleSubmit
+  const formDataRef = useRef(formData);
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
 
   // Handle individual field change
   const handleChange = useCallback((e) => {
@@ -51,9 +57,12 @@ export const useForm = (initialValues = {}, onSubmit, validate) => {
     async (e) => {
       if (e) e.preventDefault();
 
+      // Use ref to get latest formData (avoids stale closure from onBlur race)
+      const currentData = formDataRef.current;
+
       // Validate if validation function provided
       if (validate) {
-        const validationErrors = validate(formData);
+        const validationErrors = validate(currentData);
         if (Object.keys(validationErrors).length > 0) {
           setErrors(validationErrors);
           return false;
@@ -64,7 +73,7 @@ export const useForm = (initialValues = {}, onSubmit, validate) => {
       setErrors({});
 
       try {
-        await onSubmit(formData);
+        await onSubmit(currentData);
         return true;
       } catch (error) {
         setErrors({ submit: error.message || 'Submission failed' });
@@ -73,7 +82,7 @@ export const useForm = (initialValues = {}, onSubmit, validate) => {
         setIsSubmitting(false);
       }
     },
-    [formData, onSubmit, validate]
+    [onSubmit, validate]
   );
 
   return {
