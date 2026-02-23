@@ -28,10 +28,6 @@ function Checkups() {
     dispatch(fetchTests())
   }, [dispatch])
 
-  if (loading && checkups.length === 0) {
-    return <LoadingSpinner text="Loading checkups data..." />
-  }
-
   const handleViewDetails = (checkupId) => {
     navigate(`/checkups/${checkupId}`)
   }
@@ -51,6 +47,10 @@ function Checkups() {
       }
     })
   }, [checkups, patients, tests])
+
+  if (loading && checkups.length === 0) {
+    return <LoadingSpinner text="Loading checkups data..." />
+  }
 
   const TABLE_COLUMNS = [
     {
@@ -115,9 +115,8 @@ function Checkups() {
             <PermissionGate resource="checkups" action="create">
               <Button
                 onClick={() => navigate('/checkups/new')}
-                className="mt-2 mt-md-0"
                 disabled={patients.length === 0 || loading}
-                className="btn-theme-add"
+                className="btn-theme-add mt-2 mt-md-0"
               >
                 <FaPlus className="me-2" />New Checkup
               </Button>
