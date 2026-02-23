@@ -15,7 +15,7 @@ function Tests() {
   const tests = useSelector(selectAllTests);
   const { loading, error } = useSelector(state => state.tests);
   const { checkPermission } = usePermission();
-  const { filterColumns, getItemsPerPage } = useSettings();
+  const { filterColumns, getItemsPerPage, getSearchFields } = useSettings();
 
   useEffect(() => {
     dispatch(fetchTests());
@@ -119,7 +119,7 @@ function Tests() {
             error={error}
             emptyMessage="No tests available"
             itemsPerPage={getItemsPerPage('tests')}
-            searchFields={['code', 'name', 'details', 'rules']}
+            searchFields={getSearchFields('tests')}
           />
         </Col>
       </Row>

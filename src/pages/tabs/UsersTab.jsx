@@ -14,7 +14,7 @@ function UsersTab() {
   const users = useSelector(selectAllUsers);
   const { loading, error } = useSelector(state => state.users);
   const { checkPermission } = usePermission();
-  const { filterColumns, getItemsPerPage } = useSettings();
+  const { filterColumns, getItemsPerPage, getSearchFields } = useSettings();
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -76,7 +76,7 @@ function UsersTab() {
             error={error}
             emptyMessage="No users found. Add your first user to get started."
             itemsPerPage={getItemsPerPage('users')}
-            searchFields={['username', 'email', 'mobile', 'role']}
+            searchFields={getSearchFields('users')}
           />
         </Col>
       </Row>

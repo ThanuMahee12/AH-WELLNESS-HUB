@@ -90,6 +90,15 @@ export function useSettings() {
     return roles.includes(userRole)
   }, [settings])
 
+  // Get search fields — all visible column keys for a table entity
+  const getSearchFields = useCallback((entity) => {
+    const columns = settings?.tables?.[entity]?.columns
+    if (!columns) return []
+    return Object.entries(columns)
+      .filter(([, cfg]) => cfg.visible !== false)
+      .map(([key]) => key)
+  }, [settings])
+
   // Get items per page for a table entity
   const getItemsPerPage = useCallback((entity) => {
     return settings?.tables?.[entity]?.itemsPerPage || 10
@@ -115,6 +124,7 @@ export function useSettings() {
     getFieldLabel,
     getPageRoles,
     canAccessPage,
+    getSearchFields,
     getItemsPerPage,
     checkPermission,
   }
