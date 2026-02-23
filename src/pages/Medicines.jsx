@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col } from 'react-bootstrap'
@@ -15,16 +15,14 @@ function Medicines() {
   const medicines = useSelector(selectAllMedicines);
   const { loading, error } = useSelector(state => state.medicines);
   const { checkPermission } = usePermission();
-  const { filterColumns, getItemsPerPage, getSearchFields } = useSettings();
+  const { getEntityColumns, getItemsPerPage, getSearchFields } = useSettings();
 
   useEffect(() => {
     dispatch(fetchMedicines());
   }, [dispatch]);
 
-  const TABLE_COLUMNS = [
-    {
-      key: 'code',
-      label: 'Code',
+  const COLUMN_RENDERERS = useMemo(() => ({
+    code: {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/medicines/${item.id}`)}
@@ -37,9 +35,7 @@ function Medicines() {
         </strong>
       )
     },
-    {
-      key: 'name',
-      label: 'Medicine Name',
+    name: {
       render: (value) => (
         <strong style={{
           whiteSpace: 'pre-wrap',
@@ -52,9 +48,7 @@ function Medicines() {
         </strong>
       )
     },
-    {
-      key: 'brand',
-      label: 'Brand',
+    brand: {
       render: (value) => (
         <span style={{
           whiteSpace: 'nowrap',
@@ -64,17 +58,13 @@ function Medicines() {
         </span>
       )
     },
-    {
-      key: 'dosage',
-      label: 'Dosage',
+    dosage: {
       render: (value) => {
         const dosages = Array.isArray(value) ? value : (value ? [value] : [])
         return dosages.length > 0 ? dosages.join(', ') : '-'
       }
     },
-    {
-      key: 'unit',
-      label: 'Unit',
+    unit: {
       render: (value) => (
         <span style={{
           whiteSpace: 'nowrap',
@@ -84,9 +74,7 @@ function Medicines() {
         </span>
       )
     },
-    {
-      key: 'description',
-      label: 'Description',
+    description: {
       render: (value) => (
         <div style={{
           whiteSpace: 'pre-wrap',
@@ -99,9 +87,9 @@ function Medicines() {
         </div>
       )
     },
-  ];
+  }), [navigate]);
 
-  const visibleColumns = filterColumns('medicines', TABLE_COLUMNS);
+  const visibleColumns = getEntityColumns('medicines', COLUMN_RENDERERS);
 
   return (
     <Container fluid className="p-3 p-md-4">

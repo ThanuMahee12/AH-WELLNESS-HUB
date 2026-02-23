@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col } from 'react-bootstrap'
@@ -15,16 +15,14 @@ function Tests() {
   const tests = useSelector(selectAllTests);
   const { loading, error } = useSelector(state => state.tests);
   const { checkPermission } = usePermission();
-  const { filterColumns, getItemsPerPage, getSearchFields } = useSettings();
+  const { getEntityColumns, getItemsPerPage, getSearchFields } = useSettings();
 
   useEffect(() => {
     dispatch(fetchTests());
   }, [dispatch]);
 
-  const TABLE_COLUMNS = [
-    {
-      key: 'code',
-      label: 'Code',
+  const COLUMN_RENDERERS = useMemo(() => ({
+    code: {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/tests/${item.id}`)}
@@ -37,9 +35,7 @@ function Tests() {
         </strong>
       )
     },
-    {
-      key: 'name',
-      label: 'Test Name',
+    name: {
       render: (value) => (
         <strong style={{
           whiteSpace: 'pre-wrap',
@@ -51,28 +47,21 @@ function Tests() {
         </strong>
       )
     },
-    {
-      key: 'price',
-      label: 'Price (Rs.)',
+    price: {
       render: (value) => (
         <span style={{ whiteSpace: 'nowrap' }}>
           Rs. {parseFloat(value).toFixed(2)}
         </span>
       )
     },
-    {
-      key: 'percentage',
-      label: 'Commission',
-      align: 'center',
+    percentage: {
       render: (value) => (
         <span className="text-theme fw-medium" style={{ whiteSpace: 'nowrap' }}>
           {value || 20}%
         </span>
       )
     },
-    {
-      key: 'details',
-      label: 'Details',
+    details: {
       render: (value) => (
         <div style={{
           whiteSpace: 'pre-wrap',
@@ -83,9 +72,7 @@ function Tests() {
         </div>
       )
     },
-    {
-      key: 'rules',
-      label: 'Rules',
+    rules: {
       render: (value) => (
         <div style={{
           whiteSpace: 'pre-wrap',
@@ -96,9 +83,9 @@ function Tests() {
         </div>
       )
     },
-  ];
+  }), [navigate]);
 
-  const visibleColumns = filterColumns('tests', TABLE_COLUMNS);
+  const visibleColumns = getEntityColumns('tests', COLUMN_RENDERERS);
 
   return (
     <Container fluid className="p-3 p-md-4">

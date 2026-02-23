@@ -21,7 +21,7 @@ function Checkups() {
   const { loading: patientsLoading } = useSelector(state => state.patients)
   const { loading: testsLoading } = useSelector(state => state.tests)
 
-  const { filterColumns, getItemsPerPage, getSearchFields } = useSettings()
+  const { getEntityColumns, getItemsPerPage, getSearchFields } = useSettings()
   const loading = checkupsLoading || patientsLoading || testsLoading
 
   useEffect(() => {
@@ -54,10 +54,8 @@ function Checkups() {
     return <LoadingSpinner text="Loading checkups data..." />
   }
 
-  const TABLE_COLUMNS = [
-    {
-      key: 'billNo',
-      label: 'Bill No',
+  const COLUMN_RENDERERS = {
+    billNo: {
       render: (value, item) => (
         <Badge
           onClick={() => handleViewDetails(item.id)}
@@ -69,16 +67,12 @@ function Checkups() {
         </Badge>
       )
     },
-    {
-      key: 'patientName',
-      label: 'Patient',
+    patientName: {
       render: (value) => (
         <strong style={{ fontSize: 'clamp(0.85rem, 2vw, 1rem)' }}>{value}</strong>
       )
     },
-    {
-      key: 'testNames',
-      label: 'Tests',
+    testNames: {
       render: (value) => (
         <div style={{
           maxWidth: window.innerWidth < 768 ? '150px' : '300px',
@@ -90,25 +84,21 @@ function Checkups() {
         </div>
       )
     },
-    {
-      key: 'total',
-      label: 'Total (Rs.)',
+    total: {
       render: (value) => (
         <strong style={{ fontSize: 'clamp(0.85rem, 2vw, 1rem)' }}>Rs. {value?.toFixed(2)}</strong>
       )
     },
-    {
-      key: 'timestamp',
-      label: 'Date/Time',
+    timestamp: {
       render: (value) => (
         <span style={{ fontSize: 'clamp(0.8rem, 2vw, 0.9rem)', whiteSpace: 'nowrap' }}>
           {new Date(value).toLocaleString()}
         </span>
       )
     },
-  ]
+  }
 
-  const visibleColumns = filterColumns('checkups', TABLE_COLUMNS)
+  const visibleColumns = getEntityColumns('checkups', COLUMN_RENDERERS)
 
   return (
     <Container fluid className="p-3 p-md-4">

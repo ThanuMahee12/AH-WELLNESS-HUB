@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col } from 'react-bootstrap'
@@ -15,29 +15,22 @@ function Patients() {
   const patients = useSelector(selectAllPatients);
   const { loading, error } = useSelector(state => state.patients);
   const { checkPermission } = usePermission();
-  const { filterColumns, getItemsPerPage, getSearchFields } = useSettings();
+  const { getEntityColumns, getItemsPerPage, getSearchFields } = useSettings();
 
   useEffect(() => {
     dispatch(fetchPatients());
   }, [dispatch]);
 
-  const TABLE_COLUMNS = [
-    {
-      key: 'gender',
-      label: '',
+  // Custom renderers for specific columns — only rendering logic, not column definitions
+  const COLUMN_RENDERERS = useMemo(() => ({
+    gender: {
       render: (value) => {
-        if (value === 'Male') {
-          return <FaMale className="text-theme" size={18} />
-        } else if (value === 'Female') {
-          return <FaFemale className="text-theme-light" size={18} />
-        } else {
-          return <FaUser style={{ color: '#0aa2c0' }} size={18} />
-        }
+        if (value === 'Male') return <FaMale className="text-theme" size={18} />
+        if (value === 'Female') return <FaFemale className="text-theme-light" size={18} />
+        return <FaUser style={{ color: '#0aa2c0' }} size={18} />
       }
     },
-    {
-      key: 'name',
-      label: 'Name',
+    name: {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/patients/${item.id}`)}
@@ -49,12 +42,9 @@ function Patients() {
         </strong>
       )
     },
-    { key: 'age', label: 'Age' },
-    { key: 'mobile', label: 'Mobile' },
-    { key: 'address', label: 'Address' },
-  ];
+  }), [navigate]);
 
-  const visibleColumns = filterColumns('patients', TABLE_COLUMNS);
+  const visibleColumns = getEntityColumns('patients', COLUMN_RENDERERS);
 
   return (
     <Container fluid className="p-3 p-md-4">

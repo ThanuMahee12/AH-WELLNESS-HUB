@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button } from 'react-bootstrap'
@@ -9,24 +9,6 @@ import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
 
-const TEST_FIELDS = [
-  { name: 'code', label: 'Test Code', type: 'text', required: true, colSize: 6, placeholder: 'e.g., S108' },
-  { name: 'name', label: 'Test Name', type: 'text', required: true, colSize: 6 },
-  { name: 'price', label: 'Price (Rs.)', type: 'number', required: true, colSize: 6, props: { step: '0.01' } },
-  { name: 'percentage', label: 'Commission (%)', type: 'number', required: true, colSize: 6, props: { step: '1', min: '0', max: '100' }, placeholder: '20' },
-  { name: 'details', label: 'Test Details', type: 'textarea', required: false, colSize: 6, rows: 3 },
-  { name: 'rules', label: 'Test Rules/Instructions', type: 'textarea', required: false, colSize: 6, rows: 3 },
-];
-
-const INITIAL_FORM = {
-  code: '',
-  name: '',
-  price: '',
-  percentage: '20',
-  details: '',
-  rules: '',
-};
-
 function TestDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -35,15 +17,24 @@ function TestDetail() {
   const { loading } = useSelector(state => state.tests)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
-  const { filterFields } = useSettings()
+  const { getEntityFields, getInitialFormData } = useSettings()
 
   const isNew = id === 'new'
   const test = isNew ? null : tests.find(t => t.id === id)
-  const visibleFields = filterFields('tests', TEST_FIELDS)
+
+  const visibleFields = getEntityFields('tests', {
+    code: { placeholder: 'e.g., S108' },
+    price: { props: { step: '0.01' } },
+    percentage: { props: { step: '1', min: '0', max: '100' }, placeholder: '20' },
+  })
+
+  const INITIAL_FORM = useMemo(() =>
+    getInitialFormData('tests', { percentage: '20' }),
+    [getInitialFormData]
+  )
 
   const validate = useCallback((data) => {
     const errors = {}
-    // Only check code uniqueness if code was changed from original
     const codeChanged = isNew || data.code?.toLowerCase() !== test?.code?.toLowerCase()
     if (codeChanged) {
       const codeExists = tests.find(t =>
@@ -90,14 +81,11 @@ function TestDetail() {
   // Load test data into form when editing
   useEffect(() => {
     if (test) {
-      form.resetTo({
-        code: test.code || '',
-        name: test.name || '',
-        price: test.price?.toString() || '',
-        percentage: test.percentage?.toString() || '20',
-        details: test.details || '',
-        rules: test.rules || '',
+      const resetData = { ...INITIAL_FORM }
+      Object.keys(resetData).forEach(key => {
+        if (test[key] != null) resetData[key] = String(test[key])
       })
+      form.resetTo(resetData)
     }
   }, [test?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -12,26 +12,14 @@ import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
 
-const USER_FIELDS = [
-  { name: 'username', label: 'Username', type: 'text', required: true, colSize: 6 },
-  { name: 'email', label: 'Email', type: 'email', required: true, colSize: 6 },
-  { name: 'mobile', label: 'Mobile', type: 'tel', required: true, colSize: 6 },
-  { name: 'role', label: 'Role', type: 'select', required: true, colSize: 6, options: [
-    { value: 'user', label: 'User' },
-    { value: 'editor', label: 'Editor' },
-    { value: 'maintainer', label: 'Maintainer' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'superadmin', label: 'Superadmin' },
-  ]},
+// Role options for the role select field (can't be stored in DB — React-specific)
+const ROLE_OPTIONS = [
+  { value: 'user', label: 'User' },
+  { value: 'editor', label: 'Editor' },
+  { value: 'maintainer', label: 'Maintainer' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'superadmin', label: 'Superadmin' },
 ];
-
-const INITIAL_FORM = {
-  username: '',
-  email: '',
-  mobile: '',
-  role: 'user',
-  password: '',
-};
 
 function UserDetail() {
   const { id } = useParams()
@@ -42,24 +30,31 @@ function UserDetail() {
   const { user: currentUser } = useSelector(state => state.auth)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
-  const { filterFields } = useSettings()
+  const { getEntityFields, getInitialFormData } = useSettings()
   const [resettingPassword, setResettingPassword] = useState(false)
   const [togglingStatus, setTogglingStatus] = useState(false)
 
   const isNew = id === 'new'
   const user = isNew ? null : users.find(u => u.id === id)
 
-  // Filter fields through settings, then add password field for new users
+  // Get fields from settings, inject role options, add password for new users
   const fields = useMemo(() => {
-    const filtered = filterFields('users', USER_FIELDS)
+    const entityFields = getEntityFields('users', {
+      role: { options: ROLE_OPTIONS },
+    })
     if (isNew) {
       return [
-        ...filtered,
+        ...entityFields,
         { name: 'password', label: 'Password', type: 'password', required: true, colSize: 6 },
       ]
     }
-    return filtered
-  }, [isNew, filterFields])
+    return entityFields
+  }, [isNew, getEntityFields])
+
+  const INITIAL_FORM = useMemo(() =>
+    getInitialFormData('users', { role: 'user', password: '' }),
+    [getInitialFormData]
+  )
 
   const handleFormSubmit = useCallback(async (formData) => {
     try {
@@ -90,13 +85,13 @@ function UserDetail() {
   // Load user data into form when editing
   useEffect(() => {
     if (user) {
-      form.resetTo({
-        username: user.username || '',
-        email: user.email || '',
-        mobile: user.mobile || '',
-        role: user.role || 'user',
-        password: '',
+      const resetData = { ...INITIAL_FORM }
+      Object.keys(resetData).forEach(key => {
+        if (user[key] != null) resetData[key] = String(user[key])
       })
+      resetData.password = ''
+      resetData.role = user.role || 'user'
+      form.resetTo(resetData)
     }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
