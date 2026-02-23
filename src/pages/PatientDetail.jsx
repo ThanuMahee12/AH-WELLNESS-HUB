@@ -7,7 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { selectAllPatients, addPatient, updatePatient, deletePatient, fetchPatients } from '../store/patientsSlice'
 import { selectAllCheckups } from '../store/checkupsSlice'
 import { selectAllTests } from '../store/testsSlice'
-import { useForm } from '../hooks'
+import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
@@ -31,7 +31,7 @@ const INITIAL_FORM = {
 };
 
 // Custom Gender Icon Selector Component
-const GenderIconSelector = ({ value, onChange, name, disabled }) => {
+const GenderIconSelector = ({ value, onChange, name, disabled, label = 'Gender', required = true }) => {
   const genderOptions = [
     { value: 'Male', icon: FaMale, color: '#0891B2' },
     { value: 'Female', icon: FaFemale, color: '#06B6D4' },
@@ -41,7 +41,7 @@ const GenderIconSelector = ({ value, onChange, name, disabled }) => {
   return (
     <Form.Group className="mb-3">
       <Form.Label>
-        Gender <span className="text-danger ms-1">*</span>
+        {label} {required && <span className="text-danger ms-1">*</span>}
       </Form.Label>
       <div className="d-flex gap-3">
         {genderOptions.map((option) => {
@@ -76,9 +76,12 @@ function PatientDetail() {
   const { loading } = useSelector(state => state.patients)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
+  const { filterFields, isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
 
   const isNew = id === 'new'
   const patient = isNew ? null : patients.find(p => p.id === id)
+
+  const visibleFields = filterFields('patients', PATIENT_FIELDS)
 
   const [patientCheckups, setPatientCheckups] = useState([])
   const [chartData, setChartData] = useState([])
@@ -218,7 +221,7 @@ function PatientDetail() {
         <Col>
           <EntityForm
             title={isNew ? 'New Patient Information' : 'Personal Information'}
-            fields={PATIENT_FIELDS}
+            fields={visibleFields}
             formData={form.formData}
             formErrors={form.errors}
             onFormChange={form.handleChange}
@@ -229,7 +232,7 @@ function PatientDetail() {
             isEditing={!isNew}
           >
             <Row className="g-3">
-              {PATIENT_FIELDS.slice(0, 2).map((field) => (
+              {visibleFields.slice(0, 2).map((field) => (
                 <Col key={field.name} xs={12} md={field.colSize || 6}>
                   <Form.Group className="mb-3">
                     <Form.Label>
@@ -247,15 +250,19 @@ function PatientDetail() {
                   </Form.Group>
                 </Col>
               ))}
-              <Col xs={12}>
-                <GenderIconSelector
-                  value={form.formData.gender}
-                  onChange={form.handleChange}
-                  name="gender"
-                  disabled={form.isSubmitting || !canEdit}
-                />
-              </Col>
-              {PATIENT_FIELDS.slice(2).map((field) => (
+              {isFieldVisible('patients', 'gender') && (
+                <Col xs={12}>
+                  <GenderIconSelector
+                    value={form.formData.gender}
+                    onChange={form.handleChange}
+                    name="gender"
+                    disabled={form.isSubmitting || !canEdit}
+                    label={getFieldLabel('patients', 'gender', 'Gender')}
+                    required={isFieldRequired('patients', 'gender', true)}
+                  />
+                </Col>
+              )}
+              {visibleFields.slice(2).map((field) => (
                 <Col key={field.name} xs={12} md={field.colSize || 6}>
                   <Form.Group className="mb-3">
                     <Form.Label>

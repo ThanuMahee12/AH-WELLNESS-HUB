@@ -2,6 +2,18 @@ import { useSelector } from 'react-redux'
 import { hasPermission, canViewRole, isRoleHigherOrEqual } from '../../constants/roles'
 
 /**
+ * Check permission using settings first, falling back to hardcoded PERMISSIONS.
+ */
+const checkSettingsPermission = (settingsPermissions, userRole, resource, action) => {
+  const rolesArray = settingsPermissions?.[resource]?.[action]
+  if (rolesArray) {
+    return rolesArray.includes(userRole)
+  }
+  // Fallback to hardcoded
+  return hasPermission(userRole, resource, action)
+}
+
+/**
  * Permission Gate Component
  * Conditionally renders children based on user permissions
  *
@@ -19,6 +31,7 @@ export const PermissionGate = ({
   targetRole = null, // For viewing specific roles
 }) => {
   const user = useSelector((state) => state.auth.user)
+  const settingsPermissions = useSelector((state) => state.settings.data?.permissions)
 
   if (!user || !user.role) {
     return fallback
@@ -36,7 +49,7 @@ export const PermissionGate = ({
 
   // Check if user has permission for resource and action
   if (resource && action) {
-    if (!hasPermission(user.role, resource, action)) {
+    if (!checkSettingsPermission(settingsPermissions, user.role, resource, action)) {
       return fallback
     }
   }
@@ -49,10 +62,11 @@ export const PermissionGate = ({
  */
 export const usePermission = () => {
   const user = useSelector((state) => state.auth.user)
+  const settingsPermissions = useSelector((state) => state.settings.data?.permissions)
 
   const checkPermission = (resource, action) => {
     if (!user || !user.role) return false
-    return hasPermission(user.role, resource, action)
+    return checkSettingsPermission(settingsPermissions, user.role, resource, action)
   }
 
   const checkRole = (requiredRole) => {

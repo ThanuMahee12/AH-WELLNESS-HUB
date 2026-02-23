@@ -1,0 +1,111 @@
+import { useSelector, useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { Row, Col, Card, Table, Form, Button } from 'react-bootstrap'
+import { FaPlus } from 'react-icons/fa'
+import { updateSettings } from '../../store/settingsSlice'
+import { useSettings } from '../../hooks/useSettings'
+import { ENTITY_LABELS } from '../../constants/defaultSettings'
+import { useNotification } from '../../context'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+
+const TABLE_ENTITIES = ['patients', 'tests', 'medicines', 'users', 'checkups']
+
+function TablesSettingsTab() {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const { settings, loading } = useSettings()
+  const { user } = useSelector(state => state.auth)
+  const { error: showError } = useNotification()
+
+  const handleToggle = async (entity, columnKey, value) => {
+    try {
+      await dispatch(updateSettings({
+        data: {
+          tables: {
+            [entity]: {
+              columns: {
+                [columnKey]: { visible: value },
+              },
+            },
+          },
+        },
+        user,
+      })).unwrap()
+    } catch (err) {
+      showError('Failed to update setting: ' + (err || 'Unknown error'))
+    }
+  }
+
+  if (loading) {
+    return <LoadingSpinner text="Loading settings..." />
+  }
+
+  return (
+    <Row className="g-3">
+      {TABLE_ENTITIES.map((entity) => {
+        const columns = settings?.tables?.[entity]?.columns
+        if (!columns) return null
+
+        return (
+          <Col xs={12} key={entity}>
+            <Card className="shadow-sm">
+              <Card.Header className="card-header-theme d-flex justify-content-between align-items-center">
+                <h5 className="mb-0 fs-responsive-md">{ENTITY_LABELS[entity]} Table Columns</h5>
+                <Button
+                  size="sm"
+                  className="btn-theme-add"
+                  onClick={() => navigate(`/settings/tables/${entity}/new`)}
+                >
+                  <FaPlus className="me-1" /> Add Column
+                </Button>
+              </Card.Header>
+              <Card.Body className="p-0">
+                <div className="table-responsive">
+                  <Table hover className="mb-0 table-mobile-responsive align-middle">
+                    <thead className="bg-theme-slate">
+                      <tr>
+                        <th style={{ width: '30%' }}>Column Key</th>
+                        <th style={{ width: '40%' }}>Display Name</th>
+                        <th style={{ width: '25%', textAlign: 'center' }}>Visible</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(columns).map(([columnKey, cfg]) => (
+                        <tr key={columnKey} style={{ opacity: cfg.visible === false ? 0.5 : 1 }}>
+                          <td data-label="Column Key">
+                            <strong
+                              onClick={() => navigate(`/settings/tables/${entity}/${columnKey}`)}
+                              className="clickable-link text-theme"
+                              style={{ cursor: 'pointer' }}
+                              onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+                            >
+                              {columnKey}
+                            </strong>
+                          </td>
+                          <td data-label="Display Name">
+                            <span style={{ fontSize: '0.9rem' }}>{cfg.label || columnKey}</span>
+                          </td>
+                          <td data-label="Visible" style={{ textAlign: 'center' }}>
+                            <Form.Check
+                              type="switch"
+                              checked={cfg.visible !== false}
+                              onChange={(e) => handleToggle(entity, columnKey, e.target.checked)}
+                              className="d-inline-block"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        )
+      })}
+    </Row>
+  )
+}
+
+export default TablesSettingsTab

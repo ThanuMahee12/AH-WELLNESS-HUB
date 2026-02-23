@@ -9,6 +9,7 @@ import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsS
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { useNotification } from '../context'
 import { usePermission } from '../components/auth/PermissionGate'
+import { useSettings } from '../hooks'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
 function CheckupForm() {
@@ -17,6 +18,7 @@ function CheckupForm() {
   const dispatch = useDispatch()
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
+  const { isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
 
   const checkups = useSelector(selectAllCheckups)
   const patients = useSelector(selectAllPatients)
@@ -309,74 +311,105 @@ function CheckupForm() {
                     </Card.Header>
                     <Card.Body>
                       <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Name *</Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={newPatientData.name}
-                              onChange={(e) => setNewPatientData({ ...newPatientData, name: e.target.value })}
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Age *</Form.Label>
-                            <Form.Control
-                              type="number"
-                              value={newPatientData.age}
-                              onChange={(e) => setNewPatientData({ ...newPatientData, age: e.target.value })}
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Gender *</Form.Label>
-                            <Form.Select
-                              value={newPatientData.gender}
-                              onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}
-                            >
-                              <option>Male</option>
-                              <option>Female</option>
-                              <option>Other</option>
-                            </Form.Select>
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Mobile *</Form.Label>
-                            <Form.Control
-                              type="tel"
-                              value={newPatientData.mobile}
-                              onChange={(e) => setNewPatientData({ ...newPatientData, mobile: e.target.value })}
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Email</Form.Label>
-                            <Form.Control
-                              type="email"
-                              value={newPatientData.email}
-                              onChange={(e) => setNewPatientData({ ...newPatientData, email: e.target.value })}
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={12}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Address *</Form.Label>
-                            <Form.Control
-                              as="textarea"
-                              rows={2}
-                              value={newPatientData.address}
-                              onChange={(e) => setNewPatientData({ ...newPatientData, address: e.target.value })}
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
+                        {isFieldVisible('patients', 'name') && (
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                {getFieldLabel('patients', 'name', 'Name')}
+                                {isFieldRequired('patients', 'name', true) && <span className="text-danger ms-1">*</span>}
+                              </Form.Label>
+                              <Form.Control
+                                type="text"
+                                value={newPatientData.name}
+                                onChange={(e) => setNewPatientData({ ...newPatientData, name: e.target.value })}
+                                required={isFieldRequired('patients', 'name', true)}
+                              />
+                            </Form.Group>
+                          </Col>
+                        )}
+                        {isFieldVisible('patients', 'age') && (
+                          <Col md={3}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                {getFieldLabel('patients', 'age', 'Age')}
+                                {isFieldRequired('patients', 'age', true) && <span className="text-danger ms-1">*</span>}
+                              </Form.Label>
+                              <Form.Control
+                                type="number"
+                                value={newPatientData.age}
+                                onChange={(e) => setNewPatientData({ ...newPatientData, age: e.target.value })}
+                                required={isFieldRequired('patients', 'age', true)}
+                              />
+                            </Form.Group>
+                          </Col>
+                        )}
+                        {isFieldVisible('patients', 'gender') && (
+                          <Col md={3}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                {getFieldLabel('patients', 'gender', 'Gender')}
+                                {isFieldRequired('patients', 'gender', true) && <span className="text-danger ms-1">*</span>}
+                              </Form.Label>
+                              <Form.Select
+                                value={newPatientData.gender}
+                                onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}
+                              >
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                              </Form.Select>
+                            </Form.Group>
+                          </Col>
+                        )}
+                        {isFieldVisible('patients', 'mobile') && (
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                {getFieldLabel('patients', 'mobile', 'Mobile')}
+                                {isFieldRequired('patients', 'mobile', true) && <span className="text-danger ms-1">*</span>}
+                              </Form.Label>
+                              <Form.Control
+                                type="tel"
+                                value={newPatientData.mobile}
+                                onChange={(e) => setNewPatientData({ ...newPatientData, mobile: e.target.value })}
+                                required={isFieldRequired('patients', 'mobile', true)}
+                              />
+                            </Form.Group>
+                          </Col>
+                        )}
+                        {isFieldVisible('patients', 'email') && (
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                {getFieldLabel('patients', 'email', 'Email')}
+                                {isFieldRequired('patients', 'email', false) && <span className="text-danger ms-1">*</span>}
+                              </Form.Label>
+                              <Form.Control
+                                type="email"
+                                value={newPatientData.email}
+                                onChange={(e) => setNewPatientData({ ...newPatientData, email: e.target.value })}
+                                required={isFieldRequired('patients', 'email', false)}
+                              />
+                            </Form.Group>
+                          </Col>
+                        )}
+                        {isFieldVisible('patients', 'address') && (
+                          <Col md={12}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                {getFieldLabel('patients', 'address', 'Address')}
+                                {isFieldRequired('patients', 'address', true) && <span className="text-danger ms-1">*</span>}
+                              </Form.Label>
+                              <Form.Control
+                                as="textarea"
+                                rows={2}
+                                value={newPatientData.address}
+                                onChange={(e) => setNewPatientData({ ...newPatientData, address: e.target.value })}
+                                required={isFieldRequired('patients', 'address', true)}
+                              />
+                            </Form.Group>
+                          </Col>
+                        )}
                       </Row>
                       <Button variant="primary" onClick={handleCreateNewPatient} size="sm">
                         <FaPlus className="me-1" />

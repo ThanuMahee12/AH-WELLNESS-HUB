@@ -7,6 +7,7 @@ import usersReducer from './usersSlice'
 import editRequestsReducer from './editRequestsSlice'
 import userChangeRequestsReducer from './userChangeRequestsSlice'
 import medicinesReducer from './medicinesSlice'
+import settingsReducer from './settingsSlice'
 
 const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ const store = configureStore({
     editRequests: editRequestsReducer,
     userChangeRequests: userChangeRequestsReducer,
     medicines: medicinesReducer,
+    settings: settingsReducer,
   },
 })
 

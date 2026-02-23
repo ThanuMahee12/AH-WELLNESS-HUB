@@ -7,6 +7,7 @@ import { fetchMedicines, selectAllMedicines } from '../store/medicinesSlice'
 import { PageHeader } from '../components/ui'
 import { EnhancedCRUDTable } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
+import { useSettings } from '../hooks'
 
 function Medicines() {
   const dispatch = useDispatch();
@@ -14,6 +15,7 @@ function Medicines() {
   const medicines = useSelector(selectAllMedicines);
   const { loading, error } = useSelector(state => state.medicines);
   const { checkPermission } = usePermission();
+  const { filterColumns } = useSettings();
 
   useEffect(() => {
     dispatch(fetchMedicines());
@@ -99,6 +101,8 @@ function Medicines() {
     },
   ];
 
+  const visibleColumns = filterColumns('medicines', TABLE_COLUMNS);
+
   return (
     <Container fluid className="p-3 p-md-4">
       <PageHeader
@@ -113,7 +117,7 @@ function Medicines() {
         <Col>
           <EnhancedCRUDTable
             data={medicines}
-            columns={TABLE_COLUMNS}
+            columns={visibleColumns}
             loading={loading}
             error={error}
             emptyMessage="No medicines available"

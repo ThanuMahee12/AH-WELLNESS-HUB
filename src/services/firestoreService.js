@@ -5,6 +5,8 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  getDoc,
+  setDoc,
   query,
   orderBy,
   onSnapshot
@@ -67,6 +69,31 @@ export const firestoreService = {
   delete: async (collectionName, id) => {
     try {
       await deleteDoc(doc(db, collectionName, id))
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Get app settings document
+  getSettings: async () => {
+    try {
+      const docRef = doc(db, 'settings', 'app-settings')
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        return { success: true, data: docSnap.data() }
+      }
+      return { success: true, data: null }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Update app settings document (merge)
+  updateSettings: async (data) => {
+    try {
+      const docRef = doc(db, 'settings', 'app-settings')
+      await setDoc(docRef, data, { merge: true })
       return { success: true }
     } catch (error) {
       return { success: false, error: error.message }

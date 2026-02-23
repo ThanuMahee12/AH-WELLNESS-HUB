@@ -47,6 +47,9 @@ export const ACTIVITY_TYPES = {
   USER_REQUEST_APPROVE: 'user_request_approve',
   USER_REQUEST_REJECT: 'user_request_reject',
   USER_PASSWORD_RESET: 'user_password_reset',
+
+  // Settings
+  SETTINGS_UPDATE: 'settings_update',
 }
 
 /**
@@ -284,6 +287,9 @@ export const createActivityDescription = (activityType, metadata = {}) => {
     user_request_approve: `Approved user request: ${metadata.username || 'Unknown'}`,
     user_request_reject: `Rejected user request: ${metadata.username || 'Unknown'}`,
     user_password_reset: `Reset password for: ${metadata.username || 'Unknown'}`,
+
+    // Settings
+    settings_update: 'Updated application settings',
   }
 
   return descriptions[activityType] || `Performed action: ${activityType}`
