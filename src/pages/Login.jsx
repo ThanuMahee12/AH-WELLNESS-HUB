@@ -7,12 +7,19 @@ import { loginUser, setUser } from '../store/authSlice'
 import { authService } from '../services/authService'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 import { useForm } from '../hooks'
+import { useSettings } from '../hooks/useSettings'
 import '../styles/Login.css'
 
 function Login() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { loading, error } = useSelector(state => state.auth)
+  const { settings } = useSettings()
+  const resetPasswordRoles = settings?.pages?.login?.showResetPassword
+  const signUpRoles = settings?.pages?.login?.showSignUp
+  const showResetPassword = Array.isArray(resetPasswordRoles) ? resetPasswordRoles.length > 0 : resetPasswordRoles !== false
+  const showSignUp = Array.isArray(signUpRoles) ? signUpRoles.length > 0 : signUpRoles !== false
+
   const [view, setView] = useState('login') // 'login' | 'forgot' | 'signup'
   const [message, setMessage] = useState('')
 
@@ -159,17 +166,19 @@ function Login() {
                       />
                     </Form.Group>
 
-                    <div className="text-end mb-3">
-                      <Button
-                        variant="link"
-                        className="p-0 text-decoration-none"
-                        style={{ color: '#0891B2', fontSize: '0.85rem' }}
-                        onClick={() => switchView('forgot')}
-                        type="button"
-                      >
-                        Forgot Password?
-                      </Button>
-                    </div>
+                    {showResetPassword && (
+                      <div className="text-end mb-3">
+                        <Button
+                          variant="link"
+                          className="p-0 text-decoration-none"
+                          style={{ color: '#0891B2', fontSize: '0.85rem' }}
+                          onClick={() => switchView('forgot')}
+                          type="button"
+                        >
+                          Forgot Password?
+                        </Button>
+                      </div>
+                    )}
 
                     <Button
                       type="submit"
@@ -186,20 +195,22 @@ function Login() {
                       )}
                     </Button>
 
-                    <div className="text-center mt-3">
-                      <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                        Don't have an account?{' '}
-                        <Button
-                          variant="link"
-                          className="p-0 text-decoration-none fw-semibold"
-                          style={{ color: '#0891B2', fontSize: '0.9rem' }}
-                          onClick={() => switchView('signup')}
-                          type="button"
-                        >
-                          Sign Up
-                        </Button>
-                      </span>
-                    </div>
+                    {showSignUp && (
+                      <div className="text-center mt-3">
+                        <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                          Don't have an account?{' '}
+                          <Button
+                            variant="link"
+                            className="p-0 text-decoration-none fw-semibold"
+                            style={{ color: '#0891B2', fontSize: '0.9rem' }}
+                            onClick={() => switchView('signup')}
+                            type="button"
+                          >
+                            Sign Up
+                          </Button>
+                        </span>
+                      </div>
+                    )}
                   </Form>
                 )}
 

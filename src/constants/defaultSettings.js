@@ -131,6 +131,11 @@ export const DEFAULT_SETTINGS = {
     },
   },
   pages: {
+    login: {
+      label: 'Login', path: '/login', sidebar: false,
+      showResetPassword: ['superadmin', 'maintainer', 'editor', 'user'],
+      showSignUp: ['superadmin', 'maintainer', 'editor', 'user'],
+    },
     home: {
       label: 'Home', icon: 'FaHome', path: '/', order: 0,
       sidebar: false,
