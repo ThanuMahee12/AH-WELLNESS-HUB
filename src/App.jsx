@@ -24,6 +24,7 @@ const TestDetail = lazy(() => import('./pages/TestDetail'))
 const Medicines = lazy(() => import('./pages/Medicines'))
 const MedicineDetail = lazy(() => import('./pages/MedicineDetail'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
+const UserDetail = lazy(() => import('./pages/UserDetail'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 
 // Create a wrapper component to access notification context
@@ -190,6 +191,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users/:id"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <UserDetail />
                   </ProtectedRoute>
                 }
               />
