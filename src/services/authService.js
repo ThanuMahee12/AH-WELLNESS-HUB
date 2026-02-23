@@ -12,6 +12,9 @@ import { initializeApp, deleteApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { firebaseConfig } from '../config/firebase'
 
+// Flag to prevent onAuthStateChanged from signing out during self-registration
+let _selfRegistering = false
+
 export const authService = {
   // Login user
   login: async (email, password) => {
@@ -162,6 +165,44 @@ export const authService = {
     }
   },
 
+  // Self-register (uses main auth so user is auto-logged in)
+  selfRegister: async (userData) => {
+    try {
+      // Prevent onAuthStateChanged from signing out before Firestore profile is written
+      _selfRegistering = true
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        userData.email,
+        userData.password
+      )
+
+      const userProfile = {
+        username: userData.username,
+        email: userData.email,
+        mobile: userData.mobile || '',
+        role: 'user',
+        createdAt: new Date().toISOString()
+      }
+
+      await setDoc(doc(db, 'users', userCredential.user.uid), userProfile)
+      await updateProfile(userCredential.user, { displayName: userData.username })
+
+      _selfRegistering = false
+
+      return {
+        success: true,
+        user: {
+          uid: userCredential.user.uid,
+          ...userProfile
+        }
+      }
+    } catch (error) {
+      _selfRegistering = false
+      return { success: false, error: error.message }
+    }
+  },
+
   // Auth state observer
   onAuthStateChange: (callback) => {
     return onAuthStateChanged(auth, async (user) => {
@@ -183,6 +224,9 @@ export const authService = {
             email: user.email,
             ...userData
           })
+        } else if (_selfRegistering) {
+          // Self-registration in progress, Firestore profile not yet written — skip
+          return
         } else {
           // User profile doesn't exist in Firestore
           // Sign them out automatically

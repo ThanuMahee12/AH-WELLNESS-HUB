@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Spinner } from 'react-bootstrap'
-import { FaUsers, FaArrowLeft, FaKey } from 'react-icons/fa'
-import { fetchUsers, updateUser, deleteUser, selectAllUsers } from '../store/usersSlice'
+import { FaUsers, FaArrowLeft, FaKey, FaBan, FaCheckCircle } from 'react-icons/fa'
+import { fetchUsers, updateUser, deleteUser, toggleUserStatus, selectAllUsers } from '../store/usersSlice'
 import { registerUser } from '../store/authSlice'
 import { authService } from '../services/authService'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
@@ -43,6 +43,7 @@ function UserDetail() {
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
   const [resettingPassword, setResettingPassword] = useState(false)
+  const [togglingStatus, setTogglingStatus] = useState(false)
 
   const isNew = id === 'new'
   const user = isNew ? null : users.find(u => u.id === id)
@@ -158,6 +159,24 @@ function UserDetail() {
     }
   }
 
+  const handleToggleStatus = async () => {
+    const action = user.disabled ? 'enable' : 'disable'
+    if (!window.confirm(`Are you sure you want to ${action} this user account?`)) return
+
+    setTogglingStatus(true)
+    try {
+      const result = await dispatch(toggleUserStatus({ id, disabled: !!user.disabled }))
+      if (result.type.includes('rejected')) {
+        throw new Error(result.payload || `Failed to ${action} user`)
+      }
+      success(`User account ${action}d successfully!`)
+    } catch (err) {
+      showError(err.message || `Failed to ${action} user`)
+    } finally {
+      setTogglingStatus(false)
+    }
+  }
+
   // Not found
   if (!isNew && !user && users.length > 0) {
     return (
@@ -234,6 +253,46 @@ function UserDetail() {
                     <>
                       <FaKey className="me-2" />
                       Send Password Reset Email
+                    </>
+                  )}
+                </Button>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {!isNew && user && currentUser?.role === 'superadmin' && user.id !== currentUser.uid && (
+        <Row className="mt-3">
+          <Col>
+            <Card className="shadow-sm" style={{ borderLeft: `4px solid ${user.disabled ? '#198754' : '#dc3545'}` }}>
+              <Card.Header className="card-header-theme">
+                <h5 className="mb-0 fs-responsive-md">Account Status</h5>
+              </Card.Header>
+              <Card.Body>
+                <p className="text-muted mb-3">
+                  This account is currently{' '}
+                  <strong style={{ color: user.disabled ? '#dc3545' : '#198754' }}>
+                    {user.disabled ? 'Disabled' : 'Active'}
+                  </strong>.
+                  {user.disabled
+                    ? ' The user cannot log in. Enable to restore access.'
+                    : ' The user can log in normally. Disable to revoke access.'}
+                </p>
+                <Button
+                  onClick={handleToggleStatus}
+                  disabled={togglingStatus}
+                  variant={user.disabled ? 'success' : 'danger'}
+                >
+                  {togglingStatus ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      {user.disabled ? 'Enabling...' : 'Disabling...'}
+                    </>
+                  ) : (
+                    <>
+                      {user.disabled ? <FaCheckCircle className="me-2" /> : <FaBan className="me-2" />}
+                      {user.disabled ? 'Enable Account' : 'Disable Account'}
                     </>
                   )}
                 </Button>

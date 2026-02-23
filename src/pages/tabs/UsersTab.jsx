@@ -26,7 +26,7 @@ function UsersTab() {
         <strong
           onClick={() => navigate(`/users/${item.id}`)}
           className="clickable-link text-theme"
-          style={{ whiteSpace: 'nowrap' }}
+          style={{ whiteSpace: 'nowrap', opacity: item.disabled ? 0.5 : 1 }}
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
         >

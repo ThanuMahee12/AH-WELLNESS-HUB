@@ -11,6 +11,7 @@ export const ACTIVITY_TYPES = {
   // Authentication
   LOGIN: 'login',
   LOGOUT: 'logout',
+  SIGNUP: 'signup',
 
   // Patients
   PATIENT_CREATE: 'patient_create',
@@ -247,6 +248,7 @@ export const createActivityDescription = (activityType, metadata = {}) => {
     // Auth
     login: 'Logged in',
     logout: 'Logged out',
+    signup: `New account registered: ${metadata.username || 'Unknown'}`,
 
     // Patients
     patient_create: `Created patient: ${metadata.patientName || 'Unknown'}`,
