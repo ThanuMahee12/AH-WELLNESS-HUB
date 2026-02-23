@@ -9,6 +9,7 @@ import { useNotification } from '../../context'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 const TABLE_ENTITIES = ['patients', 'tests', 'medicines', 'users', 'checkups']
+const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20, 25, 50]
 
 function TablesSettingsTab() {
   const dispatch = useDispatch()
@@ -16,6 +17,21 @@ function TablesSettingsTab() {
   const { settings, loading } = useSettings()
   const { user } = useSelector(state => state.auth)
   const { error: showError } = useNotification()
+
+  const handleItemsPerPage = async (entity, value) => {
+    try {
+      await dispatch(updateSettings({
+        data: {
+          tables: {
+            [entity]: { itemsPerPage: Number(value) },
+          },
+        },
+        user,
+      })).unwrap()
+    } catch (err) {
+      showError('Failed to update setting: ' + (err || 'Unknown error'))
+    }
+  }
 
   const handleToggle = async (entity, columnKey, value) => {
     try {
@@ -43,14 +59,33 @@ function TablesSettingsTab() {
   return (
     <Row className="g-3">
       {TABLE_ENTITIES.map((entity) => {
-        const columns = settings?.tables?.[entity]?.columns
+        const tableSettings = settings?.tables?.[entity]
+        const columns = tableSettings?.columns
         if (!columns) return null
+        const currentItemsPerPage = tableSettings?.itemsPerPage || 10
 
         return (
           <Col xs={12} key={entity}>
             <Card className="shadow-sm">
               <Card.Header className="card-header-theme d-flex justify-content-between align-items-center">
-                <h5 className="mb-0 fs-responsive-md">{ENTITY_LABELS[entity]} Table Columns</h5>
+                <div className="d-flex align-items-center gap-3 flex-wrap">
+                  <h5 className="mb-0 fs-responsive-md">{ENTITY_LABELS[entity]} Table</h5>
+                  <div className="d-flex align-items-center gap-2">
+                    <Form.Label className="mb-0 text-white" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      Rows per page:
+                    </Form.Label>
+                    <Form.Select
+                      size="sm"
+                      value={currentItemsPerPage}
+                      onChange={(e) => handleItemsPerPage(entity, e.target.value)}
+                      style={{ width: '75px' }}
+                    >
+                      {ITEMS_PER_PAGE_OPTIONS.map(n => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </Form.Select>
+                  </div>
+                </div>
                 <Button
                   size="sm"
                   className="btn-theme-add"

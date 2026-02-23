@@ -21,7 +21,7 @@ function Checkups() {
   const { loading: patientsLoading } = useSelector(state => state.patients)
   const { loading: testsLoading } = useSelector(state => state.tests)
 
-  const { filterColumns } = useSettings()
+  const { filterColumns, getItemsPerPage } = useSettings()
   const loading = checkupsLoading || patientsLoading || testsLoading
 
   useEffect(() => {
@@ -149,7 +149,7 @@ function Checkups() {
             loading={loading}
             error={checkupsError}
             emptyMessage="No checkups recorded yet"
-            itemsPerPage={10}
+            itemsPerPage={getItemsPerPage('checkups')}
             searchFields={['billNo', 'patientName', 'testNames']}
           />
         </Col>

@@ -15,7 +15,7 @@ function Patients() {
   const patients = useSelector(selectAllPatients);
   const { loading, error } = useSelector(state => state.patients);
   const { checkPermission } = usePermission();
-  const { filterColumns } = useSettings();
+  const { filterColumns, getItemsPerPage } = useSettings();
 
   useEffect(() => {
     dispatch(fetchPatients());
@@ -74,7 +74,7 @@ function Patients() {
             loading={loading}
             error={error}
             emptyMessage="No patients registered yet"
-            itemsPerPage={10}
+            itemsPerPage={getItemsPerPage('patients')}
             searchFields={['name', 'age', 'gender', 'mobile', 'email', 'address']}
           />
         </Col>

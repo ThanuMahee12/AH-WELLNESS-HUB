@@ -90,6 +90,11 @@ export function useSettings() {
     return roles.includes(userRole)
   }, [settings])
 
+  // Get items per page for a table entity
+  const getItemsPerPage = useCallback((entity) => {
+    return settings?.tables?.[entity]?.itemsPerPage || 10
+  }, [settings])
+
   // Check if a role has permission for a resource+action (settings first, hardcoded fallback)
   const checkPermission = useCallback((resource, action, userRole) => {
     const rolesArray = settings?.permissions?.[resource]?.[action]
@@ -110,6 +115,7 @@ export function useSettings() {
     getFieldLabel,
     getPageRoles,
     canAccessPage,
+    getItemsPerPage,
     checkPermission,
   }
 }

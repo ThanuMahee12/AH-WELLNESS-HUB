@@ -120,6 +120,7 @@ export const DEFAULT_SETTINGS = {
   },
   tables: {
     patients: {
+      itemsPerPage: 10,
       columns: {
         gender: { visible: true, label: '' },
         name: { visible: true, label: 'Name' },
@@ -129,6 +130,7 @@ export const DEFAULT_SETTINGS = {
       },
     },
     tests: {
+      itemsPerPage: 10,
       columns: {
         code: { visible: true, label: 'Code' },
         name: { visible: true, label: 'Test Name' },
@@ -139,6 +141,7 @@ export const DEFAULT_SETTINGS = {
       },
     },
     medicines: {
+      itemsPerPage: 10,
       columns: {
         code: { visible: true, label: 'Code' },
         name: { visible: true, label: 'Medicine Name' },
@@ -149,6 +152,7 @@ export const DEFAULT_SETTINGS = {
       },
     },
     users: {
+      itemsPerPage: 10,
       columns: {
         username: { visible: true, label: 'Username' },
         email: { visible: true, label: 'Email' },
@@ -157,6 +161,7 @@ export const DEFAULT_SETTINGS = {
       },
     },
     checkups: {
+      itemsPerPage: 10,
       columns: {
         billNo: { visible: true, label: 'Bill No' },
         patientName: { visible: true, label: 'Patient' },

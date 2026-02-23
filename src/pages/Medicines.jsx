@@ -15,7 +15,7 @@ function Medicines() {
   const medicines = useSelector(selectAllMedicines);
   const { loading, error } = useSelector(state => state.medicines);
   const { checkPermission } = usePermission();
-  const { filterColumns } = useSettings();
+  const { filterColumns, getItemsPerPage } = useSettings();
 
   useEffect(() => {
     dispatch(fetchMedicines());
@@ -121,7 +121,7 @@ function Medicines() {
             loading={loading}
             error={error}
             emptyMessage="No medicines available"
-            itemsPerPage={10}
+            itemsPerPage={getItemsPerPage('medicines')}
             searchFields={['code', 'name', 'brand', 'unit', 'description']}
           />
         </Col>
