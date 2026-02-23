@@ -23,9 +23,7 @@ export const fetchUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     const result = await firestoreService.getAll(COLLECTION)
     if (result.success) {
-      // Filter out disabled users from the admin list
-      const activeUsers = result.data.filter(user => !user.disabled)
-      return activeUsers
+      return result.data
     } else {
       return rejectWithValue(result.error)
     }
@@ -112,6 +110,40 @@ export const deleteUser = createAsyncThunk(
   }
 )
 
+export const toggleUserStatus = createAsyncThunk(
+  'users/toggleStatus',
+  async ({ id, disabled }, { rejectWithValue, getState }) => {
+    const state = getState()
+    const currentUser = state.auth.user
+    const targetUser = state.users.entities[id]
+
+    const result = disabled
+      ? await authService.enableUser(id)
+      : await authService.deleteUser(id)
+
+    if (result.success) {
+      const newDisabled = !disabled
+      if (currentUser && targetUser) {
+        await logActivity({
+          userId: currentUser.uid,
+          username: currentUser.username || currentUser.email,
+          userRole: currentUser.role,
+          activityType: newDisabled ? ACTIVITY_TYPES.USER_DELETE : ACTIVITY_TYPES.USER_UPDATE,
+          description: `${newDisabled ? 'Disabled' : 'Enabled'} user: ${targetUser.username || 'Unknown'}`,
+          metadata: {
+            targetUserId: id,
+            username: targetUser.username,
+            action: newDisabled ? 'disable' : 'enable'
+          }
+        })
+      }
+      return { id, disabled: newDisabled }
+    } else {
+      return rejectWithValue(result.error)
+    }
+  }
+)
+
 const usersSlice = createSlice({
   name: 'users',
   initialState,
@@ -167,6 +199,13 @@ const usersSlice = createSlice({
       .addCase(deleteUser.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+      })
+      // Toggle user status
+      .addCase(toggleUserStatus.fulfilled, (state, action) => {
+        usersAdapter.updateOne(state, {
+          id: action.payload.id,
+          changes: { disabled: action.payload.disabled }
+        })
       })
       // Listen to registerUser from authSlice
       .addCase(registerUser.fulfilled, (state, action) => {

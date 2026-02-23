@@ -7,9 +7,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper function to get user role
+    // Helper function to get user role (safe — returns '' if profile doesn't exist yet)
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null ? userDoc.data.role : '';
     }
 
     // Helper function to check if user is superadmin
@@ -33,7 +34,9 @@ service cloud.firestore {
       // Superadmin can write to any user
       // Maintainer can update users but not change email
       // Users can write to their own profile
-      allow create: if isSuperAdmin();
+      // Self-registration (own doc, role must be 'user') checked first to avoid get() error for new users
+      allow create: if (isAuthenticated() && request.auth.uid == userId && request.resource.data.role == 'user')
+        || isSuperAdmin();
       allow delete: if isSuperAdmin();
       allow update: if isSuperAdmin()
         || (isMaintainer() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']))
