@@ -264,12 +264,7 @@ function Dashboard() {
           </div>
           <div className="flex-grow-1 overflow-hidden">
             <h6 className="text-muted mb-1 text-nowrap text-truncate">{title}</h6>
-            <h3 className="mb-0 text-nowrap" style={{
-              fontSize: 'clamp(0.9rem, 2vw, 1.5rem)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
+            <h3 className="mb-0 text-nowrap text-truncate fs-responsive-heading">
               {value}
             </h3>
           </div>
@@ -356,7 +351,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
+            <Card.Header className="bg-theme-gradient text-white">
               <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
                 <h5 className="mb-0">
                   <FaChartLine className="me-2" />
@@ -472,7 +467,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
+            <Card.Header className="bg-theme-gradient text-white">
               <h5 className="mb-0">
                 <FaFlask className="me-2" />
                 Popular Tests
@@ -536,21 +531,14 @@ function Dashboard() {
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
+            <Card.Header className="bg-theme-gradient text-white">
               <div className="d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
                   <FaRupeeSign className="me-2" />
                   Monthly Revenue
                 </h5>
                 <select
-                  className="form-select form-select-sm"
-                  style={{
-                    width: 'auto',
-                    backgroundColor: 'white',
-                    color: '#0891B2',
-                    fontWeight: '600',
-                    border: 'none'
-                  }}
+                  className="form-select form-select-sm dashboard-select"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                 >
@@ -584,7 +572,7 @@ function Dashboard() {
 
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm border-0">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
+            <Card.Header className="bg-theme-gradient text-white">
               <div className="d-flex flex-column gap-2">
                 <h5 className="mb-0"><FaCalendarAlt className="me-2" />Performance Stats</h5>
                 <ButtonGroup size="sm">
@@ -658,10 +646,10 @@ function Dashboard() {
             </Card.Header>
             <Card.Body className="p-0">
               <div className="table-responsive">
-                <table className="table table-hover mb-0" style={{ fontSize: '0.95rem' }}>
+                <table className="table table-hover mb-0">
                   <tbody>
                     {/* Checkups */}
-                    <tr style={{ borderLeft: '4px solid #0891B2' }}>
+                    <tr className="border-left-primary">
                       <td className="py-3 px-4">
                         <div className="d-flex align-items-center">
                           <div className="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
@@ -669,7 +657,7 @@ function Dashboard() {
                           </div>
                           <div>
                             <div className="text-muted small">Checkups</div>
-                            <strong className="fs-5" style={{ color: '#0891B2' }}>
+                            <strong className="fs-5 text-theme">
                               {performanceCheckups.length}
                             </strong>
                           </div>
@@ -692,7 +680,7 @@ function Dashboard() {
                     </tr>
 
                     {/* Revenue */}
-                    <tr style={{ borderLeft: '4px solid #22c55e' }}>
+                    <tr className="border-left-success">
                       <td className="py-3 px-4">
                         <div className="d-flex align-items-center">
                           <div className="rounded-circle bg-success bg-opacity-10 p-2 me-3">
@@ -715,7 +703,7 @@ function Dashboard() {
                     </tr>
 
                     {/* Average Bill */}
-                    <tr style={{ borderLeft: '4px solid #06B6D4' }}>
+                    <tr className="border-left-light">
                       <td className="py-3 px-4">
                         <div className="d-flex align-items-center">
                           <div className="rounded-circle bg-info bg-opacity-10 p-2 me-3">
@@ -731,7 +719,7 @@ function Dashboard() {
                       </td>
                       <td className="py-3 px-4 text-end">
                         <div className="small text-muted">Highest Bill</div>
-                        <div className="fw-bold" style={{ color: '#F59E0B' }}>
+                        <div className="fw-bold text-theme-amber">
                           Rs. {performanceCheckups.length > 0 ? Math.max(...performanceCheckups.map(c => c.total || 0)).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                         </div>
                       </td>
@@ -748,7 +736,7 @@ function Dashboard() {
       <Row className="g-3 g-md-4">
         <Col xs={12}>
           <Card className="shadow-sm border-0">
-            <Card.Header style={{ background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)' }} className="text-white">
+            <Card.Header className="bg-theme-gradient text-white">
               <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 10)</h5>
             </Card.Header>
             <Card.Body>

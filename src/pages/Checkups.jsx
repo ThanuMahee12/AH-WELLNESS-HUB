@@ -59,13 +59,7 @@ function Checkups() {
       render: (value, item) => (
         <Badge
           onClick={() => handleViewDetails(item.id)}
-          style={{
-            backgroundColor: '#06B6D4',
-            color: 'white',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: 'clamp(0.75rem, 1.5vw, 0.85rem)',
-          }}
+          className="badge-clickable fs-responsive-sm"
           onMouseEnter={(e) => e.target.style.backgroundColor = '#0891B2'}
           onMouseLeave={(e) => e.target.style.backgroundColor = '#06B6D4'}
         >
@@ -123,14 +117,7 @@ function Checkups() {
                 onClick={() => navigate('/checkups/new')}
                 className="mt-2 mt-md-0"
                 disabled={patients.length === 0 || loading}
-                style={{
-                  backgroundColor: '#06B6D4',
-                  border: 'none',
-                  color: 'white',
-                  padding: '0.5rem 1.5rem',
-                  borderRadius: '0.375rem',
-                  fontWeight: '500'
-                }}
+                className="btn-theme-add"
               >
                 <FaPlus className="me-2" />New Checkup
               </Button>

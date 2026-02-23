@@ -57,13 +57,7 @@ function Home() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #E8F4F8 0%, #D4EEF7 50%, #C0E8F5 100%)',
-      position: 'relative',
-      overflow: 'hidden',
-      width: '100%'
-    }}>
+    <div className="home-wrapper">
       {/* Subtle gradient orbs */}
       <motion.div
         animate={{
@@ -75,17 +69,7 @@ function Home() {
           repeat: Infinity,
           ease: 'easeInOut'
         }}
-        style={{
-          position: 'absolute',
-          top: '20%',
-          right: '20%',
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 70%)',
-          filter: 'blur(60px)',
-          zIndex: 0
-        }}
+        className="home-orb home-orb-1"
       />
 
       <motion.div
@@ -99,25 +83,15 @@ function Home() {
           ease: 'easeInOut',
           delay: 2
         }}
-        style={{
-          position: 'absolute',
-          bottom: '15%',
-          left: '15%',
-          width: '350px',
-          height: '350px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(8, 145, 178, 0.15) 0%, transparent 70%)',
-          filter: 'blur(60px)',
-          zIndex: 0
-        }}
+        className="home-orb home-orb-2"
       />
 
-      <Container className="py-3 py-md-5 px-3 px-md-4" style={{ position: 'relative', zIndex: 2, maxWidth: '100%', overflow: 'hidden' }}>
+      <Container className="py-3 py-md-5 px-3 px-md-4 home-content">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          style={{ minHeight: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1rem' }}
+          className="home-hero"
         >
           {/* Hero Section */}
           <Row className="mb-5 text-center">
@@ -126,22 +100,12 @@ function Home() {
                 <motion.div
                   variants={rotateVariants}
                   animate="animate"
-                  style={{
-                    display: 'inline-block',
-                    marginBottom: 'clamp(1.5rem, 4vw, 2.5rem)',
-                    perspective: '1000px',
-                    transformStyle: 'preserve-3d',
-                  }}
+                  className="home-logo-container"
                 >
                   <img
                     src={bloodLabLogo}
                     alt="Blood Lab Logo"
-                    style={{
-                      width: 'clamp(100px, 30vw, 200px)',
-                      maxWidth: '200px',
-                      height: 'auto',
-                      filter: 'drop-shadow(0 8px 24px rgba(8, 145, 178, 0.3))'
-                    }}
+                    className="home-logo"
                   />
                 </motion.div>
 
@@ -149,32 +113,14 @@ function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, delay: 0.3 }}
-                  style={{
-                    fontSize: 'clamp(1.4rem, 5.5vw, 4rem)',
-                    fontWeight: '700',
-                    color: '#0E7490',
-                    marginBottom: 'clamp(1rem, 3vw, 1.5rem)',
-                    textShadow: '0 4px 20px rgba(8, 145, 178, 0.3)',
-                    letterSpacing: 'clamp(-0.5px, -0.1vw, -1px)',
-                    lineHeight: '1.2',
-                    padding: '0 0.5rem'
-                  }}
+                  className="home-title"
                 >
                   AH WELLNESS HUB & ASIRI LABORATORIES
                 </motion.h1>
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <p style={{
-                  fontSize: 'clamp(0.95rem, 3.5vw, 1.6rem)',
-                  color: '#0E7490',
-                  fontWeight: '500',
-                  maxWidth: '90%',
-                  margin: '0 auto',
-                  marginBottom: 'clamp(2rem, 5vw, 3rem)',
-                  lineHeight: '1.6',
-                  padding: '0 1rem'
-                }}>
+                <p className="home-subtitle">
                   Professional Point of Sale System for Modern Blood Testing Laboratories
                 </p>
               </motion.div>
@@ -183,24 +129,12 @@ function Home() {
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  style={{ display: 'inline-block', width: '100%', maxWidth: '300px', padding: '0 1rem' }}
+                  className="home-btn-wrapper"
                 >
                   <Button
                     size="lg"
                     onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
-                    className="w-100"
-                    style={{
-                      // padding: 'clamp(0.9rem, 3vw, 1.3rem) clamp(2rem, 5vw, 3rem)',
-                      fontSize: 'clamp(1rem, 3.5vw, 1.2rem)',
-                      fontWeight: '600',
-                      borderRadius: '50px',
-                      background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
-                      color: '#ffffff',
-                      border: 'none',
-                      boxShadow: '0 10px 30px rgba(6, 182, 212, 0.35)',
-                      transition: 'all 0.3s cubic-bezier(0.6, 0.05, 0.01, 0.9)',
-                      whiteSpace: 'nowrap'
-                    }}
+                    className="w-100 home-btn"
                   >
                     {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
                   </Button>

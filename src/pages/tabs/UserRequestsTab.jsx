@@ -189,7 +189,7 @@ function UserRequestsTab() {
                   <strong>Username:</strong> {request.data.username}<br/>
                   <strong>Email:</strong> {request.data.email}<br/>
                   <strong>Mobile:</strong> {request.data.mobile}<br/>
-                  <strong>Role:</strong> <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>{request.data.role}</Badge>
+                  <strong>Role:</strong> <Badge className="badge-theme-light">{request.data.role}</Badge>
                 </Col>
                 {request.originalData && (
                   <Col md={6}>
@@ -215,7 +215,7 @@ function UserRequestsTab() {
               <Button
                 size="sm"
                 onClick={() => handleApproveRequest(request)}
-                style={{ backgroundColor: '#06B6D4', border: 'none', color: 'white' }}
+                className="btn-theme"
               >
                 <FaCheckCircle /> Approve
               </Button>
@@ -261,7 +261,7 @@ function UserRequestsTab() {
         <>
           <Row className="mb-4">
             <Col md={4}>
-              <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #FFA500' }}>
+              <Card className="text-center shadow-sm stat-card-pending">
                 <Card.Body>
                   <h3 className="mb-0" style={{ color: '#FFA500' }}>{pendingRequests.length}</h3>
                   <small className="text-muted">Pending Requests</small>
@@ -269,15 +269,15 @@ function UserRequestsTab() {
               </Card>
             </Col>
             <Col md={4}>
-              <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #06B6D4' }}>
+              <Card className="text-center shadow-sm stat-card-light">
                 <Card.Body>
-                  <h3 className="mb-0" style={{ color: '#06B6D4' }}>{approvedRequests.length}</h3>
+                  <h3 className="mb-0 text-theme-light">{approvedRequests.length}</h3>
                   <small className="text-muted">Approved Requests</small>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={4}>
-              <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #DC3545' }}>
+              <Card className="text-center shadow-sm stat-card-danger">
                 <Card.Body>
                   <h3 className="mb-0" style={{ color: '#DC3545' }}>{rejectedRequests.length}</h3>
                   <small className="text-muted">Rejected Requests</small>

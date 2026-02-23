@@ -65,8 +65,7 @@ function NotificationBell() {
       <Dropdown.Toggle
         variant="link"
         id="notification-dropdown"
-        className="text-decoration-none position-relative p-2"
-        style={{ color: '#0891B2' }}
+        className="text-decoration-none position-relative p-2 text-theme"
       >
         <FaBell size={20} />
         {unreadCount > 0 && (
@@ -125,7 +124,8 @@ function NotificationBell() {
               <button
                 className="btn btn-link btn-sm text-decoration-none p-0"
                 onClick={handleMarkAllAsRead}
-                style={{ fontSize: '0.8rem', color: '#0891B2' }}
+                className="text-theme"
+                style={{ fontSize: '0.8rem' }}
               >
                 <FaCheckDouble className="me-1" />
                 Mark all read
@@ -169,9 +169,8 @@ function NotificationBell() {
                   </div>
                   <div style={{ flex: 1, fontSize: window.innerWidth < 576 ? '0.8rem' : '0.85rem' }}>
                     <div className="d-flex justify-content-between align-items-start mb-1">
-                      <strong style={{
-                        fontSize: window.innerWidth < 576 ? '0.85rem' : '0.9rem',
-                        color: '#0891B2'
+                      <strong className="text-theme" style={{
+                        fontSize: window.innerWidth < 576 ? '0.85rem' : '0.9rem'
                       }}>
                         {notification.title}
                       </strong>
@@ -179,11 +178,9 @@ function NotificationBell() {
                         <button
                           className="btn btn-link btn-sm p-0 ms-2"
                           onClick={(e) => handleMarkAsRead(notification.id, e)}
+                          className="text-theme touch-target"
                           style={{
-                            fontSize: '0.75rem',
-                            color: '#0891B2',
-                            minWidth: '44px',
-                            minHeight: '44px'
+                            fontSize: '0.75rem'
                           }}
                           title="Mark as read"
                         >

@@ -33,10 +33,10 @@ function Navbar() {
         {isAuthenticated && (
           <div className="d-flex align-items-center ms-auto gap-2">
             <div className="user-info d-flex align-items-center">
-              <FaUser className="me-1 me-md-2" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }} />
-              <span className="user-name d-none d-sm-inline" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>{user?.username}</span>
+              <FaUser className="me-1 me-md-2 fs-responsive-base" />
+              <span className="user-name d-none d-sm-inline fs-responsive-base">{user?.username}</span>
               {user?.role === 'admin' && (
-                <Badge bg="warning" text="dark" className="ms-1 ms-md-2" style={{ fontSize: 'clamp(0.7rem, 1.5vw, 0.75rem)' }}>Admin</Badge>
+                <Badge bg="warning" text="dark" className="ms-1 ms-md-2 fs-responsive-sm">Admin</Badge>
               )}
             </div>
             <NotificationBell />
@@ -44,15 +44,9 @@ function Navbar() {
               variant="outline-light"
               size="sm"
               onClick={handleLogout}
-              className="logout-btn d-flex align-items-center"
-              style={{
-                fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                padding: 'clamp(0.25rem, 1vw, 0.375rem) clamp(0.5rem, 2vw, 0.75rem)',
-                minHeight: '44px',
-                minWidth: '44px'
-              }}
+              className="logout-btn d-flex align-items-center touch-target fs-responsive-sm"
             >
-              <FaSignOutAlt className="me-0 me-md-1" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }} />
+              <FaSignOutAlt className="me-0 me-md-1 fs-responsive-base" />
               <span className="d-none d-sm-inline">Logout</span>
             </Button>
           </div>

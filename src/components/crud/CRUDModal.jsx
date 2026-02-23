@@ -125,33 +125,6 @@ const CRUDModal = React.memo(({
         </Modal.Footer>
       </Form>
 
-      <style>{`
-        @media (max-width: 767px) {
-          .crud-modal .modal-body-responsive {
-            padding: 0.75rem !important;
-            maxHeight: calc(100vh - 150px) !important;
-          }
-
-          .crud-modal .modal-footer-responsive {
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-
-          .crud-modal .modal-footer-responsive .btn {
-            width: 100%;
-          }
-
-          .crud-modal .modal-title {
-            font-size: 1.1rem;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .w-md-auto {
-            width: auto !important;
-          }
-        }
-      `}</style>
     </Modal>
   );
 });

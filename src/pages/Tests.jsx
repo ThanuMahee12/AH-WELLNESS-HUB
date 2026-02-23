@@ -26,12 +26,8 @@ function Tests() {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/tests/${item.id}`)}
-          style={{
-            color: '#0891B2',
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
-            textDecoration: 'none'
-          }}
+          className="clickable-link text-theme"
+          style={{ whiteSpace: 'nowrap' }}
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
         >
@@ -67,7 +63,7 @@ function Tests() {
       label: 'Commission',
       align: 'center',
       render: (value) => (
-        <span style={{ whiteSpace: 'nowrap', color: '#0891B2', fontWeight: '500' }}>
+        <span className="text-theme fw-medium" style={{ whiteSpace: 'nowrap' }}>
           {value || 20}%
         </span>
       )
