@@ -177,7 +177,7 @@ function CheckupForm() {
             <h4>Checkup not found</h4>
             <Button
               onClick={() => navigate('/checkups')}
-              style={{ backgroundColor: '#06B6D4', border: 'none', color: 'white' }}
+              className="btn-theme"
             >
               <FaArrowLeft className="me-2" />
               Back to Checkups
@@ -242,8 +242,8 @@ function CheckupForm() {
     <Container fluid className="p-3 p-md-4">
       <Row className="mb-4">
         <Col>
-          <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 1.75rem)' }}>
-            <FaClipboardCheck className="me-2" style={{ color: '#0891B2' }} />
+          <h2 className="fs-responsive-lg">
+            <FaClipboardCheck className="me-2 text-theme" />
             {isNew ? 'New Checkup / Bill' : 'Edit Checkup'}
           </h2>
         </Col>
@@ -252,14 +252,8 @@ function CheckupForm() {
       <Row>
         <Col>
           <Card className="shadow-sm">
-            <Card.Header
-              style={{
-                background: 'linear-gradient(135deg, #0891B2, #06B6D4)',
-                color: 'white',
-                padding: '0.75rem 1.25rem',
-              }}
-            >
-              <h5 className="mb-0" style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.25rem)' }}>
+            <Card.Header className="card-header-theme">
+              <h5 className="mb-0 fs-responsive-md">
                 {isNew ? 'Checkup Information' : `Edit Checkup: ${checkup?.billNo || checkup?.id || ''}`}
               </h5>
             </Card.Header>
@@ -267,7 +261,7 @@ function CheckupForm() {
             <Form onSubmit={handleSubmit}>
               <Card.Body className="entity-form-body">
                 {/* Patient Selection Section */}
-                <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                <h6 className="section-heading">
                   Patient
                 </h6>
 
@@ -393,7 +387,7 @@ function CheckupForm() {
                 )}
 
                 {/* Tests Selection Section */}
-                <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem', marginTop: '1.5rem' }}>
+                <h6 className="section-heading mt-4">
                   Tests
                 </h6>
 
@@ -422,7 +416,7 @@ function CheckupForm() {
                       if (context === 'value') {
                         return (
                           <span>
-                            <strong style={{ color: '#0891B2' }}>{option.code}</strong> - {option.label}
+                            <strong className="text-theme">{option.code}</strong> - {option.label}
                           </span>
                         )
                       }
@@ -430,11 +424,11 @@ function CheckupForm() {
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <div style={{ fontSize: '14px' }}>
-                              <strong style={{ color: '#0891B2' }}>{option.code}</strong> - <strong>{option.label}</strong>
+                              <strong className="text-theme">{option.code}</strong> - <strong>{option.label}</strong>
                             </div>
                             {option.details && <small className="text-muted" style={{ fontSize: '12px' }}>{option.details}</small>}
                           </div>
-                          <Badge style={{ backgroundColor: '#0891B2', color: 'white', fontSize: '11px' }}>Rs. {option.price?.toFixed(2)}</Badge>
+                          <Badge className="badge-theme" style={{ fontSize: '11px' }}>Rs. {option.price?.toFixed(2)}</Badge>
                         </div>
                       )
                     }}
@@ -444,12 +438,12 @@ function CheckupForm() {
 
                 <Form.Group className="mb-3">
                   <Form.Label>
-                    Total Amount: <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }} className="fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
+                    Total Amount: <Badge className="badge-theme-light fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
                   </Form.Label>
                 </Form.Group>
 
                 {/* Weight/Height Section */}
-                <h6 style={{ color: '#0891B2', borderBottom: '2px solid #e0f2fe', paddingBottom: '0.5rem', marginBottom: '1rem', marginTop: '1.5rem' }}>
+                <h6 className="section-heading mt-4">
                   Measurements (Optional)
                 </h6>
 
@@ -480,7 +474,7 @@ function CheckupForm() {
                   </Col>
                 </Row>
 
-                <div style={{ padding: '1rem', backgroundColor: '#e0f2fe', borderRadius: '0.375rem', marginTop: '1rem' }}>
+                <div className="info-box mt-3">
                   <p style={{ fontSize: '0.9rem', color: '#0369a1', marginBottom: 0 }}>
                     <strong>Note:</strong> You can add detailed notes and prescriptions after creating the checkup by clicking on "View Details" and using the Notes & Prescription tabs.
                   </p>
@@ -513,60 +507,13 @@ function CheckupForm() {
                   <Button
                     type="submit"
                     disabled={isSubmitting || loading}
-                    className="entity-form-btn"
-                    style={{
-                      backgroundColor: '#06B6D4',
-                      border: 'none',
-                      color: 'white',
-                    }}
+                    className="entity-form-btn btn-theme"
                   >
                     <FaSave className="me-1" />
                     {isSubmitting ? 'Saving...' : (isNew ? 'Create Checkup' : 'Update Checkup')}
                   </Button>
                 </div>
 
-                <style>{`
-                  .entity-form-body {
-                    padding: 1.25rem;
-                  }
-                  .entity-form-footer {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 0.5rem;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 0.75rem 1.25rem;
-                  }
-                  .entity-form-actions {
-                    display: flex;
-                    gap: 0.5rem;
-                    flex-wrap: wrap;
-                  }
-                  .entity-form-btn {
-                    min-width: 100px;
-                    min-height: 44px;
-                  }
-
-                  @media (max-width: 767px) {
-                    .entity-form-body {
-                      padding: 0.75rem;
-                    }
-                    .entity-form-footer {
-                      flex-direction: column;
-                      gap: 0.5rem;
-                      padding: 0.75rem;
-                    }
-                    .entity-form-actions {
-                      width: 100%;
-                      flex-direction: column;
-                    }
-                    .entity-form-btn {
-                      width: 100%;
-                      min-height: 48px;
-                      font-size: 1rem;
-                    }
-                  }
-                `}</style>
               </Card.Footer>
             </Form>
           </Card>

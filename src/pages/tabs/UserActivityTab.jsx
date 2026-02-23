@@ -292,7 +292,7 @@ function UserActivityTab() {
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <FaCalendarAlt className="me-2" style={{ color: '#0891B2' }} />
+                  <FaCalendarAlt className="me-2 text-theme" />
                   <strong>Time Range:</strong>
                 </div>
                 <ButtonGroup>
@@ -334,17 +334,17 @@ function UserActivityTab() {
       {/* Statistics Cards */}
       <Row className="mb-4">
         <Col md={4}>
-          <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #0891B2' }}>
+          <Card className="text-center shadow-sm stat-card-primary">
             <Card.Body>
-              <h3 className="mb-0" style={{ color: '#0891B2' }}>{stats?.totalActivities || 0}</h3>
+              <h3 className="mb-0 text-theme">{stats?.totalActivities || 0}</h3>
               <small className="text-muted">Total Activities</small>
             </Card.Body>
           </Card>
         </Col>
         <Col md={4}>
-          <Card className="text-center shadow-sm" style={{ borderTop: '3px solid #06B6D4' }}>
+          <Card className="text-center shadow-sm stat-card-light">
             <Card.Body>
-              <h3 className="mb-0" style={{ color: '#06B6D4' }}>{stats?.userStats?.length || 0}</h3>
+              <h3 className="mb-0 text-theme-light">{stats?.userStats?.length || 0}</h3>
               <small className="text-muted">Active Users</small>
             </Card.Body>
           </Card>
@@ -526,7 +526,7 @@ function UserActivityTab() {
                       <tr key={userStat.userId}>
                         <td><strong>{userStat.username}</strong></td>
                         <td>
-                          <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>
+                          <Badge className="badge-theme-light">
                             {userStat.userRole}
                           </Badge>
                         </td>

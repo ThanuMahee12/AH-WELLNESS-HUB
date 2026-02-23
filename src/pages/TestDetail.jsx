@@ -129,7 +129,7 @@ function TestDetail() {
             <h4>Test not found</h4>
             <Button
               onClick={() => navigate('/tests')}
-              style={{ backgroundColor: '#06B6D4', border: 'none', color: 'white' }}
+              className="btn-theme"
             >
               <FaArrowLeft className="me-2" />
               Back to Tests
@@ -147,8 +147,8 @@ function TestDetail() {
     <Container fluid className="p-3 p-md-4">
       <Row className="mb-4">
         <Col>
-          <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 1.75rem)' }}>
-            <FaFlask className="me-2" style={{ color: '#0891B2' }} />
+          <h2 className="fs-responsive-lg">
+            <FaFlask className="me-2 text-theme" />
             {isNew ? 'Add New Test' : 'Test Details'}
           </h2>
         </Col>

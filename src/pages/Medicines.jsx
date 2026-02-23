@@ -26,13 +26,8 @@ function Medicines() {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/medicines/${item.id}`)}
-          style={{
-            color: '#0891B2',
-            whiteSpace: 'nowrap',
-            fontSize: 'clamp(0.85rem, 2vw, 1rem)',
-            cursor: 'pointer',
-            textDecoration: 'none'
-          }}
+          className="clickable-link text-theme fs-responsive-base"
+          style={{ whiteSpace: 'nowrap' }}
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
         >

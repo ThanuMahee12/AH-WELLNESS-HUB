@@ -187,11 +187,7 @@ function PatientDetail() {
             <h4>Patient not found</h4>
             <Button
               onClick={() => navigate('/patients')}
-              style={{
-                backgroundColor: '#06B6D4',
-                border: 'none',
-                color: 'white'
-              }}
+              className="btn-theme"
             >
               <FaArrowLeft className="me-2" />
               Back to Patients
@@ -210,8 +206,8 @@ function PatientDetail() {
       {/* Header */}
       <Row className="mb-4">
         <Col>
-          <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 1.75rem)' }}>
-            <FaUserInjured className="me-2" style={{ color: '#0891B2' }} />
+          <h2 className="fs-responsive-lg">
+            <FaUserInjured className="me-2 text-theme" />
             {isNew ? 'Add New Patient' : 'Patient Details'}
           </h2>
         </Col>
@@ -302,13 +298,13 @@ function PatientDetail() {
             {/* Stats */}
             <Col xs={12} lg={4} className="mb-3 mb-lg-0">
               <Card className="h-100 shadow-sm">
-                <Card.Header style={{ backgroundColor: '#06B6D4', color: 'white' }}>
+                <Card.Header className="bg-theme-light text-white">
                   <h5 className="mb-0">Summary</h5>
                 </Card.Header>
                 <Card.Body>
                   <div className="mb-2">
                     <strong>Total Checkups:</strong>{' '}
-                    <Badge style={{ backgroundColor: '#06B6D4', color: 'white' }}>
+                    <Badge className="badge-theme-light">
                       {patientCheckups.length}
                     </Badge>
                   </div>
@@ -316,11 +312,11 @@ function PatientDetail() {
                   {chartData.length > 0 && (
                     <>
                       <div className="mb-2">
-                        <FaWeight className="me-2" style={{ color: '#0891B2' }} />
+                        <FaWeight className="me-2 text-theme" />
                         <strong>Latest Weight:</strong> {chartData[chartData.length - 1].weight || 'N/A'} kg
                       </div>
                       <div className="mb-2">
-                        <FaRulerVertical className="me-2" style={{ color: '#06B6D4' }} />
+                        <FaRulerVertical className="me-2 text-theme-light" />
                         <strong>Latest Height:</strong> {chartData[chartData.length - 1].height || 'N/A'} cm
                       </div>
                     </>
@@ -332,7 +328,7 @@ function PatientDetail() {
             {/* Height/Weight Graph */}
             <Col xs={12} lg={8}>
               <Card className="shadow-sm">
-                <Card.Header style={{ backgroundColor: '#06B6D4', color: 'white' }}>
+                <Card.Header className="bg-theme-light text-white">
                   <h5 className="mb-0">Height & Weight Tracking</h5>
                 </Card.Header>
                 <Card.Body>
@@ -388,7 +384,7 @@ function PatientDetail() {
           <Row>
             <Col>
               <Card className="shadow-sm">
-                <Card.Header style={{ backgroundColor: '#06B6D4', color: 'white' }}>
+                <Card.Header className="bg-theme-light text-white">
                   <h5 className="mb-0">Checkup History</h5>
                 </Card.Header>
                 <Card.Body className="p-0">
@@ -399,7 +395,7 @@ function PatientDetail() {
                   ) : (
                     <div className="table-responsive">
                       <Table hover className="mb-0 table-mobile-responsive">
-                        <thead style={{ backgroundColor: '#f1f5f9' }}>
+                        <thead className="bg-theme-slate">
                           <tr>
                             <th style={{ width: '5%' }}></th>
                             <th style={{ width: '20%' }}>Date</th>
@@ -421,13 +417,13 @@ function PatientDetail() {
                                 >
                                   <td data-label="" className="text-center">
                                     {isExpanded ? (
-                                      <FaChevronDown style={{ color: '#0891B2' }} />
+                                      <FaChevronDown className="text-theme" />
                                     ) : (
-                                      <FaChevronRight style={{ color: '#94a3b8' }} />
+                                      <FaChevronRight className="text-theme-muted-light" />
                                     )}
                                   </td>
                                   <td data-label="Date">
-                                    <strong style={{ color: '#0891B2' }}>
+                                    <strong className="text-theme">
                                       {new Date(checkup.timestamp).toLocaleDateString()}
                                     </strong>
                                     <br />
@@ -440,12 +436,8 @@ function PatientDetail() {
                                   </td>
                                   <td data-label="Tests">
                                     <Badge
-                                      style={{
-                                        backgroundColor: '#0891B2',
-                                        color: 'white',
-                                        fontSize: '0.85rem',
-                                        padding: '0.4rem 0.8rem'
-                                      }}
+                                      className="badge-theme"
+                                      style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
                                     >
                                       {checkup.tests.length} test{checkup.tests.length !== 1 ? 's' : ''}
                                     </Badge>
@@ -463,13 +455,13 @@ function PatientDetail() {
                                   <td colSpan="4" style={{ padding: 0, border: 'none' }}>
                                     <Collapse in={isExpanded}>
                                       <div>
-                                        <div style={{ backgroundColor: '#f8fafc', padding: '0.5rem 1rem' }}>
+                                        <div className="bg-theme-slate" style={{ padding: '0.5rem 1rem' }}>
                                           <Table
                                             size="sm"
                                             className="mb-0 table-mobile-responsive"
                                             style={{ backgroundColor: 'white' }}
                                           >
-                                            <thead style={{ backgroundColor: '#e0f2fe' }}>
+                                            <thead className="bg-light-cyan">
                                               <tr>
                                                 <th style={{ width: '40%' }}>Test Name</th>
                                                 <th style={{ width: '60%' }}>Notes</th>
@@ -482,7 +474,7 @@ function PatientDetail() {
                                                 return test ? (
                                                   <tr key={testItem.testId}>
                                                     <td data-label="Test Name">
-                                                      <strong style={{ color: '#0891B2' }}>
+                                                      <strong className="text-theme">
                                                         {test.name}
                                                       </strong>
                                                     </td>

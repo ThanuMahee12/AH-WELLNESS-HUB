@@ -44,12 +44,7 @@ const CRUDTable = React.memo(({
         <Button
           size="sm"
           onClick={() => onEdit(item)}
-          className="me-2"
-          style={{
-            backgroundColor: 'transparent',
-            border: '2px solid #0891B2',
-            color: '#0891B2'
-          }}
+          className="me-2 btn-theme-outline"
         >
           <FaEdit className="me-1" />
           Edit
@@ -59,11 +54,7 @@ const CRUDTable = React.memo(({
         <Button
           size="sm"
           onClick={() => onDelete(item.id)}
-          style={{
-            backgroundColor: 'transparent',
-            border: '2px solid #0aa2c0',
-            color: '#0aa2c0'
-          }}
+          className="btn-theme-outline-light"
         >
           <FaTrash className="me-1" />
           Delete

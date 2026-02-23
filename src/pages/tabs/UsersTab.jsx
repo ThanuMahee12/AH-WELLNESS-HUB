@@ -29,7 +29,7 @@ const TABLE_COLUMNS = [
     key: 'role',
     label: 'Role',
     render: (value) => (
-      <Badge style={{ backgroundColor: value === 'admin' ? '#0891B2' : '#06B6D4', color: 'white' }}>
+      <Badge className={value === 'admin' ? 'badge-theme' : 'badge-theme-light'}>
         {value}
       </Badge>
     )
@@ -126,11 +126,7 @@ function UsersTab() {
         <Col className="d-flex justify-content-end">
           <Button
             onClick={() => handleOpen()}
-            style={{
-              backgroundColor: '#06B6D4',
-              border: 'none',
-              color: 'white'
-            }}
+            className="btn-theme"
           >
             <FaPlus className="me-2" />
             Add New User

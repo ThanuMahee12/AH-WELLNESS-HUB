@@ -84,7 +84,7 @@ const DosageInput = ({ values: rawValues, onChange, disabled }) => {
         Dosage <span className="text-danger ms-1">*</span>
       </Form.Label>
       <div
-        className="dosage-tag-input"
+        className={`dosage-tag-input${disabled ? ' disabled' : ''}`}
         onClick={(e) => {
           const inp = e.currentTarget.querySelector('input')
           if (inp) inp.focus()
@@ -113,86 +113,6 @@ const DosageInput = ({ values: rawValues, onChange, disabled }) => {
         />
       </div>
 
-      <style>{`
-        .dosage-tag-input {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 0.4rem;
-          padding: 0.5rem 0.75rem;
-          border: 1px solid #ced4da;
-          border-radius: 0.375rem;
-          background-color: ${disabled ? '#e9ecef' : '#fff'};
-          cursor: ${disabled ? 'not-allowed' : 'text'};
-          min-height: 44px;
-          transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        }
-        .dosage-tag-input:focus-within {
-          border-color: #0891B2;
-          box-shadow: 0 0 0 0.2rem rgba(8, 145, 178, 0.25);
-        }
-        .dosage-tag {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          background-color: #059669;
-          color: white;
-          font-size: clamp(0.8rem, 2vw, 0.9rem);
-          font-weight: 600;
-          padding: 0.3rem 0.55rem;
-          border-radius: 0.25rem;
-          white-space: nowrap;
-          min-height: 28px;
-        }
-        .dosage-tag-remove {
-          cursor: pointer;
-          opacity: 0.8;
-          font-size: 0.6rem;
-          min-width: 14px;
-          min-height: 14px;
-          padding: 2px;
-        }
-        .dosage-tag-remove:hover {
-          opacity: 1;
-        }
-        .dosage-tag-text-input {
-          border: none;
-          outline: none;
-          flex: 1;
-          min-width: 120px;
-          background-color: transparent;
-          font-size: 1rem;
-          padding: 0.15rem 0;
-          line-height: 1.5;
-        }
-        .dosage-tag-text-input::placeholder {
-          color: #9ca3af;
-          font-size: clamp(0.8rem, 2vw, 0.95rem);
-        }
-
-        @media (max-width: 767px) {
-          .dosage-tag-input {
-            padding: 0.5rem;
-            gap: 0.35rem;
-            min-height: 48px;
-          }
-          .dosage-tag {
-            padding: 0.35rem 0.6rem;
-            font-size: 0.85rem;
-            min-height: 32px;
-          }
-          .dosage-tag-remove {
-            min-width: 20px;
-            min-height: 20px;
-            padding: 4px;
-          }
-          .dosage-tag-text-input {
-            min-width: 100px;
-            font-size: 16px; /* prevents iOS zoom on focus */
-            padding: 0.25rem 0;
-          }
-        }
-      `}</style>
     </Form.Group>
   )
 }
@@ -303,7 +223,7 @@ function MedicineDetail() {
             <h4>Medicine not found</h4>
             <Button
               onClick={() => navigate('/medicines')}
-              style={{ backgroundColor: '#06B6D4', border: 'none', color: 'white' }}
+              className="btn-theme"
             >
               <FaArrowLeft className="me-2" />
               Back to Medicines
@@ -322,8 +242,8 @@ function MedicineDetail() {
     <Container fluid className="p-3 p-md-4">
       <Row className="mb-4">
         <Col>
-          <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 1.75rem)' }}>
-            <FaPills className="me-2" style={{ color: '#0891B2' }} />
+          <h2 className="fs-responsive-lg">
+            <FaPills className="me-2 text-theme" />
             {isNew ? 'Add New Medicine' : 'Medicine Details'}
           </h2>
         </Col>

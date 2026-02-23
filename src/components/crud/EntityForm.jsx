@@ -24,14 +24,8 @@ const EntityForm = React.memo(({
 
   return (
     <Card className="shadow-sm">
-      <Card.Header
-        style={{
-          background: 'linear-gradient(135deg, #0891B2, #06B6D4)',
-          color: 'white',
-          padding: '0.75rem 1.25rem',
-        }}
-      >
-        <h5 className="mb-0" style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.25rem)' }}>{title}</h5>
+      <Card.Header className="card-header-theme">
+        <h5 className="mb-0 fs-responsive-md">{title}</h5>
       </Card.Header>
 
       <Form onSubmit={handleSubmit}>
@@ -107,12 +101,7 @@ const EntityForm = React.memo(({
             <Button
               type="submit"
               disabled={loading}
-              className="entity-form-btn"
-              style={{
-                backgroundColor: '#06B6D4',
-                border: 'none',
-                color: 'white',
-              }}
+              className="entity-form-btn btn-theme"
             >
               {loading ? (
                 <>
@@ -128,48 +117,6 @@ const EntityForm = React.memo(({
             </Button>
           </div>
 
-          <style>{`
-            .entity-form-body {
-              padding: 1.25rem;
-            }
-            .entity-form-footer {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 0.5rem;
-              justify-content: space-between;
-              align-items: center;
-              padding: 0.75rem 1.25rem;
-            }
-            .entity-form-actions {
-              display: flex;
-              gap: 0.5rem;
-              flex-wrap: wrap;
-            }
-            .entity-form-btn {
-              min-width: 100px;
-              min-height: 44px;
-            }
-
-            @media (max-width: 767px) {
-              .entity-form-body {
-                padding: 0.75rem;
-              }
-              .entity-form-footer {
-                flex-direction: column;
-                gap: 0.5rem;
-                padding: 0.75rem;
-              }
-              .entity-form-actions {
-                width: 100%;
-                flex-direction: column;
-              }
-              .entity-form-btn {
-                width: 100%;
-                min-height: 48px;
-                font-size: 1rem;
-              }
-            }
-          `}</style>
         </Card.Footer>
       </Form>
     </Card>

@@ -25,8 +25,7 @@ function UserManagement() {
       <Tabs
         activeKey={activeTab}
         onSelect={(k) => setActiveTab(k)}
-        className="mb-3"
-        style={{ borderBottom: '2px solid #0891B2' }}
+        className="mb-3 tabs-theme"
       >
         <Tab
           eventKey="users"

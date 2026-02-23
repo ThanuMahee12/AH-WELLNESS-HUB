@@ -25,9 +25,9 @@ function Patients() {
       label: '',
       render: (value) => {
         if (value === 'Male') {
-          return <FaMale style={{ color: '#0891B2' }} size={18} />
+          return <FaMale className="text-theme" size={18} />
         } else if (value === 'Female') {
-          return <FaFemale style={{ color: '#06B6D4' }} size={18} />
+          return <FaFemale className="text-theme-light" size={18} />
         } else {
           return <FaUser style={{ color: '#0aa2c0' }} size={18} />
         }
@@ -39,11 +39,7 @@ function Patients() {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/patients/${item.id}`)}
-          style={{
-            cursor: 'pointer',
-            color: '#0891B2',
-            textDecoration: 'none'
-          }}
+          className="clickable-link text-theme"
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
         >
