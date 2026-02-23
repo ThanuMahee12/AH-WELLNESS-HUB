@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Form, Badge } from 'react-bootstrap'
 import { FaPills, FaArrowLeft, FaTimes } from 'react-icons/fa'
 import { selectAllMedicines, addMedicine, updateMedicine, deleteMedicine, fetchMedicines } from '../store/medicinesSlice'
-import { useForm } from '../hooks'
+import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
@@ -125,6 +125,7 @@ function MedicineDetail() {
   const { loading } = useSelector(state => state.medicines)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
+  const { isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
 
   const isNew = id === 'new'
   const medicine = isNew ? null : medicines.find(m => m.id === id)
@@ -264,97 +265,111 @@ function MedicineDetail() {
           >
             <Row className="g-3">
               {/* Code */}
-              <Col xs={12} md={6}>
-                <FormField
-                  label="Medicine Code"
-                  name="code"
-                  type="text"
-                  value={form.formData.code || ''}
-                  onChange={form.handleChange}
-                  error={form.errors.code}
-                  required
-                  placeholder="e.g., MED001"
-                  disabled={isDisabled}
-                />
-              </Col>
+              {isFieldVisible('medicines', 'code') && (
+                <Col xs={12} md={6}>
+                  <FormField
+                    label={getFieldLabel('medicines', 'code', 'Medicine Code')}
+                    name="code"
+                    type="text"
+                    value={form.formData.code || ''}
+                    onChange={form.handleChange}
+                    error={form.errors.code}
+                    required={isFieldRequired('medicines', 'code', true)}
+                    placeholder="e.g., MED001"
+                    disabled={isDisabled}
+                  />
+                </Col>
+              )}
               {/* Name */}
-              <Col xs={12} md={6}>
-                <FormField
-                  label="Medicine Name"
-                  name="name"
-                  type="text"
-                  value={form.formData.name || ''}
-                  onChange={form.handleChange}
-                  error={form.errors.name}
-                  required
-                  disabled={isDisabled}
-                />
-              </Col>
+              {isFieldVisible('medicines', 'name') && (
+                <Col xs={12} md={6}>
+                  <FormField
+                    label={getFieldLabel('medicines', 'name', 'Medicine Name')}
+                    name="name"
+                    type="text"
+                    value={form.formData.name || ''}
+                    onChange={form.handleChange}
+                    error={form.errors.name}
+                    required={isFieldRequired('medicines', 'name', true)}
+                    disabled={isDisabled}
+                  />
+                </Col>
+              )}
               {/* Brand */}
-              <Col xs={12} md={6}>
-                <FormField
-                  label="Brand"
-                  name="brand"
-                  type="text"
-                  value={form.formData.brand || ''}
-                  onChange={form.handleChange}
-                  error={form.errors.brand}
-                  required
-                  disabled={isDisabled}
-                />
-              </Col>
+              {isFieldVisible('medicines', 'brand') && (
+                <Col xs={12} md={6}>
+                  <FormField
+                    label={getFieldLabel('medicines', 'brand', 'Brand')}
+                    name="brand"
+                    type="text"
+                    value={form.formData.brand || ''}
+                    onChange={form.handleChange}
+                    error={form.errors.brand}
+                    required={isFieldRequired('medicines', 'brand', true)}
+                    disabled={isDisabled}
+                  />
+                </Col>
+              )}
               {/* Unit */}
-              <Col xs={12} md={6}>
-                <FormField
-                  label="Unit"
-                  name="unit"
-                  type="text"
-                  value={form.formData.unit || ''}
-                  onChange={form.handleChange}
-                  error={form.errors.unit}
-                  required
-                  placeholder="e.g., tablets, capsules, ml"
-                  disabled={isDisabled}
-                />
-              </Col>
+              {isFieldVisible('medicines', 'unit') && (
+                <Col xs={12} md={6}>
+                  <FormField
+                    label={getFieldLabel('medicines', 'unit', 'Unit')}
+                    name="unit"
+                    type="text"
+                    value={form.formData.unit || ''}
+                    onChange={form.handleChange}
+                    error={form.errors.unit}
+                    required={isFieldRequired('medicines', 'unit', true)}
+                    placeholder="e.g., tablets, capsules, ml"
+                    disabled={isDisabled}
+                  />
+                </Col>
+              )}
               {/* Dosage - Multi-tag input */}
-              <Col xs={12}>
-                <DosageInput
-                  values={form.formData.dosage || []}
-                  onChange={(newDosages) => form.setFieldValue('dosage', newDosages)}
-                  disabled={isDisabled}
-                />
-                {form.errors.dosage && (
-                  <div className="text-danger" style={{ fontSize: '0.875rem', marginTop: '-0.5rem' }}>
-                    {form.errors.dosage}
-                  </div>
-                )}
-              </Col>
+              {isFieldVisible('medicines', 'dosage') && (
+                <Col xs={12}>
+                  <DosageInput
+                    values={form.formData.dosage || []}
+                    onChange={(newDosages) => form.setFieldValue('dosage', newDosages)}
+                    disabled={isDisabled}
+                  />
+                  {form.errors.dosage && (
+                    <div className="text-danger" style={{ fontSize: '0.875rem', marginTop: '-0.5rem' }}>
+                      {form.errors.dosage}
+                    </div>
+                  )}
+                </Col>
+              )}
               {/* Description */}
-              <Col xs={12}>
-                <FormField
-                  label="Description"
-                  name="description"
-                  type="textarea"
-                  value={form.formData.description || ''}
-                  onChange={form.handleChange}
-                  error={form.errors.description}
-                  rows={2}
-                  disabled={isDisabled}
-                />
-              </Col>
+              {isFieldVisible('medicines', 'description') && (
+                <Col xs={12}>
+                  <FormField
+                    label={getFieldLabel('medicines', 'description', 'Description')}
+                    name="description"
+                    type="textarea"
+                    value={form.formData.description || ''}
+                    onChange={form.handleChange}
+                    error={form.errors.description}
+                    rows={2}
+                    disabled={isDisabled}
+                  />
+                </Col>
+              )}
               {/* Details - Rich text */}
-              <Col xs={12}>
-                <RichTextEditor
-                  label="Details (Meta - Not shown in table)"
-                  value={form.formData.details || ''}
-                  onChange={(value) => form.handleChange({ target: { name: 'details', value } })}
-                  error={form.errors.details}
-                  placeholder="Additional details..."
-                  height="150px"
-                  id="details"
-                />
-              </Col>
+              {isFieldVisible('medicines', 'details') && (
+                <Col xs={12}>
+                  <RichTextEditor
+                    label={getFieldLabel('medicines', 'details', 'Details (Meta - Not shown in table)')}
+                    value={form.formData.details || ''}
+                    onChange={(value) => form.handleChange({ target: { name: 'details', value } })}
+                    error={form.errors.details}
+                    placeholder="Additional details..."
+                    height="150px"
+                    id="details"
+                  />
+                </Col>
+              )}
             </Row>
           </EntityForm>
         </Col>

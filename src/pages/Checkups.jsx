@@ -9,6 +9,7 @@ import { fetchTests, selectAllTests } from '../store/testsSlice'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { EnhancedCRUDTable } from '../components/crud'
 import { PermissionGate } from '../components/auth/PermissionGate'
+import { useSettings } from '../hooks'
 
 function Checkups() {
   const dispatch = useDispatch()
@@ -20,6 +21,7 @@ function Checkups() {
   const { loading: patientsLoading } = useSelector(state => state.patients)
   const { loading: testsLoading } = useSelector(state => state.tests)
 
+  const { filterColumns, getItemsPerPage } = useSettings()
   const loading = checkupsLoading || patientsLoading || testsLoading
 
   useEffect(() => {
@@ -106,6 +108,8 @@ function Checkups() {
     },
   ]
 
+  const visibleColumns = filterColumns('checkups', TABLE_COLUMNS)
+
   return (
     <Container fluid className="p-3 p-md-4">
       <Row className="mb-4">
@@ -141,11 +145,11 @@ function Checkups() {
         <Col>
           <EnhancedCRUDTable
             data={enrichedCheckups}
-            columns={TABLE_COLUMNS}
+            columns={visibleColumns}
             loading={loading}
             error={checkupsError}
             emptyMessage="No checkups recorded yet"
-            itemsPerPage={10}
+            itemsPerPage={getItemsPerPage('checkups')}
             searchFields={['billNo', 'patientName', 'testNames']}
           />
         </Col>

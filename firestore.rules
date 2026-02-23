@@ -84,6 +84,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Settings collection - read: authenticated, write: superadmin only
+    match /settings/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
     // Notifications collection - users can read their own, authenticated can create
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;

@@ -9,29 +9,51 @@ import {
   FaFlask,
   FaPills,
   FaUsers,
+  FaCog,
   FaBars,
   FaTimes
 } from 'react-icons/fa'
+import { useSettings } from '../hooks/useSettings'
 import '../styles/sidebar.css'
+
+// Map sidebar paths to page settings keys
+const PATH_TO_PAGE_KEY = {
+  '/dashboard': 'dashboard',
+  '/patients': 'patients',
+  '/checkups': 'checkups',
+  '/tests': 'tests',
+  '/medicines': 'medicines',
+  '/users': 'users',
+  '/settings': 'settings',
+}
 
 function Sidebar() {
   const location = useLocation()
   const { user } = useSelector(state => state.auth)
+  const { settings } = useSettings()
   const [showMobile, setShowMobile] = useState(false)
 
   const menuItems = [
-    { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
-    { path: '/patients', icon: FaUserInjured, label: 'Patients' },
-    { path: '/checkups', icon: FaClipboardCheck, label: 'Checkups' },
-    { path: '/tests', icon: FaFlask, label: 'Tests' },
-    { path: '/medicines', icon: FaPills, label: 'Medicines', roles: ['superadmin', 'maintainer', 'editor'] },
-    { path: '/users', icon: FaUsers, label: 'User Management', roles: ['superadmin', 'maintainer', 'admin'] },
+    { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard', fallbackRoles: null },
+    { path: '/patients', icon: FaUserInjured, label: 'Patients', fallbackRoles: null },
+    { path: '/checkups', icon: FaClipboardCheck, label: 'Checkups', fallbackRoles: null },
+    { path: '/tests', icon: FaFlask, label: 'Tests', fallbackRoles: null },
+    { path: '/medicines', icon: FaPills, label: 'Medicines', fallbackRoles: ['superadmin', 'maintainer', 'editor'] },
+    { path: '/users', icon: FaUsers, label: 'Users', fallbackRoles: ['superadmin', 'maintainer', 'admin'] },
+    { path: '/settings', icon: FaCog, label: 'Settings', fallbackRoles: ['superadmin'] },
   ]
 
-  // Filter menu items based on user role
+  // Filter menu items based on page access settings (with hardcoded fallback)
   const visibleMenuItems = menuItems.filter(item => {
-    if (item.roles) {
-      return item.roles.includes(user?.role)
+    const pageKey = PATH_TO_PAGE_KEY[item.path]
+    const pageRoles = settings?.pages?.[pageKey]?.roles
+
+    if (pageRoles) {
+      return pageRoles.includes(user?.role)
+    }
+    // Fallback to hardcoded roles
+    if (item.fallbackRoles) {
+      return item.fallbackRoles.includes(user?.role)
     }
     return true
   })

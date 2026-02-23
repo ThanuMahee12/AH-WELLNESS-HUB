@@ -6,6 +6,7 @@ import { FaPlus } from 'react-icons/fa'
 import { fetchUsers, selectAllUsers } from '../../store/usersSlice'
 import { EnhancedCRUDTable } from '../../components/crud'
 import { usePermission } from '../../components/auth/PermissionGate'
+import { useSettings } from '../../hooks'
 
 function UsersTab() {
   const dispatch = useDispatch();
@@ -13,6 +14,7 @@ function UsersTab() {
   const users = useSelector(selectAllUsers);
   const { loading, error } = useSelector(state => state.users);
   const { checkPermission } = usePermission();
+  const { filterColumns, getItemsPerPage } = useSettings();
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -47,6 +49,8 @@ function UsersTab() {
     },
   ];
 
+  const visibleColumns = filterColumns('users', TABLE_COLUMNS);
+
   return (
     <>
       <Row className="mb-3">
@@ -67,11 +71,11 @@ function UsersTab() {
         <Col>
           <EnhancedCRUDTable
             data={users}
-            columns={TABLE_COLUMNS}
+            columns={visibleColumns}
             loading={loading}
             error={error}
             emptyMessage="No users found. Add your first user to get started."
-            itemsPerPage={10}
+            itemsPerPage={getItemsPerPage('users')}
             searchFields={['username', 'email', 'mobile', 'role']}
           />
         </Col>

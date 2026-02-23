@@ -7,6 +7,7 @@ import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { PageHeader } from '../components/ui'
 import { EnhancedCRUDTable } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
+import { useSettings } from '../hooks'
 
 function Patients() {
   const dispatch = useDispatch();
@@ -14,6 +15,7 @@ function Patients() {
   const patients = useSelector(selectAllPatients);
   const { loading, error } = useSelector(state => state.patients);
   const { checkPermission } = usePermission();
+  const { filterColumns, getItemsPerPage } = useSettings();
 
   useEffect(() => {
     dispatch(fetchPatients());
@@ -52,6 +54,8 @@ function Patients() {
     { key: 'address', label: 'Address' },
   ];
 
+  const visibleColumns = filterColumns('patients', TABLE_COLUMNS);
+
   return (
     <Container fluid className="p-3 p-md-4">
       <PageHeader
@@ -66,11 +70,11 @@ function Patients() {
         <Col>
           <EnhancedCRUDTable
             data={patients}
-            columns={TABLE_COLUMNS}
+            columns={visibleColumns}
             loading={loading}
             error={error}
             emptyMessage="No patients registered yet"
-            itemsPerPage={10}
+            itemsPerPage={getItemsPerPage('patients')}
             searchFields={['name', 'age', 'gender', 'mobile', 'email', 'address']}
           />
         </Col>

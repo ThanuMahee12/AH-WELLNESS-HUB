@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button } from 'react-bootstrap'
 import { FaFlask, FaArrowLeft } from 'react-icons/fa'
 import { selectAllTests, addTest, updateTest, deleteTest, fetchTests } from '../store/testsSlice'
-import { useForm } from '../hooks'
+import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
@@ -35,9 +35,11 @@ function TestDetail() {
   const { loading } = useSelector(state => state.tests)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
+  const { filterFields } = useSettings()
 
   const isNew = id === 'new'
   const test = isNew ? null : tests.find(t => t.id === id)
+  const visibleFields = filterFields('tests', TEST_FIELDS)
 
   const validate = useCallback((data) => {
     const errors = {}
@@ -158,7 +160,7 @@ function TestDetail() {
         <Col>
           <EntityForm
             title={isNew ? 'New Test Information' : `Edit Test: ${test?.name || ''}`}
-            fields={TEST_FIELDS}
+            fields={visibleFields}
             formData={form.formData}
             formErrors={form.errors}
             onFormChange={form.handleChange}

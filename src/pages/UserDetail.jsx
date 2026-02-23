@@ -7,7 +7,7 @@ import { fetchUsers, updateUser, deleteUser, toggleUserStatus, selectAllUsers } 
 import { registerUser } from '../store/authSlice'
 import { authService } from '../services/authService'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
-import { useForm } from '../hooks'
+import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
@@ -42,22 +42,24 @@ function UserDetail() {
   const { user: currentUser } = useSelector(state => state.auth)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
+  const { filterFields } = useSettings()
   const [resettingPassword, setResettingPassword] = useState(false)
   const [togglingStatus, setTogglingStatus] = useState(false)
 
   const isNew = id === 'new'
   const user = isNew ? null : users.find(u => u.id === id)
 
-  // Only show password field for new users; editing uses reset email instead
+  // Filter fields through settings, then add password field for new users
   const fields = useMemo(() => {
+    const filtered = filterFields('users', USER_FIELDS)
     if (isNew) {
       return [
-        ...USER_FIELDS,
+        ...filtered,
         { name: 'password', label: 'Password', type: 'password', required: true, colSize: 6 },
       ]
     }
-    return USER_FIELDS
-  }, [isNew])
+    return filtered
+  }, [isNew, filterFields])
 
   const handleFormSubmit = useCallback(async (formData) => {
     try {

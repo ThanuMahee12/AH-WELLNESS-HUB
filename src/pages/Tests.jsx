@@ -7,6 +7,7 @@ import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { PageHeader } from '../components/ui'
 import { EnhancedCRUDTable } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
+import { useSettings } from '../hooks'
 
 function Tests() {
   const dispatch = useDispatch();
@@ -14,6 +15,7 @@ function Tests() {
   const tests = useSelector(selectAllTests);
   const { loading, error } = useSelector(state => state.tests);
   const { checkPermission } = usePermission();
+  const { filterColumns, getItemsPerPage } = useSettings();
 
   useEffect(() => {
     dispatch(fetchTests());
@@ -96,6 +98,8 @@ function Tests() {
     },
   ];
 
+  const visibleColumns = filterColumns('tests', TABLE_COLUMNS);
+
   return (
     <Container fluid className="p-3 p-md-4">
       <PageHeader
@@ -110,11 +114,11 @@ function Tests() {
         <Col>
           <EnhancedCRUDTable
             data={tests}
-            columns={TABLE_COLUMNS}
+            columns={visibleColumns}
             loading={loading}
             error={error}
             emptyMessage="No tests available"
-            itemsPerPage={10}
+            itemsPerPage={getItemsPerPage('tests')}
             searchFields={['code', 'name', 'details', 'rules']}
           />
         </Col>

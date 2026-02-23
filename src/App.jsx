@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { setUser, logoutUser } from './store/authSlice'
+import { fetchSettings } from './store/settingsSlice'
 import { authService } from './services/authService'
 import { sessionTimeoutService } from './services/sessionTimeoutService'
 import { NotificationProvider, useNotification } from './context'
@@ -26,6 +27,9 @@ const MedicineDetail = lazy(() => import('./pages/MedicineDetail'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
 const UserDetail = lazy(() => import('./pages/UserDetail'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
+const Settings = lazy(() => import('./pages/Settings'))
+const FieldSettingDetail = lazy(() => import('./pages/FieldSettingDetail'))
+const ColumnSettingDetail = lazy(() => import('./pages/ColumnSettingDetail'))
 
 // Create a wrapper component to access notification context
 function AppContent() {
@@ -46,6 +50,9 @@ function AppContent() {
     // Listen to Firebase auth state changes
     const unsubscribe = authService.onAuthStateChange((user) => {
       dispatch(setUser(user))
+      if (user) {
+        dispatch(fetchSettings())
+      }
     })
 
     // Cleanup subscription on unmount
@@ -199,6 +206,30 @@ function AppContent() {
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <UserDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute roles={['superadmin']}>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings/forms/:entity/:fieldKey"
+                element={
+                  <ProtectedRoute roles={['superadmin']}>
+                    <FieldSettingDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings/tables/:entity/:columnKey"
+                element={
+                  <ProtectedRoute roles={['superadmin']}>
+                    <ColumnSettingDetail />
                   </ProtectedRoute>
                 }
               />
