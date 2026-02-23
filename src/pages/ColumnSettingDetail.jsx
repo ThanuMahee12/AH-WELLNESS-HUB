@@ -5,7 +5,7 @@ import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap'
 import { FaCog, FaArrowLeft } from 'react-icons/fa'
 import { updateSettings } from '../store/settingsSlice'
 import { useSettings } from '../hooks'
-import { ENTITY_LABELS } from '../constants/defaultSettings'
+import { ENTITY_LABELS, FIELD_TYPE_OPTIONS, COL_SIZE_OPTIONS } from '../constants/defaultSettings'
 import { useNotification } from '../context'
 
 function ColumnSettingDetail() {
@@ -19,11 +19,17 @@ function ColumnSettingDetail() {
   const isNew = columnKey === 'new'
   const existing = !isNew ? settings?.tables?.[entity]?.columns?.[columnKey] : null
 
+  const existingField = !isNew ? settings?.forms?.[entity]?.fields?.[columnKey] : null
+
   const [label, setLabel] = useState('')
   const [visible, setVisible] = useState(true)
   const [newKey, setNewKey] = useState('')
   const [keyError, setKeyError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [fieldType, setFieldType] = useState('text')
+  const [required, setRequired] = useState(false)
+  const [colSize, setColSize] = useState(6)
+  const [placeholder, setPlaceholder] = useState('')
 
   // Load existing data
   useEffect(() => {
@@ -32,6 +38,16 @@ function ColumnSettingDetail() {
       setVisible(existing.visible !== false)
     }
   }, [existing?.label, existing?.visible]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load existing form field data
+  useEffect(() => {
+    if (existingField) {
+      setFieldType(existingField.type || 'text')
+      setRequired(existingField.required === true)
+      setColSize(existingField.colSize ?? 6)
+      setPlaceholder(existingField.placeholder || '')
+    }
+  }, [existingField?.type, existingField?.required, existingField?.colSize, existingField?.placeholder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const validateKey = useCallback((name) => {
     if (!name.trim()) return 'Column key is required'
@@ -63,11 +79,25 @@ function ColumnSettingDetail() {
               },
             },
           },
+          forms: {
+            [entity]: {
+              fields: {
+                [key]: {
+                  label,
+                  type: fieldType,
+                  visible,
+                  required: visible ? required : false,
+                  colSize: Number(colSize),
+                  placeholder,
+                },
+              },
+            },
+          },
         },
         user,
       }))
 
-      success(isNew ? 'Column added successfully!' : 'Column updated successfully!')
+      success(isNew ? 'Column & form field added successfully!' : 'Column & form field updated successfully!')
       navigate('/settings')
     } catch (err) {
       showError(err.message || 'Failed to save')
@@ -163,7 +193,69 @@ function ColumnSettingDetail() {
                     id="col-visible-switch"
                     label="Visible"
                     checked={visible}
-                    onChange={(e) => setVisible(e.target.checked)}
+                    onChange={(e) => {
+                      setVisible(e.target.checked)
+                      if (!e.target.checked) setRequired(false)
+                    }}
+                  />
+                </Form.Group>
+
+                <hr />
+                <h6 className="text-muted mb-3">Form Field Settings</h6>
+
+                {/* Field Type */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Field Type</Form.Label>
+                  <Form.Select
+                    value={fieldType}
+                    onChange={(e) => setFieldType(e.target.value)}
+                  >
+                    {FIELD_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} — {opt.firebaseType}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Row>
+                  {/* Column Width */}
+                  <Col xs={12} md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Column Width</Form.Label>
+                      <Form.Select
+                        value={colSize}
+                        onChange={(e) => setColSize(Number(e.target.value))}
+                      >
+                        {COL_SIZE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  {/* Required */}
+                  <Col xs={12} md={6}>
+                    <Form.Group className="mb-3 mt-md-4">
+                      <Form.Check
+                        type="switch"
+                        id="required-switch"
+                        label="Required"
+                        checked={required}
+                        onChange={(e) => setRequired(e.target.checked)}
+                        disabled={!visible}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                {/* Placeholder */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Placeholder</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={placeholder}
+                    onChange={(e) => setPlaceholder(e.target.value)}
+                    placeholder="Shown when field is empty..."
                   />
                 </Form.Group>
               </Form>
@@ -203,6 +295,22 @@ function ColumnSettingDetail() {
               <div className="mb-2">
                 <strong>Visible:</strong> {visible ? 'Yes' : 'No'}
               </div>
+              <hr />
+              <small className="text-muted d-block mb-2">Form Field</small>
+              <div className="mb-2">
+                <strong>Type:</strong> {FIELD_TYPE_OPTIONS.find(o => o.value === fieldType)?.label || fieldType}
+              </div>
+              <div className="mb-2">
+                <strong>Width:</strong> {colSize === 12 ? 'Full' : 'Half'}
+              </div>
+              <div className="mb-2">
+                <strong>Required:</strong> {required ? 'Yes' : 'No'}
+              </div>
+              {placeholder && (
+                <div className="mb-2">
+                  <strong>Placeholder:</strong> {placeholder}
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
