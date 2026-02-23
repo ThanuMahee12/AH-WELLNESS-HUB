@@ -1,6 +1,59 @@
 // Default settings for dynamic form fields and table columns
 // This is the single source of truth — Firestore data is deep-merged on top of these defaults
 
+import {
+  FaTachometerAlt,
+  FaUserInjured,
+  FaClipboardCheck,
+  FaFlask,
+  FaPills,
+  FaUsers,
+  FaCog,
+  FaShieldAlt,
+  FaHome,
+  FaChartBar,
+  FaHeart,
+  FaStethoscope,
+  FaFileMedical,
+  FaNotesMedical,
+  FaCalendarCheck,
+  FaBoxes,
+  FaUserMd,
+  FaHospital,
+  FaClipboardList,
+  FaBriefcaseMedical,
+} from 'react-icons/fa'
+
+// Map icon name strings → React Icon components (for DB-driven sidebar)
+export const ICON_MAP = {
+  FaTachometerAlt,
+  FaUserInjured,
+  FaClipboardCheck,
+  FaFlask,
+  FaPills,
+  FaUsers,
+  FaCog,
+  FaShieldAlt,
+  FaHome,
+  FaChartBar,
+  FaHeart,
+  FaStethoscope,
+  FaFileMedical,
+  FaNotesMedical,
+  FaCalendarCheck,
+  FaBoxes,
+  FaUserMd,
+  FaHospital,
+  FaClipboardList,
+  FaBriefcaseMedical,
+}
+
+// Options for the icon dropdown in PagesSettingsTab
+export const ICON_OPTIONS = Object.keys(ICON_MAP).map(name => ({
+  value: name,
+  label: name.replace(/^Fa/, '').replace(/([A-Z])/g, ' $1').trim(),
+}))
+
 export const ENTITY_LABELS = {
   patients: 'Patients',
   tests: 'Tests',
@@ -78,13 +131,47 @@ export const DEFAULT_SETTINGS = {
     },
   },
   pages: {
-    dashboard:  { label: 'Dashboard',  roles: ['superadmin', 'maintainer', 'editor', 'user'] },
-    patients:   { label: 'Patients',   roles: ['superadmin', 'maintainer', 'editor', 'user'] },
-    checkups:   { label: 'Checkups',   roles: ['superadmin', 'maintainer', 'editor', 'user'] },
-    tests:      { label: 'Tests',      roles: ['superadmin', 'maintainer', 'editor', 'user'] },
-    medicines:  { label: 'Medicines',  roles: ['superadmin', 'maintainer', 'editor'] },
-    users:      { label: 'Users',      roles: ['superadmin', 'maintainer'] },
-    settings:   { label: 'Settings',   roles: ['superadmin'] },
+    home: {
+      label: 'Home', icon: 'FaHome', path: '/', order: 0,
+      sidebar: false,
+      roles: ['superadmin', 'maintainer', 'editor', 'user'],
+      content: {
+        heroTitle: 'AH WELLNESS HUB & ASIRI LABORATORIES',
+        heroSubtitle: 'Professional Point of Sale System for Modern Blood Testing Laboratories',
+        heroImageUrl: '',
+        ctaText: 'Get Started',
+        ctaAuthText: 'Go to Dashboard',
+        blogs: [
+          { title: 'Comprehensive Blood Testing', description: 'Wide range of blood tests with accurate results and professional reporting for all your diagnostic needs.', imageUrl: '', visible: true },
+          { title: 'Professional Reports', description: 'Detailed PDF invoices and prescriptions generated instantly with complete billing breakdown.', imageUrl: '', visible: true },
+          { title: 'Modern Lab Management', description: 'Streamlined workflow for patient management, test tracking, and medicine inventory all in one place.', imageUrl: '', visible: true },
+        ],
+      },
+    },
+    dashboard:  { label: 'Dashboard',  icon: 'FaTachometerAlt',  path: '/dashboard',  order: 1, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    patients:   { label: 'Patients',   icon: 'FaUserInjured',    path: '/patients',   order: 2, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    checkups:   { label: 'Checkups',   icon: 'FaClipboardCheck',  path: '/checkups',  order: 3, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    tests:      { label: 'Tests',      icon: 'FaFlask',           path: '/tests',     order: 4, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    medicines:  { label: 'Medicines',  icon: 'FaPills',           path: '/medicines', order: 5, roles: ['superadmin', 'maintainer', 'editor'] },
+    users: {
+      label: 'Users', icon: 'FaUsers', path: '/users', order: 6,
+      roles: ['superadmin', 'maintainer'],
+      tabs: {
+        users:    { label: 'Users',    roles: ['superadmin', 'maintainer'] },
+        activity: { label: 'Activity', roles: ['superadmin'] },
+        requests: { label: 'Requests', roles: ['superadmin'] },
+      },
+    },
+    settings: {
+      label: 'Settings', icon: 'FaCog', path: '/settings', order: 7,
+      roles: ['superadmin', 'maintainer', 'editor'],
+      tabs: {
+        forms:  { label: 'Form Fields',         roles: ['superadmin'] },
+        tables: { label: 'Table Columns',        roles: ['superadmin'] },
+        pages:  { label: 'Page Access',          roles: ['superadmin'] },
+        public: { label: 'Public Page Control',  roles: ['superadmin', 'maintainer', 'editor'] },
+      },
+    },
   },
   permissions: {
     patients: {
@@ -122,52 +209,52 @@ export const DEFAULT_SETTINGS = {
     patients: {
       itemsPerPage: 10,
       columns: {
-        gender: { visible: true, label: '' },
-        name: { visible: true, label: 'Name' },
-        age: { visible: true, label: 'Age' },
-        mobile: { visible: true, label: 'Mobile' },
-        address: { visible: true, label: 'Address' },
+        gender: { visible: true, label: '', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        name: { visible: true, label: 'Name', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        age: { visible: true, label: 'Age', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        mobile: { visible: true, label: 'Mobile', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        address: { visible: true, label: 'Address', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
       },
     },
     tests: {
       itemsPerPage: 10,
       columns: {
-        code: { visible: true, label: 'Code' },
-        name: { visible: true, label: 'Test Name' },
-        price: { visible: true, label: 'Price (Rs.)' },
-        percentage: { visible: true, label: 'Commission' },
-        details: { visible: true, label: 'Details' },
-        rules: { visible: true, label: 'Rules' },
+        code: { visible: true, label: 'Code', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        name: { visible: true, label: 'Test Name', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        price: { visible: true, label: 'Price (Rs.)', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        percentage: { visible: true, label: 'Commission', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        details: { visible: true, label: 'Details', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        rules: { visible: true, label: 'Rules', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
       },
     },
     medicines: {
       itemsPerPage: 10,
       columns: {
-        code: { visible: true, label: 'Code' },
-        name: { visible: true, label: 'Medicine Name' },
-        brand: { visible: true, label: 'Brand' },
-        dosage: { visible: true, label: 'Dosage' },
-        unit: { visible: true, label: 'Unit' },
-        description: { visible: true, label: 'Description' },
+        code: { visible: true, label: 'Code', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        name: { visible: true, label: 'Medicine Name', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        brand: { visible: true, label: 'Brand', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        dosage: { visible: true, label: 'Dosage', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        unit: { visible: true, label: 'Unit', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        description: { visible: true, label: 'Description', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
       },
     },
     users: {
       itemsPerPage: 10,
       columns: {
-        username: { visible: true, label: 'Username' },
-        email: { visible: true, label: 'Email' },
-        mobile: { visible: true, label: 'Mobile' },
-        role: { visible: true, label: 'Role' },
+        username: { visible: true, label: 'Username', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        email: { visible: true, label: 'Email', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        mobile: { visible: true, label: 'Mobile', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        role: { visible: true, label: 'Role', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
       },
     },
     checkups: {
       itemsPerPage: 10,
       columns: {
-        billNo: { visible: true, label: 'Bill No' },
-        patientName: { visible: true, label: 'Patient' },
-        testNames: { visible: true, label: 'Tests' },
-        total: { visible: true, label: 'Total (Rs.)' },
-        timestamp: { visible: true, label: 'Date/Time' },
+        billNo: { visible: true, label: 'Bill No', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        patientName: { visible: true, label: 'Patient', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        testNames: { visible: true, label: 'Tests', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        total: { visible: true, label: 'Total (Rs.)', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        timestamp: { visible: true, label: 'Date/Time', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
       },
     },
   },

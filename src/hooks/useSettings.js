@@ -6,6 +6,7 @@ import { hasPermission } from '../constants/roles'
 export function useSettings() {
   const dispatch = useDispatch()
   const { data: settings, loading, loaded } = useSelector(state => state.settings)
+  const userRole = useSelector(state => state.auth?.user?.role)
 
   // Auto-fetch settings if not yet loaded
   useEffect(() => {
@@ -88,7 +89,9 @@ export function useSettings() {
     const merged = columnsArray
       .filter((col) => {
         const cfg = entitySettings[col.key]
-        return !cfg || cfg.visible !== false
+        if (cfg?.visible === false) return false
+        if (cfg?.roles && userRole && !cfg.roles.includes(userRole)) return false
+        return true
       })
       .map((col) => {
         const cfg = entitySettings[col.key]
@@ -101,14 +104,19 @@ export function useSettings() {
 
     // Append dynamic columns added via settings
     const dynamicColumns = Object.entries(entitySettings)
-      .filter(([key, cfg]) => !hardcodedKeys.has(key) && cfg.visible !== false)
+      .filter(([key, cfg]) => {
+        if (hardcodedKeys.has(key)) return false
+        if (cfg.visible === false) return false
+        if (cfg.roles && userRole && !cfg.roles.includes(userRole)) return false
+        return true
+      })
       .map(([key, cfg]) => ({
         key,
         label: cfg.label || key,
       }))
 
     return [...merged, ...dynamicColumns]
-  }, [settings])
+  }, [settings, userRole])
 
   // Get the roles array for a given page key
   const getPageRoles = useCallback((pageKey) => {
@@ -149,13 +157,17 @@ export function useSettings() {
     if (!entitySettings) return []
 
     return Object.entries(entitySettings)
-      .filter(([, cfg]) => cfg.visible !== false)
+      .filter(([, cfg]) => {
+        if (cfg.visible === false) return false
+        if (cfg.roles && userRole && !cfg.roles.includes(userRole)) return false
+        return true
+      })
       .map(([key, cfg]) => ({
         key,
         label: cfg.label || key,
         ...(customRenderers[key] || {}),
       }))
-  }, [settings])
+  }, [settings, userRole])
 
   // Build initial form data object from entity fields (all empty strings)
   const getInitialFormData = useCallback((entity, defaults = {}) => {
@@ -171,14 +183,19 @@ export function useSettings() {
     return { ...initial, ...defaults }
   }, [settings])
 
-  // Get search fields — all visible column keys for a table entity
+  // Get search fields — visible, searchable, role-allowed column keys for a table entity
   const getSearchFields = useCallback((entity) => {
     const columns = settings?.tables?.[entity]?.columns
     if (!columns) return []
     return Object.entries(columns)
-      .filter(([, cfg]) => cfg.visible !== false)
+      .filter(([, cfg]) => {
+        if (cfg.visible === false) return false
+        if (cfg.searchable === false) return false
+        if (cfg.roles && userRole && !cfg.roles.includes(userRole)) return false
+        return true
+      })
       .map(([key]) => key)
-  }, [settings])
+  }, [settings, userRole])
 
   // Get items per page for a table entity
   const getItemsPerPage = useCallback((entity) => {

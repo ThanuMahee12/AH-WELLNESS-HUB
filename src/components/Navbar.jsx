@@ -1,7 +1,7 @@
 import { Container, Navbar as BSNavbar, Button, Badge } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { FaUser, FaSignOutAlt } from 'react-icons/fa'
+import { FaUser, FaSignOutAlt, FaSignInAlt } from 'react-icons/fa'
 import { logoutUser } from '../store/authSlice'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import NotificationBell from './NotificationBell'
@@ -30,9 +30,13 @@ function Navbar() {
           <span className="brand-text ms-2">AH-WH</span>
         </BSNavbar.Brand>
 
-        {isAuthenticated && (
+        {isAuthenticated ? (
           <div className="d-flex align-items-center ms-auto gap-2">
-            <div className="user-info d-flex align-items-center">
+            <div
+              className="user-info d-flex align-items-center"
+              onClick={() => navigate('/dashboard')}
+              style={{ cursor: 'pointer' }}
+            >
               <FaUser className="me-1 me-md-2 fs-responsive-base" />
               <span className="user-name d-none d-sm-inline fs-responsive-base">{user?.username}</span>
               {user?.role === 'admin' && (
@@ -50,6 +54,16 @@ function Navbar() {
               <span className="d-none d-sm-inline">Logout</span>
             </Button>
           </div>
+        ) : (
+          <Button
+            variant="outline-light"
+            size="sm"
+            onClick={() => navigate('/login')}
+            className="logout-btn d-flex align-items-center ms-auto touch-target fs-responsive-sm"
+          >
+            <FaSignInAlt className="me-0 me-md-1 fs-responsive-base" />
+            <span className="d-none d-sm-inline">Login</span>
+          </Button>
         )}
       </Container>
     </BSNavbar>

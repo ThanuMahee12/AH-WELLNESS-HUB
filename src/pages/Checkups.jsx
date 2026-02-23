@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap'
+import { Container, Row, Col, Card, Button } from 'react-bootstrap'
 import { FaPlus, FaClipboardCheck } from 'react-icons/fa'
 import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
@@ -57,14 +57,13 @@ function Checkups() {
   const COLUMN_RENDERERS = {
     billNo: {
       render: (value, item) => (
-        <Badge
+        <span
           onClick={() => handleViewDetails(item.id)}
-          className="badge-clickable fs-responsive-sm"
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#0891B2'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#06B6D4'}
+          className="fs-responsive-sm"
+          style={{ cursor: 'pointer', color: '#0891B2', fontWeight: 600 }}
         >
           {value || `#${item.id}`}
-        </Badge>
+        </span>
       )
     },
     patientName: {

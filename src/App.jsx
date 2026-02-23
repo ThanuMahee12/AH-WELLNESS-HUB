@@ -43,7 +43,7 @@ function AppContent() {
   const showSidebar = isAuthenticated && !noSidebarPages.includes(location.pathname)
 
   // Pages that shouldn't show navbar
-  const noNavbarPages = ['/']
+  const noNavbarPages = []
   const showNavbar = !noNavbarPages.includes(location.pathname)
 
   useEffect(() => {

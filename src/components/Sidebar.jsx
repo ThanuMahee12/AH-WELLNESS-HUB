@@ -1,31 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Nav } from 'react-bootstrap'
 import { Link, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import {
-  FaTachometerAlt,
-  FaUserInjured,
-  FaClipboardCheck,
-  FaFlask,
-  FaPills,
-  FaUsers,
-  FaCog,
-  FaBars,
-  FaTimes
-} from 'react-icons/fa'
+import { FaFlask, FaBars, FaTimes } from 'react-icons/fa'
 import { useSettings } from '../hooks/useSettings'
+import { ICON_MAP } from '../constants/defaultSettings'
 import '../styles/sidebar.css'
-
-// Map sidebar paths to page settings keys
-const PATH_TO_PAGE_KEY = {
-  '/dashboard': 'dashboard',
-  '/patients': 'patients',
-  '/checkups': 'checkups',
-  '/tests': 'tests',
-  '/medicines': 'medicines',
-  '/users': 'users',
-  '/settings': 'settings',
-}
 
 function Sidebar() {
   const location = useLocation()
@@ -33,30 +13,25 @@ function Sidebar() {
   const { settings } = useSettings()
   const [showMobile, setShowMobile] = useState(false)
 
-  const menuItems = [
-    { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard', fallbackRoles: null },
-    { path: '/patients', icon: FaUserInjured, label: 'Patients', fallbackRoles: null },
-    { path: '/checkups', icon: FaClipboardCheck, label: 'Checkups', fallbackRoles: null },
-    { path: '/tests', icon: FaFlask, label: 'Tests', fallbackRoles: null },
-    { path: '/medicines', icon: FaPills, label: 'Medicines', fallbackRoles: ['superadmin', 'maintainer', 'editor'] },
-    { path: '/users', icon: FaUsers, label: 'Users', fallbackRoles: ['superadmin', 'maintainer', 'admin'] },
-    { path: '/settings', icon: FaCog, label: 'Settings', fallbackRoles: ['superadmin'] },
-  ]
+  // Build menu items from settings.pages, sorted by order
+  const visibleMenuItems = useMemo(() => {
+    const pages = settings?.pages
+    if (!pages) return []
 
-  // Filter menu items based on page access settings (with hardcoded fallback)
-  const visibleMenuItems = menuItems.filter(item => {
-    const pageKey = PATH_TO_PAGE_KEY[item.path]
-    const pageRoles = settings?.pages?.[pageKey]?.roles
-
-    if (pageRoles) {
-      return pageRoles.includes(user?.role)
-    }
-    // Fallback to hardcoded roles
-    if (item.fallbackRoles) {
-      return item.fallbackRoles.includes(user?.role)
-    }
-    return true
-  })
+    return Object.entries(pages)
+      .map(([key, cfg]) => ({
+        key,
+        path: cfg.path || `/${key}`,
+        icon: ICON_MAP[cfg.icon] || FaFlask,
+        label: cfg.label || key,
+        order: cfg.order ?? 99,
+        roles: cfg.roles || [],
+        sidebar: cfg.sidebar,
+      }))
+      .filter(item => item.sidebar !== false)
+      .filter(item => item.roles.includes(user?.role))
+      .sort((a, b) => a.order - b.order)
+  }, [settings?.pages, user?.role])
 
   return (
     <>

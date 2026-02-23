@@ -42,15 +42,15 @@ function CheckupDetail() {
   const [showPdfSettings, setShowPdfSettings] = useState(false)
   const [showPrescriptionPdfSettings, setShowPrescriptionPdfSettings] = useState(false)
   const [pdfSettings, setPdfSettings] = useState({
-    format: 'a4',
-    width: 210,
-    height: 297,
+    format: 'a5',
+    width: 148,
+    height: 210,
     orientation: 'portrait'
   })
   const [prescriptionPdfSettings, setPrescriptionPdfSettings] = useState({
-    format: 'a4',
-    width: 210,
-    height: 297,
+    format: 'a5',
+    width: 148,
+    height: 210,
     orientation: 'portrait'
   })
   const prescriptionRef = useRef()
@@ -198,12 +198,19 @@ function CheckupDetail() {
         throw new Error('Prescription element is not visible')
       }
 
+      // Convert selected page width mm → pixels (96 DPI)
+      const rxPageWidthMm = prescriptionPdfSettings.width
+      const rxPageWidthPx = Math.round(rxPageWidthMm * 96 / 25.4)
+      const rxPadding = rxPageWidthMm < 100 ? '8px' : '25px'
+      const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : '0.85rem'
+
       const prescriptionClone = element.cloneNode(true)
       prescriptionClone.style.position = 'absolute'
       prescriptionClone.style.left = '-9999px'
       prescriptionClone.style.top = '0'
-      prescriptionClone.style.width = '210mm'
-      prescriptionClone.style.padding = '25px'
+      prescriptionClone.style.width = rxPageWidthMm + 'mm'
+      prescriptionClone.style.padding = rxPadding
+      prescriptionClone.style.fontSize = rxFontSize
       prescriptionClone.style.backgroundColor = '#ffffff'
       prescriptionClone.style.display = 'block'
       prescriptionClone.style.visibility = 'visible'
@@ -231,7 +238,7 @@ function CheckupDetail() {
         logging: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: 794,
+        windowWidth: rxPageWidthPx,
         width: prescriptionClone.scrollWidth,
         height: prescriptionClone.scrollHeight,
       })
@@ -360,13 +367,20 @@ function CheckupDetail() {
         throw new Error('Invoice element is not visible')
       }
 
+      // Convert selected page width mm → pixels (96 DPI)
+      const pageWidthMm = pdfSettings.width
+      const pageWidthPx = Math.round(pageWidthMm * 96 / 25.4)
+      const clonePadding = pageWidthMm < 100 ? '8px' : '25px'
+      const cloneFontSize = pageWidthMm < 100 ? '0.65rem' : '0.85rem'
+
       // Clone the bill content to avoid modifying the original
       const billClone = element.cloneNode(true)
       billClone.style.position = 'absolute'
       billClone.style.left = '-9999px'
       billClone.style.top = '0'
-      billClone.style.width = '210mm' // A4 width
-      billClone.style.padding = '25px'
+      billClone.style.width = pageWidthMm + 'mm'
+      billClone.style.padding = clonePadding
+      billClone.style.fontSize = cloneFontSize
       billClone.style.backgroundColor = '#ffffff'
       billClone.style.display = 'block'
       billClone.style.visibility = 'visible'
@@ -381,9 +395,9 @@ function CheckupDetail() {
             img.onload = resolve
             img.onerror = () => {
               console.warn('Image failed to load:', img.src)
-              resolve() // Continue even if image fails
+              resolve()
             }
-            setTimeout(resolve, 3000) // Timeout after 3 seconds
+            setTimeout(resolve, 3000)
           })
         })
       )
@@ -392,10 +406,10 @@ function CheckupDetail() {
       const canvas = await html2canvas(billClone, {
         scale: 2,
         useCORS: true,
-        logging: true, // Enable logging for debugging
+        logging: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: 794, // A4 width in pixels at 96 DPI
+        windowWidth: pageWidthPx,
         width: billClone.scrollWidth,
         height: billClone.scrollHeight,
       })
@@ -946,8 +960,25 @@ function CheckupDetail() {
               )}
 
               {/* Footer */}
-              <div className="mt-3 pt-2 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
-                <Row>
+              <div className="mt-3 pt-3 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
+                <div className="text-end mb-3" style={{ paddingRight: '0.5rem' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    border: '2.5px solid #16a34a',
+                    borderRadius: '6px',
+                    color: '#16a34a',
+                    fontWeight: '700',
+                    fontSize: '0.9rem',
+                    padding: '4px 18px',
+                    letterSpacing: '3px',
+                    transform: 'rotate(-3deg)',
+                    opacity: 0.8,
+                    textTransform: 'uppercase',
+                  }}>
+                    PAID
+                  </span>
+                </div>
+                <Row className="pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
                   <Col xs={6}>
                     <p className="mb-0">
                       <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
@@ -1385,103 +1416,139 @@ function CheckupDetail() {
             <Col>
               <Card className="shadow-sm">
                 <Card.Body ref={prescriptionRef} className="prescription-preview" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
-                  {/* Header */}
-                  <div className="mb-3 pb-2 prescription-header" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <Row>
-                      <Col xs={6}>
-                        <h5 style={{ color: '#334155', fontWeight: '600', marginBottom: '0.25rem', fontSize: '1rem' }}>
-                          Medical Prescription
-                        </h5>
+                  {/* Compact Header — same as invoice */}
+                  <div className="mb-3 pb-2 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
+                    <Row className="align-items-center">
+                      <Col xs={3} className="text-start">
+                        <img
+                          src={bloodLabLogo}
+                          alt="AWH Logo"
+                          style={{ height: '60px', objectFit: 'contain' }}
+                        />
                       </Col>
-                      <Col xs={6} className="text-end">
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          <div>{new Date(checkup.timestamp).toLocaleDateString()}</div>
-                          <div>{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      <Col xs={6} className="text-center">
+                        <h4 style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
+                          AH WELLNESS HUB & ASIRI LABORATORIES
+                        </h4>
+                        <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                          Complete Health Care Solutions
+                        </p>
+                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            <strong>Bill #:</strong> {checkup.billNo || checkup.id}
+                          </span>
+                          {' | '}
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            {new Date(checkup.timestamp).toLocaleDateString()}
+                          </span>
+                          {' | '}
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            {new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
                       </Col>
+                      <Col xs={3} className="text-end">
+                        <img
+                          src={asiriLogo}
+                          alt="ASIRI Logo"
+                          style={{ height: '50px', objectFit: 'contain', opacity: 0.8 }}
+                        />
+                      </Col>
                     </Row>
                   </div>
 
-                  {/* Patient Info */}
-                  <div className="mb-3" style={{ fontSize: '0.85rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.375rem' }}>
-                    <Row className="mb-2">
-                      <Col xs={12} md={6}>
-                        <strong>Patient:</strong> {patient.name}
-                      </Col>
-                      <Col xs={6} md={3}>
-                        <strong>Age:</strong> {patient.age} years
-                      </Col>
-                      <Col xs={6} md={3}>
-                        <strong>Gender:</strong> {patient.gender}
-                      </Col>
-                    </Row>
+                  {/* Compact Patient Info — same as invoice */}
+                  <div className="mb-3" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
                     <Row>
-                      <Col xs={6} md={3}>
-                        <strong>Weight:</strong> {checkup.weight || 'N/A'}
+                      <Col xs={6}>
+                        <strong>Patient:</strong> {patient.name} | <strong>Age:</strong> {patient.age}yr | <strong>Gender:</strong> {patient.gender}
                       </Col>
-                      <Col xs={6} md={3}>
-                        <strong>Height:</strong> {checkup.height || 'N/A'}
+                      <Col xs={6} className="text-end">
+                        <strong>Mobile:</strong> {patient.mobile}
                       </Col>
                     </Row>
                   </div>
 
-                  {/* Medicines Table */}
-                  {prescriptionMedicines.length > 0 && (
-                    <div className="mb-3">
-                      <h6 style={{ color: '#0891B2', marginBottom: '0.75rem', fontSize: '0.95rem' }}>℞ Prescribed Medications</h6>
-                      <Table bordered className="prescription-table" style={{ marginBottom: '0', fontSize: '0.85rem' }}>
-                        <thead style={{ backgroundColor: '#e0f2fe' }}>
-                          <tr>
-                            <th style={{ color: '#0891B2', padding: '0.5rem' }}>Medicine (Brand)</th>
-                            <th style={{ color: '#0891B2', padding: '0.5rem', width: '15%' }}>Dosage</th>
-                            <th style={{ color: '#0891B2', padding: '0.5rem', width: '15%' }}>Quantity</th>
-                            <th style={{ color: '#0891B2', padding: '0.5rem', width: '25%' }}>Instructions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {prescriptionMedicines.map((med, index) => {
-                            const medicine = medicines.find(m => m.id === med.medicineId)
-                            return medicine ? (
-                              <tr key={index}>
-                                <td style={{ padding: '0.5rem' }}>
-                                  <strong>{medicine.name}</strong>
-                                  <br />
-                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{medicine.brand}</span>
-                                </td>
-                                <td style={{ padding: '0.5rem', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
-                                <td style={{ padding: '0.5rem' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
-                                <td style={{ padding: '0.5rem' }}>{med.instructions || '-'}</td>
+                  {/* Body: 70% left / 30% right */}
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    {/* Left 70% — main content */}
+                    <div style={{ flex: '0 0 70%', maxWidth: '70%' }}>
+                      {/* Medicines Table */}
+                      {prescriptionMedicines.length > 0 && (
+                        <div className="mb-3">
+                          <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>℞ Prescribed Medications</h6>
+                          <Table bordered className="prescription-table" style={{ marginBottom: '0', fontSize: '0.85rem' }}>
+                            <thead style={{ backgroundColor: '#e0f2fe' }}>
+                              <tr>
+                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem' }}>Medicine (Brand)</th>
+                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Dosage</th>
+                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Qty</th>
+                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '25%' }}>Instructions</th>
                               </tr>
-                            ) : null
-                          })}
-                        </tbody>
-                      </Table>
-                    </div>
-                  )}
+                            </thead>
+                            <tbody>
+                              {prescriptionMedicines.map((med, index) => {
+                                const medicine = medicines.find(m => m.id === med.medicineId)
+                                return medicine ? (
+                                  <tr key={index}>
+                                    <td style={{ padding: '0.4rem 0.6rem' }}>
+                                      <strong>{medicine.name}</strong>
+                                      <br />
+                                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{medicine.brand}</span>
+                                    </td>
+                                    <td style={{ padding: '0.4rem 0.6rem', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
+                                    <td style={{ padding: '0.4rem 0.6rem' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
+                                    <td style={{ padding: '0.4rem 0.6rem' }}>{med.instructions || '-'}</td>
+                                  </tr>
+                                ) : null
+                              })}
+                            </tbody>
+                          </Table>
+                        </div>
+                      )}
 
-                  {/* Additional Notes */}
-                  {prescriptionNotes && (
-                    <div className="mb-3">
-                      <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Instructions</h6>
-                      <p style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
-                        {prescriptionNotes}
-                      </p>
-                    </div>
-                  )}
+                      {/* Additional Notes */}
+                      {prescriptionNotes && (
+                        <div className="mb-3">
+                          <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Instructions</h6>
+                          <p style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                            {prescriptionNotes}
+                          </p>
+                        </div>
+                      )}
 
-                  {/* Empty State */}
-                  {prescriptionMedicines.length === 0 && !prescriptionNotes && (
-                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                      <FaPrescriptionBottleAlt size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                      <p style={{ fontSize: '0.9rem' }}>
-                        <em>No prescription added yet. Click "Edit Notes" to add medicines and instructions.</em>
-                      </p>
+                      {/* Empty State */}
+                      {prescriptionMedicines.length === 0 && !prescriptionNotes && (
+                        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                          <FaPrescriptionBottleAlt size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                          <p style={{ fontSize: '0.9rem' }}>
+                            <em>No prescription added yet. Click "Edit Notes" to add medicines and instructions.</em>
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {/* Footer */}
-                  <div className="mt-4 pt-3" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
-                    <Row>
+                    {/* Right 30% — side content */}
+                    <div style={{ flex: '0 0 28%', maxWidth: '28%', borderLeft: '1px solid #e2e8f0', paddingLeft: '1rem', fontSize: '0.85rem' }}>
+                      <div className="mb-2">
+                        <strong>H:</strong> {checkup.height || 'N/A'} &nbsp; <strong>W:</strong> {checkup.weight || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer — same as invoice */}
+                  <div className="mt-3 pt-2 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
+                    <Row className="mb-2 align-items-end">
+                      <Col xs={6}>
+                        <div style={{ borderTop: '1px solid #64748b', width: '150px', marginBottom: '0.25rem' }} />
+                        <p style={{ fontSize: '0.75rem', marginBottom: 0 }}>Date</p>
+                      </Col>
+                      <Col xs={6} className="text-end">
+                        <div style={{ borderTop: '1px solid #64748b', width: '150px', marginLeft: 'auto', marginBottom: '0.25rem' }} />
+                        <p style={{ fontSize: '0.75rem', marginBottom: 0 }}>Signature</p>
+                      </Col>
+                    </Row>
+                    <Row className="pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
                       <Col xs={6}>
                         <p className="mb-0">
                           <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
@@ -1493,12 +1560,29 @@ function CheckupDetail() {
                         </p>
                       </Col>
                       <Col xs={6} className="text-end">
-                        <div style={{ marginTop: '1rem' }}>
-                          <div style={{ borderTop: '1px solid #64748b', width: '150px', marginLeft: 'auto', marginBottom: '0.25rem' }} />
-                          <p style={{ fontSize: '0.75rem', marginBottom: 0 }}>Doctor's Signature</p>
-                        </div>
+                        <p className="mb-0">
+                          <FaInstagram className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
+                          <strong>IG:</strong> wijayjena2
+                        </p>
+                        <p className="mb-0">
+                          <FaFacebook className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
+                          <strong>FB:</strong> drwjanakan
+                        </p>
                       </Col>
                     </Row>
+                    <div className="text-center mt-2 pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
+                      <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
+                        <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: 0 }}>
+                          Thank you for choosing AH Wellness Hub & Asiri Laboratories
+                        </p>
+                        <img
+                          src={asiriLogo}
+                          alt="Powered by ASIRI"
+                          style={{ height: '20px', opacity: 0.7, objectFit: 'contain' }}
+                          title="Powered by ASIRI Laboratories"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </Card.Body>
               </Card>
