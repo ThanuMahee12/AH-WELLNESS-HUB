@@ -41,6 +41,7 @@ AH Wellness Hub Blood Lab Manager is a complete Point of Sale (POS) system for b
 - `src/store/checkupsSlice.js` - Checkups/billing management with Firestore sync
 - `src/store/usersSlice.js` - Users management with Firestore sync
 - `src/store/medicinesSlice.js` - Medicines management with Firestore sync
+- `src/store/settingsSlice.js` - Dynamic settings (forms, tables, pages, permissions) with Firestore sync
 
 ### Components
 - `src/components/Navbar.jsx` - Top navigation bar with user info and logout
@@ -50,7 +51,7 @@ AH Wellness Hub Blood Lab Manager is a complete Point of Sale (POS) system for b
 - `src/components/ui/` - UI components (PageHeader, FormField, RichTextEditor)
 
 ### Pages
-- `src/pages/Home.jsx` - Landing page with features showcase
+- `src/pages/Home.jsx` - Landing page with features showcase (content driven by settings)
 - `src/pages/Login.jsx` - Firebase authentication page
 - `src/pages/Dashboard.jsx` - Analytics dashboard with charts, statistics, and time-range filters
 - `src/pages/Patients.jsx` - Patient CRUD with enhanced table
@@ -63,6 +64,11 @@ AH Wellness Hub Blood Lab Manager is a complete Point of Sale (POS) system for b
   - `src/pages/tabs/UsersTab.jsx` - User CRUD operations
   - `src/pages/tabs/UserActivityTab.jsx` - Activity tracking and analytics (superadmin only)
   - `src/pages/tabs/UserRequestsTab.jsx` - User role change requests (superadmin only)
+- `src/pages/Settings.jsx` - Settings page with dynamic tabs
+  - `src/pages/tabs/TablesSettingsTab.jsx` - Table column config (visibility, roles, searchable)
+  - `src/pages/tabs/PagesSettingsTab.jsx` - Page access and sidebar config
+  - `src/pages/tabs/PublicPageTab.jsx` - Home page content editor (hero, blogs, CTA)
+- `src/pages/ColumnSettingDetail.jsx` - Column detail editor (label, visible, roles, searchable, field type, etc.)
 - `src/pages/AdminSetup.jsx` - Initial admin setup page
 
 ### Services
@@ -74,6 +80,11 @@ AH Wellness Hub Blood Lab Manager is a complete Point of Sale (POS) system for b
 ### Hooks
 - `src/hooks/useCRUD.js` - Reusable CRUD operations hook
 - `src/hooks/usePermission.js` - Permission checking hook
+- `src/hooks/useSettings.js` - Settings access hook (filter fields/columns by visibility, role, searchable; page access checks; permission checks)
+
+### Constants
+- `src/constants/defaultSettings.js` - Default settings (forms, tables, pages, permissions); single source of truth merged with Firestore
+- `src/constants/roles.js` - Role hierarchy and permission helpers
 
 ### Context
 - `src/context/NotificationContext.jsx` - Toast notifications provider
@@ -97,6 +108,24 @@ AH Wellness Hub Blood Lab Manager is a complete Point of Sale (POS) system for b
 **Checkup**: `{ id, billNo, patientId, tests[], medicines[], total, commission, discount, notes, timestamp }`
 **UserActivity**: `{ id, userId, username, action, resource, metadata, timestamp }`
 **RoleRequest**: `{ id, userId, username, currentRole, requestedRole, status, requestedAt, processedAt, processedBy }`
+
+### Dynamic Settings System
+Settings are stored in Firestore (`settings` collection) and deep-merged on top of `DEFAULT_SETTINGS` in `src/constants/defaultSettings.js`.
+
+**Forms settings** (`settings.forms.[entity].fields`):
+- Per-field: `visible`, `required`, `label`, `type`, `colSize`, `placeholder`, `rows`
+
+**Tables settings** (`settings.tables.[entity]`):
+- `itemsPerPage`: Rows per page for the table
+- Per-column: `visible`, `label`, `roles` (array of roles that can see the column), `searchable` (whether included in search)
+
+**Pages settings** (`settings.pages.[pageKey]`):
+- `label`, `icon`, `path`, `order`, `roles`, `sidebar`
+- `tabs`: per-tab `label` and `roles`
+- `content`: home page hero/blog content
+
+**Permissions settings** (`settings.permissions.[resource].[action]`):
+- Array of roles allowed for each action (view, create, edit, delete)
 
 ### User Roles & Permissions
 
@@ -223,19 +252,28 @@ The application is **highly optimized for mobile devices** with responsive break
 5. Generate PDF invoice or prescription
 
 ### PDF Generation
+Both invoice and prescription share the same branded template (header with dual logos, company name, bill #, date/time).
+
 **Invoice Format** (Bill Tab):
-- AH Wellness Hub & Asiri Laboratories branding
-- Patient information and bill details
-- Tests and medicines table with prices
-- Discount, commission, and total breakdown
-- Footer with contact info and branding
+- Branded header with AWH + ASIRI logos
+- Compact patient info row
+- Tests table with prices and total
+- Green PAID stamp in footer
+- Contact info footer (Mobile, Email, IG, FB)
+- "Thank you" banner with ASIRI logo
 
 **Prescription Format** (Prescription Tab):
-- Doctor/lab header
-- Patient information
-- Medicines table with dosage and duration
-- Instructions and notes
-- Footer with signatures
+- Same branded header as invoice
+- Compact patient info row
+- 70/30 body split: medicines table + instructions (left 70%), patient vitals H/W (right 30%)
+- Date line (left) and Signature line (right) in footer
+- Same contact info footer and "Thank you" banner
+
+**Page Size Configuration**:
+- Default: A5 (148 x 210 mm)
+- Supported: A4, A5, Letter, Thermal 80mm, Thermal 58mm, Custom
+- Clone width and html2canvas windowWidth dynamically match selected page size
+- Smaller formats (<100mm) auto-adjust padding and font size
 
 ### User Activity Tracking
 - Automatic logging of all CRUD operations
