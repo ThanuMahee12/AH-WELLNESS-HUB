@@ -10,14 +10,30 @@ A complete Point of Sale (POS) system for blood testing laboratories with Fireba
 ## ✨ Features
 
 ### Core Functionality
-- 🔐 **User Authentication** - Firebase email/password authentication
+- 🔐 **User Authentication** - Firebase email/password authentication with forgot password and sign-up
 - 👥 **Patient Management** - Complete CRUD operations
 - 🧬 **Blood Tests Catalog** - Manage test types, prices, and rules
-- 📋 **Checkup/Billing** - Create bills with multiple tests
-- 📄 **PDF Generation** - Professional invoice generation
-- 👤 **User Management** - Create and manage staff users
-- 📊 **Dashboard** - Analytics and statistics
-- 🎨 **Responsive Design** - Works on all devices
+- 📋 **Checkup/Billing** - Create bills with multiple tests, medicines, and prescriptions
+- 📄 **PDF Generation** - Professional invoice and prescription PDFs with configurable page sizes (A4, A5, Letter, thermal, custom)
+- 💊 **Medicine Management** - Full medicine inventory with dosage tracking
+- 👤 **User Management** - Create and manage staff users with activity tracking
+- 📊 **Dashboard** - Analytics and statistics with time-range filters
+- 🎨 **Responsive Design** - Mobile-first, works on all devices
+
+### Settings & Configuration
+- ⚙️ **Dynamic Form Fields** - Configure form fields per entity (visibility, required, type, width, placeholder)
+- 📊 **Dynamic Table Columns** - Configure table columns with role-based visibility and searchable toggles
+- 🔒 **Role-Based Column Access** - Control which roles can see specific table columns
+- 🔍 **Searchable Columns** - Toggle which columns are included in table search
+- 📄 **Page Access Control** - Configure page and tab visibility per role from settings
+- 🏠 **Public Page Control** - Edit home page hero, blogs, and CTA content from settings
+- 📏 **Configurable Rows Per Page** - Set items per page for each table
+
+### PDF Templates
+- 🧾 **Invoice Template** - Branded header with dual logos, patient info, tests table, PAID stamp, contact footer
+- 💊 **Prescription Template** - Same branded header, 70/30 split layout (medicines left, patient vitals right), date/signature lines, contact footer
+- 📐 **Page Size Support** - A5 default, A4, Letter, thermal 80mm/58mm, custom dimensions
+- 🖨️ **Print Support** - Browser print with matching page size settings
 
 ### Technical Features
 - ☁️ **Cloud Database** - Firestore for real-time data
@@ -26,6 +42,7 @@ A complete Point of Sale (POS) system for blood testing laboratories with Fireba
 - 🔄 **Real-time Updates** - Live data synchronization
 - 🛡️ **Secure** - Firebase Authentication & Firestore Rules
 - 📱 **Mobile-First** - Bootstrap responsive design
+- 🗄️ **Database-Driven UI** - Forms, tables, and pages fully configurable from Firestore
 
 ## 🚀 Quick Start
 
@@ -372,12 +389,16 @@ See [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md) for more troubleshooting 
 
 ## 📈 Roadmap
 
-- [ ] Add more blood test types
+- [x] Medicine inventory management
+- [x] Prescription PDF generation
+- [x] Role-based access control (RBAC)
+- [x] Dynamic settings system (forms, tables, pages)
+- [x] Role-based column visibility
+- [x] Configurable PDF page sizes
+- [x] User activity tracking
 - [ ] Implement appointment scheduling
-- [ ] Add inventory management
 - [ ] Email invoice delivery
 - [ ] SMS notifications
-- [ ] Advanced analytics
 - [ ] Multi-language support
 - [ ] Dark mode theme
 

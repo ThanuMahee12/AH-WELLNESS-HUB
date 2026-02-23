@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Row, Col, Badge, Button } from 'react-bootstrap'
@@ -14,16 +14,14 @@ function UsersTab() {
   const users = useSelector(selectAllUsers);
   const { loading, error } = useSelector(state => state.users);
   const { checkPermission } = usePermission();
-  const { filterColumns, getItemsPerPage } = useSettings();
+  const { getEntityColumns, getItemsPerPage, getSearchFields } = useSettings();
 
   useEffect(() => {
     dispatch(fetchUsers());
   }, [dispatch]);
 
-  const TABLE_COLUMNS = [
-    {
-      key: 'username',
-      label: 'Username',
+  const COLUMN_RENDERERS = useMemo(() => ({
+    username: {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/users/${item.id}`)}
@@ -36,20 +34,16 @@ function UsersTab() {
         </strong>
       )
     },
-    { key: 'email', label: 'Email' },
-    { key: 'mobile', label: 'Mobile' },
-    {
-      key: 'role',
-      label: 'Role',
+    role: {
       render: (value) => (
         <Badge className={value === 'admin' ? 'badge-theme' : 'badge-theme-light'}>
           {value}
         </Badge>
       )
     },
-  ];
+  }), [navigate]);
 
-  const visibleColumns = filterColumns('users', TABLE_COLUMNS);
+  const visibleColumns = getEntityColumns('users', COLUMN_RENDERERS);
 
   return (
     <>
@@ -76,7 +70,7 @@ function UsersTab() {
             error={error}
             emptyMessage="No users found. Add your first user to get started."
             itemsPerPage={getItemsPerPage('users')}
-            searchFields={['username', 'email', 'mobile', 'role']}
+            searchFields={getSearchFields('users')}
           />
         </Col>
       </Row>

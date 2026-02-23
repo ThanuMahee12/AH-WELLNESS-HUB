@@ -104,11 +104,21 @@ function FieldSettingDetail() {
               },
             },
           },
+          tables: {
+            [entity]: {
+              columns: {
+                [key]: {
+                  label: fieldData.label,
+                  visible: fieldData.visible,
+                },
+              },
+            },
+          },
         },
         user,
       }))
 
-      success(isNew ? 'Field added successfully!' : 'Field updated successfully!')
+      success(isNew ? 'Field & table column added successfully!' : 'Field & table column updated successfully!')
       navigate('/settings')
     } catch (err) {
       showError(err.message || 'Failed to save')

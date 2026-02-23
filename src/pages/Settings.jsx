@@ -1,14 +1,36 @@
 import { useState } from 'react'
+import { useSelector } from 'react-redux'
 import { Container, Tabs, Tab } from 'react-bootstrap'
-import { FaCog, FaWpforms, FaTable, FaShieldAlt } from 'react-icons/fa'
+import { FaCog, FaWpforms, FaTable, FaShieldAlt, FaGlobe } from 'react-icons/fa'
 import { PageHeader } from '../components/ui'
+import { useSettings } from '../hooks/useSettings'
 
 import FormsSettingsTab from './tabs/FormsSettingsTab'
 import TablesSettingsTab from './tabs/TablesSettingsTab'
 import PagesSettingsTab from './tabs/PagesSettingsTab'
+import PublicPageTab from './tabs/PublicPageTab'
+
+const SETTINGS_TABS = [
+  { key: 'forms',  icon: FaWpforms,   component: FormsSettingsTab },
+  { key: 'tables', icon: FaTable,     component: TablesSettingsTab },
+  { key: 'pages',  icon: FaShieldAlt, component: PagesSettingsTab },
+  { key: 'public', icon: FaGlobe,     component: PublicPageTab },
+]
 
 function Settings() {
+  const { user } = useSelector(state => state.auth)
+  const { settings } = useSettings()
   const [activeTab, setActiveTab] = useState('forms')
+
+  const settingsTabs = settings?.pages?.settings?.tabs || {}
+
+  const canSeeTab = (tabKey) => {
+    const tabCfg = settingsTabs[tabKey]
+    if (!tabCfg) return user?.role === 'superadmin'
+    return tabCfg.roles?.includes(user?.role)
+  }
+
+  const visibleTabs = SETTINGS_TABS.filter(t => canSeeTab(t.key))
 
   return (
     <Container fluid className="p-3 p-md-4">
@@ -18,45 +40,24 @@ function Settings() {
       />
 
       <Tabs
-        activeKey={activeTab}
+        activeKey={visibleTabs.some(t => t.key === activeTab) ? activeTab : visibleTabs[0]?.key}
         onSelect={(k) => setActiveTab(k)}
         className="mb-3 tabs-theme"
       >
-        <Tab
-          eventKey="forms"
-          title={
-            <span>
-              <FaWpforms className="me-2" />
-              Form Fields
-            </span>
-          }
-        >
-          <FormsSettingsTab />
-        </Tab>
-
-        <Tab
-          eventKey="tables"
-          title={
-            <span>
-              <FaTable className="me-2" />
-              Table Columns
-            </span>
-          }
-        >
-          <TablesSettingsTab />
-        </Tab>
-
-        <Tab
-          eventKey="pages"
-          title={
-            <span>
-              <FaShieldAlt className="me-2" />
-              Page Access
-            </span>
-          }
-        >
-          <PagesSettingsTab />
-        </Tab>
+        {visibleTabs.map(({ key, icon: Icon, component: Comp }) => (
+          <Tab
+            key={key}
+            eventKey={key}
+            title={
+              <span>
+                <Icon className="me-2" />
+                {settingsTabs[key]?.label || key}
+              </span>
+            }
+          >
+            <Comp />
+          </Tab>
+        ))}
       </Tabs>
     </Container>
   )

@@ -5,7 +5,7 @@ import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap'
 import { FaCog, FaArrowLeft } from 'react-icons/fa'
 import { updateSettings } from '../store/settingsSlice'
 import { useSettings } from '../hooks'
-import { ENTITY_LABELS } from '../constants/defaultSettings'
+import { ENTITY_LABELS, FIELD_TYPE_OPTIONS, COL_SIZE_OPTIONS, ALL_ROLES } from '../constants/defaultSettings'
 import { useNotification } from '../context'
 
 function ColumnSettingDetail() {
@@ -19,19 +19,39 @@ function ColumnSettingDetail() {
   const isNew = columnKey === 'new'
   const existing = !isNew ? settings?.tables?.[entity]?.columns?.[columnKey] : null
 
+  const existingField = !isNew ? settings?.forms?.[entity]?.fields?.[columnKey] : null
+
   const [label, setLabel] = useState('')
   const [visible, setVisible] = useState(true)
   const [newKey, setNewKey] = useState('')
   const [keyError, setKeyError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [fieldType, setFieldType] = useState('text')
+  const [required, setRequired] = useState(false)
+  const [colSize, setColSize] = useState(6)
+  const [placeholder, setPlaceholder] = useState('')
+  const [roles, setRoles] = useState([...ALL_ROLES])
+  const [searchable, setSearchable] = useState(true)
 
   // Load existing data
   useEffect(() => {
     if (existing) {
       setLabel(existing.label || '')
       setVisible(existing.visible !== false)
+      if (existing.roles) setRoles(existing.roles)
+      setSearchable(existing.searchable !== false)
     }
-  }, [existing?.label, existing?.visible]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [existing?.label, existing?.visible, existing?.searchable]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load existing form field data
+  useEffect(() => {
+    if (existingField) {
+      setFieldType(existingField.type || 'text')
+      setRequired(existingField.required === true)
+      setColSize(existingField.colSize ?? 6)
+      setPlaceholder(existingField.placeholder || '')
+    }
+  }, [existingField?.type, existingField?.required, existingField?.colSize, existingField?.placeholder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const validateKey = useCallback((name) => {
     if (!name.trim()) return 'Column key is required'
@@ -59,7 +79,21 @@ function ColumnSettingDetail() {
           tables: {
             [entity]: {
               columns: {
-                [key]: { label, visible },
+                [key]: { label, visible, roles, searchable },
+              },
+            },
+          },
+          forms: {
+            [entity]: {
+              fields: {
+                [key]: {
+                  label,
+                  type: fieldType,
+                  visible,
+                  required: visible ? required : false,
+                  colSize: Number(colSize),
+                  placeholder,
+                },
               },
             },
           },
@@ -67,7 +101,7 @@ function ColumnSettingDetail() {
         user,
       }))
 
-      success(isNew ? 'Column added successfully!' : 'Column updated successfully!')
+      success(isNew ? 'Column & form field added successfully!' : 'Column & form field updated successfully!')
       navigate('/settings')
     } catch (err) {
       showError(err.message || 'Failed to save')
@@ -163,7 +197,109 @@ function ColumnSettingDetail() {
                     id="col-visible-switch"
                     label="Visible"
                     checked={visible}
-                    onChange={(e) => setVisible(e.target.checked)}
+                    onChange={(e) => {
+                      setVisible(e.target.checked)
+                      if (!e.target.checked) setRequired(false)
+                    }}
+                  />
+                </Form.Group>
+
+                {/* Searchable */}
+                <Form.Group className="mb-3">
+                  <Form.Check
+                    type="switch"
+                    id="col-searchable-switch"
+                    label="Searchable"
+                    checked={searchable}
+                    onChange={(e) => setSearchable(e.target.checked)}
+                  />
+                  <Form.Text className="text-muted">
+                    Include this column in table search results
+                  </Form.Text>
+                </Form.Group>
+
+                {/* Roles */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Visible to Roles</Form.Label>
+                  <div className="d-flex flex-wrap gap-3">
+                    {ALL_ROLES.map((role) => (
+                      <Form.Check
+                        key={role}
+                        type="checkbox"
+                        id={`role-${role}`}
+                        label={role}
+                        checked={roles.includes(role)}
+                        onChange={(e) => {
+                          setRoles(prev =>
+                            e.target.checked
+                              ? [...prev, role]
+                              : prev.filter(r => r !== role)
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <Form.Text className="text-muted">
+                    Only selected roles will see this column
+                  </Form.Text>
+                </Form.Group>
+
+                <hr />
+                <h6 className="text-muted mb-3">Form Field Settings</h6>
+
+                {/* Field Type */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Field Type</Form.Label>
+                  <Form.Select
+                    value={fieldType}
+                    onChange={(e) => setFieldType(e.target.value)}
+                  >
+                    {FIELD_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} — {opt.firebaseType}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Row>
+                  {/* Column Width */}
+                  <Col xs={12} md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Column Width</Form.Label>
+                      <Form.Select
+                        value={colSize}
+                        onChange={(e) => setColSize(Number(e.target.value))}
+                      >
+                        {COL_SIZE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  {/* Required */}
+                  <Col xs={12} md={6}>
+                    <Form.Group className="mb-3 mt-md-4">
+                      <Form.Check
+                        type="switch"
+                        id="required-switch"
+                        label="Required"
+                        checked={required}
+                        onChange={(e) => setRequired(e.target.checked)}
+                        disabled={!visible}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                {/* Placeholder */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Placeholder</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={placeholder}
+                    onChange={(e) => setPlaceholder(e.target.value)}
+                    placeholder="Shown when field is empty..."
                   />
                 </Form.Group>
               </Form>
@@ -203,6 +339,34 @@ function ColumnSettingDetail() {
               <div className="mb-2">
                 <strong>Visible:</strong> {visible ? 'Yes' : 'No'}
               </div>
+              <div className="mb-2">
+                <strong>Searchable:</strong> {searchable ? 'Yes' : 'No'}
+              </div>
+              <div className="mb-2">
+                <strong>Roles:</strong>{' '}
+                {roles.length > 0
+                  ? roles.map(r => (
+                      <span key={r} className="badge bg-info text-dark me-1" style={{ fontSize: '0.7rem' }}>{r}</span>
+                    ))
+                  : <span className="text-muted">None</span>
+                }
+              </div>
+              <hr />
+              <small className="text-muted d-block mb-2">Form Field</small>
+              <div className="mb-2">
+                <strong>Type:</strong> {FIELD_TYPE_OPTIONS.find(o => o.value === fieldType)?.label || fieldType}
+              </div>
+              <div className="mb-2">
+                <strong>Width:</strong> {colSize === 12 ? 'Full' : 'Half'}
+              </div>
+              <div className="mb-2">
+                <strong>Required:</strong> {required ? 'Yes' : 'No'}
+              </div>
+              {placeholder && (
+                <div className="mb-2">
+                  <strong>Placeholder:</strong> {placeholder}
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>

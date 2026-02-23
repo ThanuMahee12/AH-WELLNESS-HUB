@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Badge, Collapse, Form } from 'react-bootstrap'
@@ -11,24 +11,6 @@ import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
-
-// Form field configuration (without gender - handled separately via children)
-const PATIENT_FIELDS = [
-  { name: 'name', label: 'Patient Name', type: 'text', required: true, colSize: 6 },
-  { name: 'age', label: 'Age', type: 'number', required: true, colSize: 6 },
-  { name: 'mobile', label: 'Mobile', type: 'tel', required: true, colSize: 6 },
-  { name: 'email', label: 'Email', type: 'email', required: false, colSize: 6 },
-  { name: 'address', label: 'Address', type: 'textarea', required: true, colSize: 12, rows: 2 },
-];
-
-const INITIAL_FORM = {
-  name: '',
-  age: '',
-  gender: 'Male',
-  mobile: '',
-  address: '',
-  email: '',
-};
 
 // Custom Gender Icon Selector Component
 const GenderIconSelector = ({ value, onChange, name, disabled, label = 'Gender', required = true }) => {
@@ -76,12 +58,18 @@ function PatientDetail() {
   const { loading } = useSelector(state => state.patients)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
-  const { filterFields, isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
+  const { getEntityFields, getInitialFormData, isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
 
   const isNew = id === 'new'
   const patient = isNew ? null : patients.find(p => p.id === id)
 
-  const visibleFields = filterFields('patients', PATIENT_FIELDS)
+  // Get fields from settings, excluding gender (rendered as custom component)
+  const visibleFields = getEntityFields('patients').filter(f => f.name !== 'gender')
+
+  const INITIAL_FORM = useMemo(() =>
+    getInitialFormData('patients', { gender: 'Male' }),
+    [getInitialFormData]
+  )
 
   const [patientCheckups, setPatientCheckups] = useState([])
   const [chartData, setChartData] = useState([])
@@ -119,14 +107,13 @@ function PatientDetail() {
   // Load patient data into form when editing
   useEffect(() => {
     if (patient) {
-      form.resetTo({
-        name: patient.name || '',
-        age: patient.age?.toString() || '',
-        gender: patient.gender || 'Male',
-        mobile: patient.mobile || '',
-        address: patient.address || '',
-        email: patient.email || '',
+      const resetData = { ...INITIAL_FORM }
+      Object.keys(resetData).forEach(key => {
+        if (patient[key] != null) resetData[key] = String(patient[key])
       })
+      // Restore gender properly
+      if (patient.gender) resetData.gender = patient.gender
+      form.resetTo(resetData)
     }
   }, [patient?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 

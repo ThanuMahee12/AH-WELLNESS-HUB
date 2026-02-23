@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Form, Badge } from 'react-bootstrap'
@@ -11,15 +11,8 @@ import { usePermission } from '../components/auth/PermissionGate'
 import FormField from '../components/ui/FormField'
 import RichTextEditor from '../components/ui/RichTextEditor'
 
-const INITIAL_FORM = {
-  code: '',
-  name: '',
-  brand: '',
-  dosage: [],
-  unit: '',
-  description: '',
-  details: '',
-};
+// Fields with custom rendering (can't be auto-rendered by EntityForm)
+const CUSTOM_RENDERED_FIELDS = ['dosage', 'details'];
 
 // Normalize dosage from Firebase (could be string or array)
 const normalizeDosage = (dosage) => {
@@ -125,10 +118,26 @@ function MedicineDetail() {
   const { loading } = useSelector(state => state.medicines)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
-  const { isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
+  const { isFieldVisible, isFieldRequired, getFieldLabel, getEntityFields, getInitialFormData } = useSettings()
 
   const isNew = id === 'new'
   const medicine = isNew ? null : medicines.find(m => m.id === id)
+
+  // Get all visible fields from settings; separate standard fields and custom-rendered ones
+  const allFields = getEntityFields('medicines', {
+    code: { placeholder: 'e.g., MED001' },
+    unit: { placeholder: 'e.g., tablets, capsules, ml' },
+  })
+  // Fields that use standard FormField rendering (not custom like dosage/richtext)
+  const standardFields = allFields.filter(f => !CUSTOM_RENDERED_FIELDS.includes(f.name) && f.type !== 'richtext')
+  // Dynamic fields added via settings (not in default medicine fields)
+  const dynamicFields = allFields.filter(f => !CUSTOM_RENDERED_FIELDS.includes(f.name) && f.type !== 'richtext')
+    .filter(f => !['code', 'name', 'brand', 'unit', 'description'].includes(f.name))
+
+  const INITIAL_FORM = useMemo(() =>
+    getInitialFormData('medicines', { dosage: [] }),
+    [getInitialFormData]
+  )
 
   const validate = useCallback((data) => {
     const errors = {}
@@ -182,15 +191,15 @@ function MedicineDetail() {
   // Load medicine data into form when editing
   useEffect(() => {
     if (medicine) {
-      form.resetTo({
-        code: medicine.code || '',
-        name: medicine.name || '',
-        brand: medicine.brand || '',
-        dosage: normalizeDosage(medicine.dosage),
-        unit: medicine.unit || '',
-        description: medicine.description || '',
-        details: medicine.details || '',
+      const resetData = { ...INITIAL_FORM }
+      Object.keys(resetData).forEach(key => {
+        if (key === 'dosage') {
+          resetData[key] = normalizeDosage(medicine[key])
+        } else if (medicine[key] != null) {
+          resetData[key] = String(medicine[key])
+        }
       })
+      form.resetTo(resetData)
     }
   }, [medicine?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -370,6 +379,23 @@ function MedicineDetail() {
                   />
                 </Col>
               )}
+              {/* Dynamic fields added via settings */}
+              {dynamicFields.map((field) => (
+                <Col key={field.name} xs={12} md={field.colSize || 6}>
+                  <FormField
+                    label={field.label}
+                    name={field.name}
+                    type={field.type || 'text'}
+                    value={form.formData[field.name] || ''}
+                    onChange={form.handleChange}
+                    error={form.errors[field.name]}
+                    required={field.required}
+                    placeholder={field.placeholder}
+                    rows={field.rows}
+                    disabled={isDisabled}
+                  />
+                </Col>
+              ))}
             </Row>
           </EntityForm>
         </Col>
