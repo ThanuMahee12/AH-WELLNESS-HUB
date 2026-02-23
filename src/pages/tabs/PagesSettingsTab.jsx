@@ -192,6 +192,57 @@ function PagesSettingsTab() {
         </Card.Body>
       </Card>
 
+      {/* Login Page Controls */}
+      <Card className="shadow-sm mb-4">
+        <Card.Header className="card-header-theme">
+          <h5 className="mb-0 fs-responsive-md">Login Page Controls</h5>
+        </Card.Header>
+        <Card.Body className="p-0">
+          <div className="table-responsive">
+            <Table hover size="sm" className="mb-0 table-mobile-responsive align-middle">
+              <thead className="bg-theme-slate">
+                <tr>
+                  <th style={{ width: '25%' }}>Feature</th>
+                  {ALL_ROLES.map(role => (
+                    <th key={role} style={{ textAlign: 'center', textTransform: 'capitalize' }}>
+                      {role}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { key: 'showResetPassword', label: 'Reset Password' },
+                  { key: 'showSignUp', label: 'Sign Up' },
+                ].map(({ key, label }) => {
+                  const currentRoles = Array.isArray(pages?.login?.[key]) ? pages.login[key] : ALL_ROLES
+                  return (
+                    <tr key={key}>
+                      <td data-label="Feature"><strong>{label}</strong></td>
+                      {ALL_ROLES.map(role => (
+                        <td key={role} data-label={role} style={{ textAlign: 'center' }}>
+                          <Form.Check
+                            type="switch"
+                            checked={currentRoles.includes(role)}
+                            onChange={(e) => {
+                              const newRoles = e.target.checked
+                                ? [...currentRoles, role]
+                                : currentRoles.filter(r => r !== role)
+                              handlePageFieldChange('login', key, newRoles)
+                            }}
+                            className="d-inline-block"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
+
       {pagesWithTabs.length > 0 && (
         <>
           <h5 className="mb-3 mt-4 fs-responsive-md">Tab Access by Role</h5>
