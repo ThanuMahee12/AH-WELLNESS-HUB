@@ -163,9 +163,7 @@ function CheckupDetail() {
     setPrescriptionMedicines(prescriptionMedicines.filter((_, i) => i !== index))
   }
 
-  // Shared header + patient info used by both invoice and prescription
   // Single shared template — header + children + contact footer
-  const isMobile = window.innerWidth < 768
   const renderTemplate = (children) => (
     <>
       {/* Header */}
@@ -951,6 +949,40 @@ function CheckupDetail() {
             padding: 0.25rem !important;
           }
 
+          /* --- Section headings --- */
+          .bill-content h6 {
+            font-size: 0.8rem !important;
+          }
+
+          /* --- Date / Signature lines --- */
+          .bill-content .date-signature-row {
+            gap: 0.5rem !important;
+          }
+          .bill-content .date-signature-row > div {
+            flex: 1 !important;
+          }
+          .bill-content .date-signature-row .sig-line {
+            width: 100% !important;
+          }
+
+          /* --- PAID stamp --- */
+          .bill-content .paid-stamp {
+            font-size: 0.7rem !important;
+            padding: 2px 10px !important;
+            letter-spacing: 2px !important;
+          }
+
+          /* --- Notes text --- */
+          .bill-content .notes-text {
+            font-size: 0.75rem !important;
+          }
+
+          /* --- Lab results children row on narrow screens --- */
+          .bill-content .lab-children-row {
+            flex-wrap: wrap !important;
+            gap: 2px 8px !important;
+          }
+
           /* --- Prescription form cards --- */
           .prescription-form-card {
             padding: 0.5rem !important;
@@ -1132,7 +1164,7 @@ function CheckupDetail() {
                           style={{ fontSize: '0.85rem' }}
                         />
                       ) : (
-                        <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
+                        <p className="notes-text" style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
                           {checkup.notes}
                         </p>
                       )}
@@ -1141,7 +1173,7 @@ function CheckupDetail() {
 
                   {/* PAID Stamp */}
                   <div className="text-end mb-1" style={{ paddingRight: '0.5rem' }}>
-                    <span style={{
+                    <span className="paid-stamp" style={{
                       display: 'inline-block',
                       border: '2.5px solid #16a34a',
                       borderRadius: '6px',
@@ -1605,7 +1637,7 @@ function CheckupDetail() {
                           {prescriptionNotes && (
                             <div className="mb-3">
                               <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Instructions</h6>
-                              <p style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                              <p className="notes-text" style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
                                 {prescriptionNotes}
                               </p>
                             </div>
@@ -1661,7 +1693,7 @@ function CheckupDetail() {
                                         <span style={{ fontSize: '0.65rem' }}>{val || emptyText(display)}</span>
                                       )}
                                     </div>
-                                    <div style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
+                                    <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
                                       {children.map(({ key: ck, label: cl, display: cd }) => {
                                         const cv = checkup.labResults?.[ck]
                                         if (!shouldShow(cd, cv)) return null
@@ -1707,13 +1739,13 @@ function CheckupDetail() {
                       </div>
 
                       {/* Date / Signature lines */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
+                      <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
                         <div>
-                          <div style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
+                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
                           <p style={{ fontSize: '0.65rem', marginBottom: 0 }}>Date</p>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
+                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
                           <p style={{ fontSize: '0.65rem', marginBottom: 0 }}>Signature</p>
                         </div>
                       </div>
