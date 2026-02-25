@@ -8,6 +8,7 @@ import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 import FormField from '../components/ui/FormField'
 import RichTextEditor from '../components/ui/RichTextEditor'
 
@@ -116,6 +117,7 @@ function MedicineDetail() {
   const dispatch = useDispatch()
   const medicines = useSelector(selectAllMedicines)
   const { loading } = useSelector(state => state.medicines)
+  const user = useSelector(state => state.auth.user)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
   const { isFieldVisible, isFieldRequired, getFieldLabel, getEntityFields, getInitialFormData } = useSettings()
@@ -209,6 +211,20 @@ function MedicineDetail() {
       dispatch(fetchMedicines())
     }
   }, [dispatch, medicines.length])
+
+  // Log medicine view activity
+  useEffect(() => {
+    if (!isNew && medicine && user) {
+      logActivity({
+        userId: user.uid,
+        username: user.username || user.email,
+        userRole: user.role,
+        activityType: ACTIVITY_TYPES.MEDICINE_VIEW,
+        description: createActivityDescription(ACTIVITY_TYPES.MEDICINE_VIEW, { medicineName: medicine.name }),
+        metadata: { medicineId: id, medicineName: medicine.name }
+      })
+    }
+  }, [medicine?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this medicine?')) return

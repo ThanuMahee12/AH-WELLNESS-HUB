@@ -8,6 +8,7 @@ import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 function TestDetail() {
   const { id } = useParams()
@@ -15,6 +16,7 @@ function TestDetail() {
   const dispatch = useDispatch()
   const tests = useSelector(selectAllTests)
   const { loading } = useSelector(state => state.tests)
+  const user = useSelector(state => state.auth.user)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
   const { getEntityFields, getInitialFormData } = useSettings()
@@ -95,6 +97,20 @@ function TestDetail() {
       dispatch(fetchTests())
     }
   }, [dispatch, tests.length])
+
+  // Log test view activity
+  useEffect(() => {
+    if (!isNew && test && user) {
+      logActivity({
+        userId: user.uid,
+        username: user.username || user.email,
+        userRole: user.role,
+        activityType: ACTIVITY_TYPES.TEST_VIEW,
+        description: createActivityDescription(ACTIVITY_TYPES.TEST_VIEW, { testName: test.name }),
+        metadata: { testId: id, testName: test.name }
+      })
+    }
+  }, [test?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this test?')) return
