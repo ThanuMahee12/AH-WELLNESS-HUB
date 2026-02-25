@@ -4,12 +4,14 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
 import { FaArrowLeft, FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa'
 import Select from 'react-select'
-import { selectAllCheckups, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
-import { selectAllPatients } from '../store/patientsSlice'
+import { selectAllCheckups, fetchCheckups, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
+import { selectAllPatients, fetchPatients } from '../store/patientsSlice'
 import { selectAllTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
 import { RichTextEditor } from '../components/ui'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
+import { useSettings } from '../hooks/useSettings'
+import LoadingSpinner from '../components/common/LoadingSpinner'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import asiriLogo from '../assets/asiri-logo.png'
 import jsPDF from 'jspdf'
@@ -26,6 +28,8 @@ function CheckupDetail() {
   const tests = useSelector(selectAllTests)
   const medicines = useSelector(selectAllMedicines)
   const user = useSelector(state => state.auth.user)
+  const { loading: checkupsLoading } = useSelector(state => state.checkups)
+  const { loading: patientsLoading } = useSelector(state => state.patients)
 
   const [checkup, setCheckup] = useState(null)
   const [patient, setPatient] = useState(null)
@@ -54,11 +58,16 @@ function CheckupDetail() {
     orientation: 'portrait'
   })
   const prescriptionRef = useRef()
+  const [editedLabResults, setEditedLabResults] = useState({})
+  const { settings, getLabResultFields } = useSettings()
+  const labResultFields = getLabResultFields()
+  const labResultsShowEmpty = settings?.labResults?.showEmpty || 'hide'
 
   useEffect(() => {
-    // Fetch medicines when component mounts
+    if (checkups.length === 0) dispatch(fetchCheckups())
+    if (patients.length === 0) dispatch(fetchPatients())
     dispatch(fetchMedicines())
-  }, [dispatch])
+  }, [dispatch, checkups.length, patients.length])
 
   useEffect(() => {
     const foundCheckup = checkups.find(c => c.id === id)
@@ -79,6 +88,7 @@ function CheckupDetail() {
         testNotesMap[testItem.testId] = testItem.notes || ''
       })
       setEditedTestNotes(testNotesMap)
+      setEditedLabResults(foundCheckup.labResults || {})
     }
   }, [id, checkups, patients])
 
@@ -99,6 +109,7 @@ function CheckupDetail() {
       testNotesMap[testItem.testId] = testItem.notes || ''
     })
     setEditedTestNotes(testNotesMap)
+    setEditedLabResults(checkup.labResults || {})
   }
 
   const handleSave = async () => {
@@ -117,7 +128,8 @@ function CheckupDetail() {
         prescription: editedPrescription,
         prescriptionMedicines: prescriptionMedicines,
         prescriptionNotes: prescriptionNotes,
-        tests: updatedTests
+        tests: updatedTests,
+        labResults: editedLabResults
       })).unwrap()
 
       setIsEditing(false)
@@ -150,6 +162,81 @@ function CheckupDetail() {
   const handleRemoveMedicine = (index) => {
     setPrescriptionMedicines(prescriptionMedicines.filter((_, i) => i !== index))
   }
+
+  // Single shared template — header + children + contact footer
+  const renderTemplate = (children) => (
+    <>
+      {/* Header */}
+      <div className="mb-2 pb-1 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
+        <div className="header-row" style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="header-logo-left" style={{ flex: '0 0 20%' }}>
+            <img src={bloodLabLogo} alt="AWH Logo" className="template-logo-main" style={{ height: '50px', objectFit: 'contain' }} />
+          </div>
+          <div className="header-center" style={{ flex: '1 1 60%', textAlign: 'center' }}>
+            <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: '0.9rem' }}>
+              AH WELLNESS HUB & ASIRI LABORATORIES
+            </h4>
+            <p style={{ color: '#64748b', fontSize: '0.65rem', marginBottom: '0.15rem' }}>Complete Health Care Solutions</p>
+            <div style={{ fontSize: '0.6rem', color: '#64748b' }}>
+              <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
+              {' | '}
+              <span>{new Date(checkup.timestamp).toLocaleDateString()}</span>
+              {' | '}
+              <span>{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+          <div className="header-logo-right" style={{ flex: '0 0 20%', textAlign: 'right' }}>
+            <img src={asiriLogo} alt="ASIRI Logo" className="template-logo-asiri" style={{ height: '40px', objectFit: 'contain', opacity: 0.8 }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Patient Info */}
+      <div className="mb-2 template-patient" style={{ fontSize: '0.75rem', lineHeight: '1.3' }}>
+        <div className="patient-row" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <span><strong>Patient:</strong> {patient.name} | <strong>Age:</strong> {patient.age}yr | <strong>Gender:</strong> {patient.gender}</span>
+          <span><strong>Mobile:</strong> {patient.mobile}</span>
+        </div>
+      </div>
+
+      {/* Body — unique per tab */}
+      {children}
+
+      {/* Contact Footer */}
+      <div className="mt-2 pt-1 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.6rem' }}>
+        <div className="footer-contacts" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', borderTop: '1px solid #e2e8f0', paddingTop: '0.25rem' }}>
+          <div>
+            <p className="mb-0">
+              <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <strong>Mobile:</strong> +94 72 338 8793
+            </p>
+            <p className="mb-0">
+              <FaEnvelope className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <strong>Email:</strong> vijayjena@yahoo.com
+            </p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p className="mb-0">
+              <FaInstagram className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <strong>IG:</strong> wijayjena2
+            </p>
+            <p className="mb-0">
+              <FaFacebook className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <strong>FB:</strong> drwjanakan
+            </p>
+          </div>
+        </div>
+        <div className="text-center mt-1 pt-1 footer-thankyou" style={{ borderTop: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '0.15rem' }}>
+            <p style={{ fontSize: '0.55rem', color: '#94a3b8', marginBottom: 0 }}>
+              Thank you for choosing AH Wellness Hub & Asiri Laboratories
+            </p>
+            <img src={asiriLogo} alt="Powered by ASIRI" className="footer-asiri-logo" style={{ height: '15px', opacity: 0.7, objectFit: 'contain' }} title="Powered by ASIRI Laboratories" />
+          </div>
+        </div>
+      </div>
+    </>
+  )
 
   const handleMedicineChange = (index, field, value) => {
     const updated = [...prescriptionMedicines]
@@ -201,8 +288,8 @@ function CheckupDetail() {
       // Convert selected page width mm → pixels (96 DPI)
       const rxPageWidthMm = prescriptionPdfSettings.width
       const rxPageWidthPx = Math.round(rxPageWidthMm * 96 / 25.4)
-      const rxPadding = rxPageWidthMm < 100 ? '8px' : '25px'
-      const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : '0.85rem'
+      const rxPadding = rxPageWidthMm < 100 ? '8px' : rxPageWidthMm <= 160 ? '15px' : '25px'
+      const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : rxPageWidthMm <= 160 ? '0.75rem' : '0.85rem'
 
       const prescriptionClone = element.cloneNode(true)
       prescriptionClone.style.position = 'absolute'
@@ -238,7 +325,7 @@ function CheckupDetail() {
         logging: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: rxPageWidthPx,
+        windowWidth: Math.max(rxPageWidthPx, 800),
         width: prescriptionClone.scrollWidth,
         height: prescriptionClone.scrollHeight,
       })
@@ -370,8 +457,8 @@ function CheckupDetail() {
       // Convert selected page width mm → pixels (96 DPI)
       const pageWidthMm = pdfSettings.width
       const pageWidthPx = Math.round(pageWidthMm * 96 / 25.4)
-      const clonePadding = pageWidthMm < 100 ? '8px' : '25px'
-      const cloneFontSize = pageWidthMm < 100 ? '0.65rem' : '0.85rem'
+      const clonePadding = pageWidthMm < 100 ? '8px' : pageWidthMm <= 160 ? '15px' : '25px'
+      const cloneFontSize = pageWidthMm < 100 ? '0.65rem' : pageWidthMm <= 160 ? '0.75rem' : '0.85rem'
 
       // Clone the bill content to avoid modifying the original
       const billClone = element.cloneNode(true)
@@ -409,7 +496,7 @@ function CheckupDetail() {
         logging: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: pageWidthPx,
+        windowWidth: Math.max(pageWidthPx, 800),
         width: billClone.scrollWidth,
         height: billClone.scrollHeight,
       })
@@ -488,7 +575,13 @@ function CheckupDetail() {
     }
   }
 
-  if (!checkup || !patient) {
+  // Show loading while data is being fetched
+  if ((checkupsLoading || patientsLoading) && checkups.length === 0) {
+    return <LoadingSpinner text="Loading checkup..." />
+  }
+
+  // Only show "not found" after data has loaded
+  if ((!checkup || !patient) && checkups.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
         <Card>
@@ -505,6 +598,11 @@ function CheckupDetail() {
         </Card>
       </Container>
     )
+  }
+
+  // Still waiting for data
+  if (!checkup || !patient) {
+    return <LoadingSpinner text="Loading checkup..." />
   }
 
   return (
@@ -696,6 +794,220 @@ function CheckupDetail() {
         </Row>
       </Collapse>
 
+      {/* Shared template styles for both invoice & prescription */}
+      <style>{`
+        .bill-content {
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow: visible;
+        }
+
+        /* === PDF / Print: A5 & general printing === */
+        .bill-content.printing {
+          overflow: visible;
+          page-break-inside: avoid;
+        }
+        .bill-content.printing * {
+          box-sizing: border-box;
+        }
+        .bill-content.printing img {
+          max-width: 100%;
+          height: auto;
+        }
+        .bill-content.printing .header-section img {
+          height: 40px !important;
+        }
+        .bill-content.printing .header-section h4 {
+          font-size: 0.85rem !important;
+        }
+        .bill-content.printing .header-section p,
+        .bill-content.printing .header-section div {
+          font-size: 0.6rem !important;
+        }
+        .bill-content.printing .footer-section {
+          font-size: 0.55rem !important;
+        }
+        .bill-content.printing .footer-section img {
+          height: 12px !important;
+        }
+        .bill-content.printing table {
+          font-size: 0.75rem !important;
+        }
+        .bill-content.printing th,
+        .bill-content.printing td {
+          padding: 0.3rem 0.4rem !important;
+        }
+
+        /* Hide fixed/absolute positioned elements during PDF generation */
+        body:has(.printing) *[style*="position: fixed"],
+        body:has(.printing) *[style*="position: absolute"]:not(.bill-content *) {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
+        /* === On-screen mobile === */
+        @media (max-width: 767px) {
+          .bill-content {
+            padding: 0.75rem !important;
+          }
+
+          /* --- Header: stacked, logo center, ASIRI top-right --- */
+          .bill-content .header-row {
+            flex-wrap: wrap !important;
+            position: relative !important;
+          }
+          .bill-content .header-logo-left {
+            flex: 0 0 100% !important;
+            text-align: center !important;
+            order: 1;
+          }
+          .bill-content .template-logo-main {
+            height: 40px !important;
+          }
+          .bill-content .header-center {
+            flex: 0 0 100% !important;
+            order: 3;
+          }
+          .bill-content .template-title {
+            font-size: 0.7rem !important;
+          }
+          .bill-content .header-section p,
+          .bill-content .header-section div {
+            font-size: 0.55rem !important;
+          }
+          .bill-content .header-logo-right {
+            position: absolute !important;
+            top: 0 !important;
+            right: 0 !important;
+            flex: none !important;
+          }
+          .bill-content .template-logo-asiri {
+            height: 22px !important;
+          }
+
+          /* --- Patient info: stack name above details --- */
+          .bill-content .template-patient {
+            font-size: 0.65rem !important;
+          }
+          .bill-content .patient-row {
+            flex-direction: column !important;
+          }
+
+          /* --- Footer: stacked contacts, centered thank you --- */
+          .bill-content .footer-section {
+            font-size: 0.55rem !important;
+          }
+          .bill-content .footer-contacts {
+            flex-direction: column !important;
+          }
+          .bill-content .footer-contacts > div:last-child {
+            text-align: left !important;
+          }
+          .bill-content .footer-thankyou > div {
+            flex-direction: column !important;
+            gap: 2px !important;
+          }
+          .bill-content .footer-asiri-logo {
+            display: block !important;
+            margin: 0 auto !important;
+          }
+
+          /* --- Prescription: stack 70/30, 3-col lab grid --- */
+          .bill-content .prescription-body {
+            flex-direction: column !important;
+          }
+          .bill-content .prescription-left {
+            flex: 1 1 100% !important;
+            max-width: 100% !important;
+          }
+          .bill-content .prescription-right {
+            flex: 1 1 100% !important;
+            max-width: 100% !important;
+            border-left: none !important;
+            border-top: 1px solid #e2e8f0 !important;
+            padding-left: 0 !important;
+            padding-top: 0.5rem !important;
+          }
+          .bill-content .lab-results-grid {
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 1px 12px !important;
+          }
+
+          /* --- Tables --- */
+          .bill-content table {
+            font-size: 0.7rem !important;
+          }
+          .bill-content th,
+          .bill-content td {
+            padding: 0.25rem 0.4rem !important;
+          }
+          .prescription-table {
+            font-size: 0.7rem !important;
+          }
+          .prescription-table th,
+          .prescription-table td {
+            padding: 0.25rem !important;
+          }
+
+          /* --- Section headings --- */
+          .bill-content h6 {
+            font-size: 0.8rem !important;
+          }
+
+          /* --- Date / Signature lines --- */
+          .bill-content .date-signature-row {
+            gap: 0.5rem !important;
+          }
+          .bill-content .date-signature-row > div {
+            flex: 1 !important;
+          }
+          .bill-content .date-signature-row .sig-line {
+            width: 100% !important;
+          }
+
+          /* --- PAID stamp --- */
+          .bill-content .paid-stamp {
+            font-size: 0.7rem !important;
+            padding: 2px 10px !important;
+            letter-spacing: 2px !important;
+          }
+
+          /* --- Notes text --- */
+          .bill-content .notes-text {
+            font-size: 0.75rem !important;
+          }
+
+          /* --- Lab results children row on narrow screens --- */
+          .bill-content .lab-children-row {
+            flex-wrap: wrap !important;
+            gap: 2px 8px !important;
+          }
+
+          /* --- Prescription form cards --- */
+          .prescription-form-card {
+            padding: 0.5rem !important;
+          }
+          .prescription-form-card .row {
+            margin: 0 !important;
+          }
+          .prescription-form-card .col-md-5,
+          .prescription-form-card .col-md-2,
+          .prescription-form-card .col-md-4,
+          .prescription-form-card .col-md-1 {
+            padding: 0.25rem !important;
+            margin-bottom: 0.5rem;
+          }
+        }
+        @media (min-width: 768px) and (max-width: 991px) {
+          .prescription-form-card {
+            padding: 0.75rem !important;
+          }
+          .prescription-table {
+            font-size: 0.8rem !important;
+          }
+        }
+      `}</style>
+
       {/* Tabbed Interface */}
       <Row>
         <Col>
@@ -746,9 +1058,7 @@ function CheckupDetail() {
         <Row>
           <Col>
           <style>{`
-            /* Print styles */
             @media print {
-              /* Page setup */
               @page {
                 size: ${pdfSettings.format === 'a4' ? 'A4' :
                        pdfSettings.format === 'a5' ? 'A5' :
@@ -757,263 +1067,130 @@ function CheckupDetail() {
                 margin: 10mm;
               }
             }
-
-            /* Dynamic sizing based on paper format */
-            .bill-content {
-              max-width: 100%;
-              box-sizing: border-box;
-              overflow: visible;
-            }
-
-            .bill-content.printing {
-              width: 100%;
-              max-width: ${pdfSettings.width}mm;
-              height: auto;
-              max-height: ${pdfSettings.height}mm;
-              padding: ${pdfSettings.width < 100 ? '8px' : '25px'} !important;
-              font-size: ${pdfSettings.width < 100 ? '0.65rem' : '0.85rem'} !important;
-              overflow: visible;
-              page-break-inside: avoid;
-            }
-
-            /* Prevent content overflow */
-            .bill-content.printing * {
-              box-sizing: border-box;
-            }
-
-            /* Fix rounded corners and borders */
-            .bill-content img {
-              display: block;
-              max-width: 100%;
-              height: auto;
-            }
-
-            /* Hide fixed/absolute positioned elements during PDF generation */
-            body:has(.printing) *[style*="position: fixed"],
-            body:has(.printing) *[style*="position: absolute"]:not(.bill-content *) {
-              display: none !important;
-              visibility: hidden !important;
-            }
-
-            /* Thermal printer adjustments */
             ${pdfSettings.width < 100 ? `
               .bill-content.printing .header-section {
                 flex-direction: column !important;
                 text-align: center !important;
               }
-
               .bill-content.printing .header-section img {
-                height: 40px !important;
-                margin: 0 auto 5px !important;
+                height: 30px !important;
+                margin: 0 auto 3px !important;
               }
-
               .bill-content.printing .header-section h4 {
-                font-size: 0.75rem !important;
+                font-size: 0.7rem !important;
               }
-
               .bill-content.printing table {
-                font-size: 0.65rem !important;
+                font-size: 0.6rem !important;
               }
-
               .bill-content.printing th,
               .bill-content.printing td {
-                padding: 0.2rem 0.3rem !important;
-              }
-
-              .bill-content.printing .footer-section {
-                font-size: 0.55rem !important;
+                padding: 0.15rem 0.25rem !important;
               }
             ` : ''}
           `}</style>
           <Card className="shadow-sm">
             <Card.Body ref={billRef} className="bill-content" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
-              {/* Compact Header */}
-              <div className="mb-3 pb-2 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
-                <Row className="align-items-center">
-                  <Col xs={3} className="text-start">
-                    <img
-                      src={bloodLabLogo}
-                      alt="AWH Logo"
-                      style={{ height: '60px', objectFit: 'contain' }}
-                    />
-                  </Col>
-                  <Col xs={6} className="text-center">
-                    <h4 style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
-                      AH WELLNESS HUB & ASIRI LABORATORIES
-                    </h4>
-                    <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-                      Complete Health Care Solutions
-                    </p>
-                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                      <span style={{ whiteSpace: 'nowrap' }}>
-                        <strong>Bill #:</strong> {checkup.billNo || checkup.id}
-                      </span>
-                      {' | '}
-                      <span style={{ whiteSpace: 'nowrap' }}>
-                        {new Date(checkup.timestamp).toLocaleDateString()}
-                      </span>
-                      {' | '}
-                      <span style={{ whiteSpace: 'nowrap' }}>
-                        {new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </Col>
-                  <Col xs={3} className="text-end">
-                    <img
-                      src={asiriLogo}
-                      alt="ASIRI Logo"
-                      style={{ height: '50px', objectFit: 'contain', opacity: 0.8 }}
-                    />
-                  </Col>
-                </Row>
-              </div>
-
-              {/* Compact Patient Info */}
-              <div className="mb-3" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
-                <Row>
-                  <Col xs={6}>
-                    <strong>Patient:</strong> {patient.name} | <strong>Age:</strong> {patient.age}yr | <strong>Gender:</strong> {patient.gender}
-                  </Col>
-                  <Col xs={6} className="text-end">
-                    <strong>Mobile:</strong> {patient.mobile}
-                  </Col>
-                </Row>
-              </div>
-
-              {/* Tests Table */}
-              <div className="mb-3">
-                <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Tests Performed</h6>
-                <Table bordered style={{ marginBottom: '0', fontSize: '0.85rem' }}>
-                  <thead style={{ backgroundColor: '#e0f2fe' }}>
-                    <tr>
-                      <th style={{ width: '70%', color: '#0891B2', padding: '0.4rem 0.6rem' }}>Test Name</th>
-                      <th style={{ width: '30%', color: '#0891B2', textAlign: 'right', padding: '0.4rem 0.6rem' }}>Price (Rs.)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {checkup.tests.map((testItem) => {
-                      const test = tests.find(t => t.id === testItem.testId)
-                      return test ? (
-                        <tr key={testItem.testId}>
-                          <td style={{ padding: '0.4rem 0.6rem' }}>
-                            <strong style={{ color: '#0891B2' }}>{test.code}</strong> - {test.name}
-                          </td>
-                          <td style={{ textAlign: 'right', padding: '0.4rem 0.6rem' }}>Rs. {test.price.toFixed(2)}</td>
+              {renderTemplate(
+                <>
+                  {/* Tests Table */}
+                  <div className="mb-3">
+                    <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Tests Performed</h6>
+                    <Table bordered style={{ marginBottom: '0', fontSize: '0.85rem' }}>
+                      <thead style={{ backgroundColor: '#e0f2fe' }}>
+                        <tr>
+                          <th style={{ width: '70%', color: '#0891B2', padding: '0.4rem 0.6rem' }}>Test Name</th>
+                          <th style={{ width: '30%', color: '#0891B2', textAlign: 'right', padding: '0.4rem 0.6rem' }}>Price (Rs.)</th>
                         </tr>
-                      ) : null
-                    })}
-                    <tr style={{ backgroundColor: '#0891B2', color: 'white', fontWeight: 'bold' }}>
-                      <td style={{ padding: '0.5rem 0.6rem' }}>Total Amount</td>
-                      <td style={{ textAlign: 'right', padding: '0.5rem 0.6rem' }}>Rs. {checkup.total.toFixed(2)}</td>
-                    </tr>
-                  </tbody>
-                </Table>
-              </div>
+                      </thead>
+                      <tbody>
+                        {checkup.tests.map((testItem) => {
+                          const test = tests.find(t => t.id === testItem.testId)
+                          return test ? (
+                            <tr key={testItem.testId}>
+                              <td style={{ padding: '0.4rem 0.6rem' }}>
+                                <strong style={{ color: '#0891B2' }}>{test.code}</strong> - {test.name}
+                              </td>
+                              <td style={{ textAlign: 'right', padding: '0.4rem 0.6rem' }}>Rs. {test.price.toFixed(2)}</td>
+                            </tr>
+                          ) : null
+                        })}
+                        <tr style={{ backgroundColor: '#0891B2', color: 'white', fontWeight: 'bold' }}>
+                          <td style={{ padding: '0.5rem 0.6rem' }}>Total Amount</td>
+                          <td style={{ textAlign: 'right', padding: '0.5rem 0.6rem' }}>Rs. {checkup.total.toFixed(2)}</td>
+                        </tr>
+                      </tbody>
+                    </Table>
+                  </div>
 
-              {/* Individual Test Notes - Only visible when editing */}
-              {isEditing && (
-                <div className="mb-3 bg-theme-slate p-3 rounded">
-                  <h6 className="text-theme mb-3" style={{ fontSize: '0.9rem' }}>Edit Individual Test Notes (Not printed)</h6>
-                  {checkup.tests.map((testItem, index) => {
-                    const test = tests.find(t => t.id === testItem.testId)
-                    return test ? (
-                      <div key={testItem.testId} className="mb-2">
-                        <Form.Label style={{ fontSize: '0.85rem', color: '#0891B2', marginBottom: '0.25rem' }}>
-                          <strong>{test.code}</strong> - <strong>{test.name}</strong>
-                          <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#666' }}>
-                            (Rs. {test.price?.toFixed(2)})
-                          </span>
-                        </Form.Label>
+                  {/* Individual Test Notes - Only visible when editing */}
+                  {isEditing && (
+                    <div className="mb-3 bg-theme-slate p-3 rounded">
+                      <h6 className="text-theme mb-3" style={{ fontSize: '0.9rem' }}>Edit Individual Test Notes (Not printed)</h6>
+                      {checkup.tests.map((testItem, index) => {
+                        const test = tests.find(t => t.id === testItem.testId)
+                        return test ? (
+                          <div key={testItem.testId} className="mb-2">
+                            <Form.Label style={{ fontSize: '0.85rem', color: '#0891B2', marginBottom: '0.25rem' }}>
+                              <strong>{test.code}</strong> - <strong>{test.name}</strong>
+                              <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#666' }}>
+                                (Rs. {test.price?.toFixed(2)})
+                              </span>
+                            </Form.Label>
+                            <Form.Control
+                              as="textarea"
+                              rows={2}
+                              value={editedTestNotes[testItem.testId] || ''}
+                              onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
+                              placeholder={`Internal notes for ${test.code} - ${test.name}...`}
+                              style={{ fontSize: '0.85rem' }}
+                            />
+                          </div>
+                        ) : null
+                      })}
+                    </div>
+                  )}
+
+                  {/* General Notes */}
+                  {(checkup.notes || isEditing) && (
+                    <div className="mb-3">
+                      <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Notes</h6>
+                      {isEditing ? (
                         <Form.Control
                           as="textarea"
-                          rows={2}
-                          value={editedTestNotes[testItem.testId] || ''}
-                          onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
-                          placeholder={`Internal notes for ${test.code} - ${test.name}...`}
+                          rows={3}
+                          value={editedNotes}
+                          onChange={(e) => setEditedNotes(e.target.value)}
+                          placeholder="Add general notes for this checkup (will be printed)..."
                           style={{ fontSize: '0.85rem' }}
                         />
-                      </div>
-                    ) : null
-                  })}
-                </div>
-              )}
-
-              {/* General Notes */}
-              {(checkup.notes || isEditing) && (
-                <div className="mb-3">
-                  <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Notes</h6>
-                  {isEditing ? (
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={editedNotes}
-                      onChange={(e) => setEditedNotes(e.target.value)}
-                      placeholder="Add general notes for this checkup (will be printed)..."
-                      style={{ fontSize: '0.85rem' }}
-                    />
-                  ) : (
-                    <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
-                      {checkup.notes}
-                    </p>
+                      ) : (
+                        <p className="notes-text" style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
+                          {checkup.notes}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
 
-              {/* Footer */}
-              <div className="mt-3 pt-3 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
-                <div className="text-end mb-3" style={{ paddingRight: '0.5rem' }}>
-                  <span style={{
-                    display: 'inline-block',
-                    border: '2.5px solid #16a34a',
-                    borderRadius: '6px',
-                    color: '#16a34a',
-                    fontWeight: '700',
-                    fontSize: '0.9rem',
-                    padding: '4px 18px',
-                    letterSpacing: '3px',
-                    transform: 'rotate(-3deg)',
-                    opacity: 0.8,
-                    textTransform: 'uppercase',
-                  }}>
-                    PAID
-                  </span>
-                </div>
-                <Row className="pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
-                  <Col xs={6}>
-                    <p className="mb-0">
-                      <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                      <strong>Mobile:</strong> +94 72 338 8793
-                    </p>
-                    <p className="mb-0">
-                      <FaEnvelope className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                      <strong>Email:</strong> vijayjena@yahoo.com
-                    </p>
-                  </Col>
-                  <Col xs={6} className="text-end">
-                    <p className="mb-0">
-                      <FaInstagram className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                      <strong>IG:</strong> wijayjena2
-                    </p>
-                    <p className="mb-0">
-                      <FaFacebook className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                      <strong>FB:</strong> drwjanakan
-                    </p>
-                  </Col>
-                </Row>
-                <div className="text-center mt-2 pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
-                  <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
-                    <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: 0 }}>
-                      Thank you for choosing AH Wellness Hub & Asiri Laboratories
-                    </p>
-                    <img
-                      src={asiriLogo}
-                      alt="Powered by ASIRI"
-                      style={{ height: '20px', opacity: 0.7, objectFit: 'contain' }}
-                      title="Powered by ASIRI Laboratories"
-                    />
+                  {/* PAID Stamp */}
+                  <div className="text-end mb-1" style={{ paddingRight: '0.5rem' }}>
+                    <span className="paid-stamp" style={{
+                      display: 'inline-block',
+                      border: '2.5px solid #16a34a',
+                      borderRadius: '6px',
+                      color: '#16a34a',
+                      fontWeight: '700',
+                      fontSize: '0.8rem',
+                      padding: '3px 14px',
+                      letterSpacing: '3px',
+                      transform: 'rotate(-3deg)',
+                      opacity: 0.8,
+                      textTransform: 'uppercase',
+                    }}>
+                      PAID
+                    </span>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </Card.Body>
           </Card>
         </Col>
@@ -1415,175 +1592,165 @@ function CheckupDetail() {
           <Row>
             <Col>
               <Card className="shadow-sm">
-                <Card.Body ref={prescriptionRef} className="prescription-preview" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
-                  {/* Compact Header — same as invoice */}
-                  <div className="mb-3 pb-2 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
-                    <Row className="align-items-center">
-                      <Col xs={3} className="text-start">
-                        <img
-                          src={bloodLabLogo}
-                          alt="AWH Logo"
-                          style={{ height: '60px', objectFit: 'contain' }}
-                        />
-                      </Col>
-                      <Col xs={6} className="text-center">
-                        <h4 style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
-                          AH WELLNESS HUB & ASIRI LABORATORIES
-                        </h4>
-                        <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-                          Complete Health Care Solutions
-                        </p>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                          <span style={{ whiteSpace: 'nowrap' }}>
-                            <strong>Bill #:</strong> {checkup.billNo || checkup.id}
-                          </span>
-                          {' | '}
-                          <span style={{ whiteSpace: 'nowrap' }}>
-                            {new Date(checkup.timestamp).toLocaleDateString()}
-                          </span>
-                          {' | '}
-                          <span style={{ whiteSpace: 'nowrap' }}>
-                            {new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </Col>
-                      <Col xs={3} className="text-end">
-                        <img
-                          src={asiriLogo}
-                          alt="ASIRI Logo"
-                          style={{ height: '50px', objectFit: 'contain', opacity: 0.8 }}
-                        />
-                      </Col>
-                    </Row>
-                  </div>
-
-                  {/* Compact Patient Info — same as invoice */}
-                  <div className="mb-3" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
-                    <Row>
-                      <Col xs={6}>
-                        <strong>Patient:</strong> {patient.name} | <strong>Age:</strong> {patient.age}yr | <strong>Gender:</strong> {patient.gender}
-                      </Col>
-                      <Col xs={6} className="text-end">
-                        <strong>Mobile:</strong> {patient.mobile}
-                      </Col>
-                    </Row>
-                  </div>
-
-                  {/* Body: 70% left / 30% right */}
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    {/* Left 70% — main content */}
-                    <div style={{ flex: '0 0 70%', maxWidth: '70%' }}>
-                      {/* Medicines Table */}
-                      {prescriptionMedicines.length > 0 && (
-                        <div className="mb-3">
-                          <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>℞ Prescribed Medications</h6>
-                          <Table bordered className="prescription-table" style={{ marginBottom: '0', fontSize: '0.85rem' }}>
-                            <thead style={{ backgroundColor: '#e0f2fe' }}>
-                              <tr>
-                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem' }}>Medicine (Brand)</th>
-                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Dosage</th>
-                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Qty</th>
-                                <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '25%' }}>Instructions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {prescriptionMedicines.map((med, index) => {
-                                const medicine = medicines.find(m => m.id === med.medicineId)
-                                return medicine ? (
-                                  <tr key={index}>
-                                    <td style={{ padding: '0.4rem 0.6rem' }}>
-                                      <strong>{medicine.name}</strong>
-                                      <br />
-                                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{medicine.brand}</span>
-                                    </td>
-                                    <td style={{ padding: '0.4rem 0.6rem', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
-                                    <td style={{ padding: '0.4rem 0.6rem' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
-                                    <td style={{ padding: '0.4rem 0.6rem' }}>{med.instructions || '-'}</td>
+                <Card.Body ref={prescriptionRef} className="bill-content" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
+                  {renderTemplate(
+                    <>
+                      {/* Body: 70% left / 30% right */}
+                      <div className="prescription-body" style={{ display: 'flex', gap: '0.75rem' }}>
+                        {/* Left — main content */}
+                        <div className="prescription-left" style={{ flex: '0 0 70%', maxWidth: '70%' }}>
+                          {/* Medicines Table */}
+                          {prescriptionMedicines.length > 0 && (
+                            <div className="mb-3">
+                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>℞ Prescribed Medications</h6>
+                              <Table bordered className="prescription-table" style={{ marginBottom: '0', fontSize: '0.85rem' }}>
+                                <thead style={{ backgroundColor: '#e0f2fe' }}>
+                                  <tr>
+                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem' }}>Medicine (Brand)</th>
+                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Dosage</th>
+                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Qty</th>
+                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '25%' }}>Instructions</th>
                                   </tr>
-                                ) : null
-                              })}
-                            </tbody>
-                          </Table>
-                        </div>
-                      )}
+                                </thead>
+                                <tbody>
+                                  {prescriptionMedicines.map((med, index) => {
+                                    const medicine = medicines.find(m => m.id === med.medicineId)
+                                    return medicine ? (
+                                      <tr key={index}>
+                                        <td style={{ padding: '0.4rem 0.6rem' }}>
+                                          <strong>{medicine.name}</strong>
+                                          <br />
+                                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{medicine.brand}</span>
+                                        </td>
+                                        <td style={{ padding: '0.4rem 0.6rem', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
+                                        <td style={{ padding: '0.4rem 0.6rem' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
+                                        <td style={{ padding: '0.4rem 0.6rem' }}>{med.instructions || '-'}</td>
+                                      </tr>
+                                    ) : null
+                                  })}
+                                </tbody>
+                              </Table>
+                            </div>
+                          )}
 
-                      {/* Additional Notes */}
-                      {prescriptionNotes && (
-                        <div className="mb-3">
-                          <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Instructions</h6>
-                          <p style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
-                            {prescriptionNotes}
-                          </p>
-                        </div>
-                      )}
+                          {/* Additional Notes */}
+                          {prescriptionNotes && (
+                            <div className="mb-3">
+                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Instructions</h6>
+                              <p className="notes-text" style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                                {prescriptionNotes}
+                              </p>
+                            </div>
+                          )}
 
-                      {/* Empty State */}
-                      {prescriptionMedicines.length === 0 && !prescriptionNotes && (
-                        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                          <FaPrescriptionBottleAlt size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                          <p style={{ fontSize: '0.9rem' }}>
-                            <em>No prescription added yet. Click "Edit Notes" to add medicines and instructions.</em>
-                          </p>
+                          {/* Empty State */}
+                          {prescriptionMedicines.length === 0 && !prescriptionNotes && (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                              <FaPrescriptionBottleAlt size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                              <p style={{ fontSize: '0.9rem' }}>
+                                <em>No prescription added yet. Click "Edit Notes" to add medicines and instructions.</em>
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Right 30% — side content */}
-                    <div style={{ flex: '0 0 28%', maxWidth: '28%', borderLeft: '1px solid #e2e8f0', paddingLeft: '1rem', fontSize: '0.85rem' }}>
-                      <div className="mb-2">
-                        <strong>H:</strong> {checkup.height || 'N/A'} &nbsp; <strong>W:</strong> {checkup.weight || 'N/A'}
+                        {/* Right — lab results grid */}
+                        <div className="prescription-right" style={{ flex: '0 0 28%', maxWidth: '28%', borderLeft: '1px solid #e2e8f0', paddingLeft: '0.5rem' }}>
+                          <div className="lab-results-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 6px' }}>
+                            {(() => {
+                              const shouldShow = (fieldDisplay, value) => {
+                                if (isEditing) return true
+                                const effective = fieldDisplay === 'default' ? labResultsShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
+                                if (value) return true
+                                return effective !== 'hide'
+                              }
+                              const emptyText = (fieldDisplay) => {
+                                const effective = fieldDisplay === 'default' ? labResultsShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
+                                return effective === 'na' ? 'N/A' : ''
+                              }
+
+                              return labResultFields.map(({ key, label, display, children }) => {
+                                const val = checkup.labResults?.[key]
+                                const childrenHaveValues = children?.some(({ key: ck }) => checkup.labResults?.[ck])
+                                const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
+                                  children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.labResults?.[ck]))
+                                if (!children && !shouldShow(display, val)) return null
+                                if (children && !isEditing && !parentShouldShow) return null
+
+                                return children ? (
+                                  <div key={key} style={{ gridColumn: '1 / -1' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
+                                      <strong style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                      {isEditing ? (
+                                        <Form.Control
+                                          size="sm"
+                                          type="text"
+                                          value={editedLabResults[key] || ''}
+                                          onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
+                                          style={{ height: '18px', fontSize: '0.6rem', padding: '0 2px', flex: 1, minWidth: 0 }}
+                                        />
+                                      ) : (
+                                        <span style={{ fontSize: '0.65rem' }}>{val || emptyText(display)}</span>
+                                      )}
+                                    </div>
+                                    <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
+                                      {children.map(({ key: ck, label: cl, display: cd }) => {
+                                        const cv = checkup.labResults?.[ck]
+                                        if (!shouldShow(cd, cv)) return null
+                                        return (
+                                          <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
+                                            <span style={{ fontSize: '0.6rem', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
+                                            {isEditing ? (
+                                              <Form.Control
+                                                size="sm"
+                                                type="text"
+                                                value={editedLabResults[ck] || ''}
+                                                onChange={(e) => setEditedLabResults(prev => ({ ...prev, [ck]: e.target.value }))}
+                                                style={{ height: '16px', fontSize: '0.55rem', padding: '0 2px', flex: 1, minWidth: 0 }}
+                                              />
+                                            ) : (
+                                              <span style={{ fontSize: '0.6rem' }}>{cv || emptyText(cd)}</span>
+                                            )}
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
+                                    <strong style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                    {isEditing ? (
+                                      <Form.Control
+                                        size="sm"
+                                        type="text"
+                                        value={editedLabResults[key] || ''}
+                                        onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
+                                        style={{ height: '18px', fontSize: '0.6rem', padding: '0 2px', flex: 1, minWidth: 0 }}
+                                      />
+                                    ) : (
+                                      <span style={{ fontSize: '0.65rem' }}>{val || emptyText(display)}</span>
+                                    )}
+                                  </div>
+                                )
+                              })
+                            })()}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Footer — same as invoice */}
-                  <div className="mt-3 pt-2 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
-                    <Row className="mb-2 align-items-end">
-                      <Col xs={6}>
-                        <div style={{ borderTop: '1px solid #64748b', width: '150px', marginBottom: '0.25rem' }} />
-                        <p style={{ fontSize: '0.75rem', marginBottom: 0 }}>Date</p>
-                      </Col>
-                      <Col xs={6} className="text-end">
-                        <div style={{ borderTop: '1px solid #64748b', width: '150px', marginLeft: 'auto', marginBottom: '0.25rem' }} />
-                        <p style={{ fontSize: '0.75rem', marginBottom: 0 }}>Signature</p>
-                      </Col>
-                    </Row>
-                    <Row className="pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
-                      <Col xs={6}>
-                        <p className="mb-0">
-                          <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                          <strong>Mobile:</strong> +94 72 338 8793
-                        </p>
-                        <p className="mb-0">
-                          <FaEnvelope className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                          <strong>Email:</strong> vijayjena@yahoo.com
-                        </p>
-                      </Col>
-                      <Col xs={6} className="text-end">
-                        <p className="mb-0">
-                          <FaInstagram className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                          <strong>IG:</strong> wijayjena2
-                        </p>
-                        <p className="mb-0">
-                          <FaFacebook className="me-1" style={{ color: '#0891B2', fontSize: '0.65rem' }} />
-                          <strong>FB:</strong> drwjanakan
-                        </p>
-                      </Col>
-                    </Row>
-                    <div className="text-center mt-2 pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
-                      <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
-                        <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: 0 }}>
-                          Thank you for choosing AH Wellness Hub & Asiri Laboratories
-                        </p>
-                        <img
-                          src={asiriLogo}
-                          alt="Powered by ASIRI"
-                          style={{ height: '20px', opacity: 0.7, objectFit: 'contain' }}
-                          title="Powered by ASIRI Laboratories"
-                        />
+                      {/* Date / Signature lines */}
+                      <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
+                        <div>
+                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
+                          <p style={{ fontSize: '0.65rem', marginBottom: 0 }}>Date</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
+                          <p style={{ fontSize: '0.65rem', marginBottom: 0 }}>Signature</p>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </Card.Body>
               </Card>
 
@@ -1606,57 +1773,6 @@ function CheckupDetail() {
             </Col>
           </Row>
 
-          {/* Responsive Styles for Prescription */}
-          <style>{`
-            @media (max-width: 767px) {
-              .prescription-form-card {
-                padding: 0.5rem !important;
-              }
-
-              .prescription-form-card .row {
-                margin: 0 !important;
-              }
-
-              .prescription-form-card .col-md-5,
-              .prescription-form-card .col-md-2,
-              .prescription-form-card .col-md-4,
-              .prescription-form-card .col-md-1 {
-                padding: 0.25rem !important;
-                margin-bottom: 0.5rem;
-              }
-
-              .prescription-table {
-                font-size: 0.75rem !important;
-              }
-
-              .prescription-table th,
-              .prescription-table td {
-                padding: 0.3rem !important;
-              }
-
-              .prescription-preview {
-                padding: 1rem !important;
-              }
-
-              .prescription-header h4 {
-                font-size: 0.9rem !important;
-              }
-
-              .prescription-header img {
-                height: 40px !important;
-              }
-            }
-
-            @media (min-width: 768px) and (max-width: 991px) {
-              .prescription-form-card {
-                padding: 0.75rem !important;
-              }
-
-              .prescription-table {
-                font-size: 0.8rem !important;
-              }
-            }
-          `}</style>
         </>
       )}
 

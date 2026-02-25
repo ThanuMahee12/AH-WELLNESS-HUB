@@ -52,8 +52,7 @@
   }
 
   /* Show bill and prescription content */
-  .bill-content,
-  .prescription-preview {
+  .bill-content {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -67,8 +66,7 @@
   }
 
   /* Show all content inside */
-  .bill-content *,
-  .prescription-preview * {
+  .bill-content * {
     visibility: visible !important;
     opacity: 1 !important;
   }
@@ -82,8 +80,7 @@
   }
 
   /* Ensure images print */
-  .bill-content img,
-  .prescription-preview img {
+  .bill-content img {
     max-width: 100% !important;
     height: auto !important;
     -webkit-print-color-adjust: exact !important;
@@ -91,65 +88,54 @@
   }
 
   /* Print colors */
-  .bill-content *,
-  .prescription-preview * {
+  .bill-content * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   /* Table styling */
-  .bill-content table,
-  .prescription-preview table {
+  .bill-content table {
     display: table !important;
     width: 100% !important;
     page-break-inside: avoid !important;
   }
 
-  .bill-content thead,
-  .prescription-preview thead {
+  .bill-content thead {
     display: table-header-group !important;
   }
 
-  .bill-content tbody,
-  .prescription-preview tbody {
+  .bill-content tbody {
     display: table-row-group !important;
   }
 
-  .bill-content tr,
-  .prescription-preview tr {
+  .bill-content tr {
     display: table-row !important;
   }
 
   .bill-content th,
-  .bill-content td,
-  .prescription-preview th,
-  .prescription-preview td {
+  .bill-content td {
     display: table-cell !important;
   }
 
   /* Prevent page breaks */
   .bill-content .header-section,
-  .bill-content .footer-section,
-  .prescription-preview table {
+  .bill-content .footer-section {
     page-break-inside: avoid !important;
   }
 
   /* Footer adjustments for print */
-  .bill-content .footer-section .text-center .d-flex,
-  .prescription-preview .footer-section .text-center .d-flex {
+  .bill-content .footer-section .text-center .d-flex {
     flex-direction: column !important;
     align-items: center !important;
     gap: 0.25rem !important;
   }
 
-  .bill-content .footer-section img,
-  .prescription-preview .footer-section img {
+  .bill-content .footer-section img {
     height: 12px !important;
     margin-top: 0.25rem !important;
   }
 
-  .bill-content .footer-section .text-center p,
-  .prescription-preview .footer-section .text-center p {
+  .bill-content .footer-section .text-center p {
     text-align: center !important;
     margin-bottom: 0.25rem !important;
   }
