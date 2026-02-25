@@ -23,6 +23,7 @@ function UserActivityTab() {
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('all') // Default: All history
   const [stats, setStats] = useState(null)
+  const [allActivities, setAllActivities] = useState([])
   const [recentActivities, setRecentActivities] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalActivities, setTotalActivities] = useState(0)
@@ -104,14 +105,15 @@ function UserActivityTab() {
         setStats(filteredStats)
       }
 
-      // Get all activities for pagination
+      // Get all activities for charts and pagination
       const activitiesResult = await getUserActivities({ days: timeRange })
       if (activitiesResult.success) {
         // Filter activities based on role
         const filteredActivities = filterActivitiesByRole(activitiesResult.data)
+        setAllActivities(filteredActivities)
         setTotalActivities(filteredActivities.length)
 
-        // Calculate pagination
+        // Calculate pagination for activity logs table
         const startIndex = (currentPage - 1) * activitiesPerPage
         const endIndex = startIndex + activitiesPerPage
         setRecentActivities(filteredActivities.slice(startIndex, endIndex))
@@ -131,46 +133,80 @@ function UserActivityTab() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
 
-  // Prepare scatter plot data - individual activities as separate points with 30-min precision
-  const prepareScatterData = () => {
-    if (!recentActivities || recentActivities.length === 0) {
-      return []
+  // Build the full date range for the X-axis based on time range selection
+  const getDateRange = () => {
+    if (!allActivities || allActivities.length === 0) return { dates: [], dateToNum: {}, numToDate: {} }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    let startDate
+
+    if (timeRange === 'all') {
+      // Find earliest activity date
+      const earliest = allActivities.reduce((min, a) => {
+        const d = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp)
+        return d < min ? d : min
+      }, new Date())
+      startDate = new Date(earliest)
+      startDate.setHours(0, 0, 0, 0)
+    } else {
+      startDate = new Date(today)
+      startDate.setDate(today.getDate() - (timeRange - 1))
     }
 
-    // Create scatter plot data grouped by user
-    const userScatterData = {}
+    const dates = []
+    const dateToNum = {}
+    const numToDate = {}
+    const current = new Date(startDate)
+    let i = 0
+    while (current <= today) {
+      const key = current.toISOString().split('T')[0]
+      const label = `${current.getMonth() + 1}/${current.getDate()}`
+      dates.push(key)
+      dateToNum[key] = i
+      numToDate[i] = label
+      current.setDate(current.getDate() + 1)
+      i++
+    }
 
+    return { dates, dateToNum, numToDate }
+  }
+
+  const dateRange = getDateRange()
+
+  // Prepare scatter plot data - uses ALL activities for the time range
+  const prepareScatterData = () => {
+    if (!allActivities || allActivities.length === 0) return []
+
+    const userScatterData = {}
     stats?.userStats?.forEach(userStat => {
       userScatterData[userStat.username] = []
     })
 
-    recentActivities.forEach(activity => {
+    allActivities.forEach(activity => {
       if (!activity.timestamp) return
 
       const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
       const dateKey = date.toISOString().split('T')[0]
       const hour = date.getHours()
       const minute = date.getMinutes()
-
-      // Convert to decimal time (e.g., 14:30 = 14.5)
       const timeValue = hour + (minute / 60)
 
-      const d = new Date(dateKey)
-      const displayDate = `${d.getMonth() + 1}/${d.getDate()}`
-
-      // Find the user's data array
       const username = activity.username || 'Unknown'
       if (!userScatterData[username]) {
         userScatterData[username] = []
       }
 
-      // Add each activity as individual point
+      const dayNum = dateRange.dateToNum[dateKey]
+      if (dayNum === undefined) return
+
       userScatterData[username].push({
-        date: displayDate,
+        day: dayNum,
+        date: dateRange.numToDate[dayNum],
         fullDate: dateKey,
         time: timeValue,
-        hour: hour,
-        minute: minute,
+        hour,
+        minute,
         activityType: activity.activityType,
         description: activity.description
       })
@@ -380,13 +416,15 @@ function UserActivityTab() {
                     <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
-                        type="category"
-                        dataKey="date"
+                        type="number"
+                        dataKey="day"
                         name="Date"
+                        domain={[0, dateRange.dates.length - 1]}
+                        ticks={Object.keys(dateRange.numToDate).map(Number)}
+                        tickFormatter={(value) => dateRange.numToDate[value] || ''}
                         angle={-45}
                         textAnchor="end"
                         height={80}
-                        allowDuplicatedCategory={false}
                       />
                       <YAxis
                         type="number"

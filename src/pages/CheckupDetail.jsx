@@ -92,6 +92,20 @@ function CheckupDetail() {
     }
   }, [id, checkups, patients])
 
+  // Log checkup view activity
+  useEffect(() => {
+    if (checkup && patient && user) {
+      logActivity({
+        userId: user.uid,
+        username: user.username || user.email,
+        userRole: user.role,
+        activityType: ACTIVITY_TYPES.CHECKUP_VIEW,
+        description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_VIEW, { billNo: checkup.billNo, checkupId: checkup.id }),
+        metadata: { checkupId: id, billNo: checkup.billNo, patientName: patient.name }
+      })
+    }
+  }, [checkup?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleEdit = () => {
     setIsEditing(true)
   }

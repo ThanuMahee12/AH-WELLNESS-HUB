@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/too
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { notifyRoleRequestSubmitted, notifyRoleRequestApproved, notifyRoleRequestRejected } from '../services/notificationService'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 const userChangeRequestsAdapter = createEntityAdapter()
 
@@ -60,6 +61,16 @@ export const createUserChangeRequest = createAsyncThunk(
         await notifyRoleRequestSubmitted(newRequest, superadminId)
       }
 
+      // Log activity
+      await logActivity({
+        userId: requestData.userId,
+        username: requestData.username || requestData.email,
+        userRole: requestData.currentRole,
+        activityType: ACTIVITY_TYPES.USER_REQUEST_CREATE,
+        description: createActivityDescription(ACTIVITY_TYPES.USER_REQUEST_CREATE, { username: requestData.username }),
+        metadata: { requestId: docRef.id, requestedRole: requestData.role }
+      })
+
       return newRequest
     } catch (error) {
       return rejectWithValue(error.message)
@@ -70,7 +81,7 @@ export const createUserChangeRequest = createAsyncThunk(
 // Approve a change request (for superadmin)
 export const approveUserChangeRequest = createAsyncThunk(
   'userChangeRequests/approve',
-  async ({ requestId, approvedBy }, { rejectWithValue }) => {
+  async ({ requestId, approvedBy }, { rejectWithValue, getState }) => {
     try {
       const requestRef = doc(db, 'userChangeRequests', requestId)
       await updateDoc(requestRef, {
@@ -78,6 +89,20 @@ export const approveUserChangeRequest = createAsyncThunk(
         approvedBy,
         approvedAt: serverTimestamp(),
       })
+
+      // Log activity
+      const { auth } = getState()
+      if (auth.user) {
+        await logActivity({
+          userId: auth.user.uid,
+          username: auth.user.username || auth.user.email,
+          userRole: auth.user.role,
+          activityType: ACTIVITY_TYPES.USER_REQUEST_APPROVE,
+          description: createActivityDescription(ACTIVITY_TYPES.USER_REQUEST_APPROVE, { username: auth.user.username }),
+          metadata: { requestId }
+        })
+      }
+
       return { id: requestId, status: 'approved', approvedBy }
     } catch (error) {
       return rejectWithValue(error.message)
@@ -88,7 +113,7 @@ export const approveUserChangeRequest = createAsyncThunk(
 // Reject a change request (for superadmin)
 export const rejectUserChangeRequest = createAsyncThunk(
   'userChangeRequests/reject',
-  async ({ requestId, rejectedBy, reason }, { rejectWithValue }) => {
+  async ({ requestId, rejectedBy, reason }, { rejectWithValue, getState }) => {
     try {
       const requestRef = doc(db, 'userChangeRequests', requestId)
       await updateDoc(requestRef, {
@@ -97,6 +122,20 @@ export const rejectUserChangeRequest = createAsyncThunk(
         rejectedAt: serverTimestamp(),
         rejectionReason: reason,
       })
+
+      // Log activity
+      const { auth } = getState()
+      if (auth.user) {
+        await logActivity({
+          userId: auth.user.uid,
+          username: auth.user.username || auth.user.email,
+          userRole: auth.user.role,
+          activityType: ACTIVITY_TYPES.USER_REQUEST_REJECT,
+          description: createActivityDescription(ACTIVITY_TYPES.USER_REQUEST_REJECT, { username: auth.user.username }),
+          metadata: { requestId, rejectionReason: reason }
+        })
+      }
+
       return { id: requestId, status: 'rejected', rejectedBy, rejectionReason: reason }
     } catch (error) {
       return rejectWithValue(error.message)

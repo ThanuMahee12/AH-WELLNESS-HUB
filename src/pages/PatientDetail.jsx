@@ -11,6 +11,7 @@ import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
+import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
 // Custom Gender Icon Selector Component
 const GenderIconSelector = ({ value, onChange, name, disabled, label = 'Gender', required = true }) => {
@@ -56,6 +57,7 @@ function PatientDetail() {
   const checkups = useSelector(selectAllCheckups)
   const tests = useSelector(selectAllTests)
   const { loading } = useSelector(state => state.patients)
+  const user = useSelector(state => state.auth.user)
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
   const { getEntityFields, getInitialFormData, isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
@@ -123,6 +125,20 @@ function PatientDetail() {
       dispatch(fetchPatients())
     }
   }, [dispatch, patients.length])
+
+  // Log patient view activity
+  useEffect(() => {
+    if (!isNew && patient && user) {
+      logActivity({
+        userId: user.uid,
+        username: user.username || user.email,
+        userRole: user.role,
+        activityType: ACTIVITY_TYPES.PATIENT_VIEW,
+        description: createActivityDescription(ACTIVITY_TYPES.PATIENT_VIEW, { patientName: patient.name }),
+        metadata: { patientId: id, patientName: patient.name }
+      })
+    }
+  }, [patient?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build checkup history data
   useEffect(() => {
