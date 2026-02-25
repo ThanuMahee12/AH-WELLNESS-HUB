@@ -327,7 +327,7 @@ function CheckupDetail() {
         logging: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: rxPageWidthPx,
+        windowWidth: Math.max(rxPageWidthPx, 800),
         width: prescriptionClone.scrollWidth,
         height: prescriptionClone.scrollHeight,
       })
@@ -498,7 +498,7 @@ function CheckupDetail() {
         logging: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: pageWidthPx,
+        windowWidth: Math.max(pageWidthPx, 800),
         width: billClone.scrollWidth,
         height: billClone.scrollHeight,
       })
