@@ -348,6 +348,43 @@
   }
 }
 
+/* --- Mobile Sort Dropdown --- */
+.mobile-sort-dropdown .dropdown-toggle {
+  background-color: var(--theme-bg-light-cyan);
+  border-color: var(--theme-border-cyan);
+  color: var(--theme-primary);
+  font-size: 0.875rem;
+}
+
+.mobile-sort-dropdown .dropdown-toggle:hover,
+.mobile-sort-dropdown .dropdown-toggle:focus {
+  background-color: var(--theme-primary);
+  border-color: var(--theme-primary);
+  color: #fff;
+}
+
+.mobile-sort-dropdown .dropdown-toggle::after {
+  margin-left: auto;
+}
+
+.mobile-sort-dropdown .dropdown-menu {
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 0.875rem;
+}
+
+.mobile-sort-dropdown .dropdown-item {
+  padding: 0.5rem 1rem;
+}
+
+.mobile-sort-dropdown .dropdown-item.active {
+  background-color: var(--theme-primary);
+}
+
+.mobile-sort-dropdown .dropdown-item:hover:not(.active) {
+  background-color: var(--theme-bg-light-cyan);
+}
+
 /* --- Table Header --- */
 .thead-theme {
   background-color: var(--theme-bg-light-cyan) !important;
