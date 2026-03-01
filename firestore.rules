@@ -2,102 +2,150 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
+    // ============================================
+    // Helper Functions
+    // ============================================
+
+    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Helper function to get user role (safe — returns '' if profile doesn't exist yet)
+    // Get user role (safe — returns '' if profile doesn't exist yet)
     function getUserRole() {
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return userDoc != null ? userDoc.data.role : '';
     }
 
-    // Helper function to check if user is superadmin
+    // Role hierarchy checks (from highest to lowest privilege)
+    // superadmin > admin > maintainer > editor > user
+
     function isSuperAdmin() {
       return isAuthenticated() && getUserRole() == 'superadmin';
     }
 
-    // Helper function to check if user is maintainer
-    function isMaintainer() {
-      return isAuthenticated() && getUserRole() == 'maintainer';
+    function isAdminOrAbove() {
+      let role = getUserRole();
+      return isAuthenticated() && (role == 'superadmin' || role == 'admin');
     }
 
-    // Helper function to check if user is admin (superadmin, admin, or maintainer)
-    function isAdmin() {
-      return isSuperAdmin() || isMaintainer() || (isAuthenticated() && getUserRole() == 'admin');
+    function isMaintainerOrAbove() {
+      let role = getUserRole();
+      return isAuthenticated() && (role == 'superadmin' || role == 'admin' || role == 'maintainer');
     }
 
-    // Users collection
+    function isEditorOrAbove() {
+      let role = getUserRole();
+      return isAuthenticated() && (role == 'superadmin' || role == 'admin' || role == 'maintainer' || role == 'editor');
+    }
+
+    // ============================================
+    // Users Collection
+    // ============================================
     match /users/{userId} {
+      // All authenticated users can read user profiles
       allow read: if isAuthenticated();
-      // Superadmin can write to any user
-      // Maintainer can update users but not change email
-      // Users can write to their own profile
-      // Self-registration (own doc, role must be 'user') checked first to avoid get() error for new users
+
+      // Create: Self-registration (own doc, role must be 'user') or superadmin
       allow create: if (isAuthenticated() && request.auth.uid == userId && request.resource.data.role == 'user')
         || isSuperAdmin();
+
+      // Delete: Superadmin only
       allow delete: if isSuperAdmin();
+
+      // Update: Superadmin (full), Admin (can't change superadmin), or own profile (can't change role)
       allow update: if isSuperAdmin()
-        || (isMaintainer() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']))
-        || (isAuthenticated() && request.auth.uid == userId);
+        || (isAdminOrAbove() && resource.data.role != 'superadmin' && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']))
+        || (isAuthenticated() && request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email']));
     }
 
-    // Patients collection - all authenticated users can manage
+    // ============================================
+    // Patients Collection
+    // Role: Read (all), Create/Update (editor+), Delete (admin+)
+    // ============================================
     match /patients/{patientId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create, update: if isEditorOrAbove();
+      allow delete: if isAdminOrAbove();
     }
 
-    // Tests collection - all authenticated users can manage
+    // ============================================
+    // Tests Collection
+    // Role: Read (all), Write (maintainer+)
+    // ============================================
     match /tests/{testId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isMaintainerOrAbove();
     }
 
-    // Checkups collection - all authenticated users can manage
+    // ============================================
+    // Checkups Collection
+    // Role: Read (all), Create/Update (editor+), Delete (admin+)
+    // ============================================
     match /checkups/{checkupId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create, update: if isEditorOrAbove();
+      allow delete: if isAdminOrAbove();
     }
 
-    // Medicines collection - role-based access
+    // ============================================
+    // Medicines Collection
+    // Role: Read (all), Write (maintainer+)
+    // ============================================
     match /medicines/{medicineId} {
-      // Editor can only view
       allow read: if isAuthenticated();
-      // Maintainer and SuperAdmin can create, update, delete
-      allow write: if isAdmin();
+      allow create, update, delete: if isMaintainerOrAbove();
     }
 
-    // User change requests collection - for maintainer approval workflow
+    // ============================================
+    // Role Change Requests Collection
+    // ============================================
     match /userChangeRequests/{requestId} {
-      allow read: if isAuthenticated();
-      // Maintainer can create requests, superadmin can approve/reject
-      allow create: if isMaintainer();
+      // Admin+ can read all requests
+      allow read: if isAdminOrAbove();
+      // Any authenticated user can create a request for themselves
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Superadmin can approve/reject (update/delete)
       allow update, delete: if isSuperAdmin();
     }
 
-    // User activities collection - for activity tracking and analytics
+    // ============================================
+    // User Activities Collection (Audit Trail)
+    // ============================================
     match /userActivities/{activityId} {
       // All authenticated users can create activity logs
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       // Only superadmin can read activities (for analytics dashboard)
       allow read: if isSuperAdmin();
-      // No one can update or delete activities (audit trail)
+      // No one can update or delete activities (immutable audit trail)
       allow update, delete: if false;
     }
 
-    // Settings collection - read: authenticated, write: superadmin only
+    // ============================================
+    // Settings Collection
+    // ============================================
     match /settings/{docId} {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin();
     }
 
-    // Notifications collection - users can read their own, authenticated can create
+    // ============================================
+    // Notifications Collection
+    // ============================================
     match /notifications/{notificationId} {
+      // Users can read their own notifications
       allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      // Authenticated users can create notifications
       allow create: if isAuthenticated();
+      // Users can update (mark as read) their own notifications
       allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      // No delete - notifications are archived, not deleted
+      allow delete: if isSuperAdmin();
     }
 
-    // Deny all other access
+    // ============================================
+    // Deny all other access (catch-all)
+    // ============================================
     match /{document=**} {
       allow read, write: if false;
     }
