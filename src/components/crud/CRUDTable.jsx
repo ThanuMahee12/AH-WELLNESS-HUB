@@ -1,24 +1,10 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Table, Button, Card } from 'react-bootstrap';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
 
-/**
- * Reusable CRUD Table Component
- * Handles responsive tables with edit/delete actions
- *
- * @param {Object} props
- * @param {Array} props.data - Array of data items
- * @param {Array} props.columns - Column definitions
- * @param {Function} props.onEdit - Edit handler
- * @param {Function} props.onDelete - Delete handler
- * @param {boolean} props.loading - Loading state
- * @param {string} props.error - Error message
- * @param {string} props.emptyMessage - Message when no data
- * @param {Function} props.renderActions - Custom actions renderer
- * @param {Function} props.renderCell - Custom cell renderer
- */
 const CRUDTable = React.memo(({
   data = [],
   columns = [],
@@ -41,32 +27,20 @@ const CRUDTable = React.memo(({
   const defaultRenderActions = (item) => (
     <>
       {onEdit && (
-        <Button
-          size="sm"
-          onClick={() => onEdit(item)}
-          className="me-2 btn-theme-outline"
-        >
-          <FaEdit className="me-1" />
-          Edit
+        <Button size="sm" onClick={() => onEdit(item)} className="me-2 btn-theme-outline">
+          <FaEdit className="me-1" />Edit
         </Button>
       )}
       {onDelete && (
-        <Button
-          size="sm"
-          onClick={() => onDelete(item.id)}
-          className="btn-theme-outline-light"
-        >
-          <FaTrash className="me-1" />
-          Delete
+        <Button size="sm" onClick={() => onDelete(item.id)} className="btn-theme-outline-light">
+          <FaTrash className="me-1" />Delete
         </Button>
       )}
     </>
   );
 
   const defaultRenderCell = (item, column) => {
-    if (column.render) {
-      return column.render(item[column.key], item);
-    }
+    if (column.render) return column.render(item[column.key], item);
     return item[column.key];
   };
 
@@ -77,44 +51,25 @@ const CRUDTable = React.memo(({
           <thead>
             <tr>
               {columns.map((column) => (
-                <th key={column.key} className={column.headerClassName || ''}>
-                  {column.label}
-                </th>
+                <th key={column.key} className={column.headerClassName || ''}>{column.label}</th>
               ))}
-              {(onEdit || onDelete || renderActions) && (
-                <th className="text-center">Actions</th>
-              )}
+              {(onEdit || onDelete || renderActions) && <th className="text-center">Actions</th>}
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={columns.length + 1}
-                  className="text-center py-4 text-muted"
-                >
-                  {emptyMessage}
-                </td>
-              </tr>
+              <tr><td colSpan={columns.length + 1} className="text-center py-4 text-muted">{emptyMessage}</td></tr>
             ) : (
               data.map((item) => (
                 <tr key={item.id}>
                   {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      data-label={column.label}
-                      className={column.cellClassName || ''}
-                    >
-                      {renderCell
-                        ? renderCell(item, column)
-                        : defaultRenderCell(item, column)}
+                    <td key={column.key} data-label={column.label} className={column.cellClassName || ''}>
+                      {renderCell ? renderCell(item, column) : defaultRenderCell(item, column)}
                     </td>
                   ))}
                   {(onEdit || onDelete || renderActions) && (
                     <td data-label="Actions" className="text-center">
-                      {renderActions
-                        ? renderActions(item)
-                        : defaultRenderActions(item)}
+                      {renderActions ? renderActions(item) : defaultRenderActions(item)}
                     </td>
                   )}
                 </tr>
@@ -128,5 +83,23 @@ const CRUDTable = React.memo(({
 });
 
 CRUDTable.displayName = 'CRUDTable';
+
+CRUDTable.propTypes = {
+  data: PropTypes.arrayOf(PropTypes.object),
+  columns: PropTypes.arrayOf(PropTypes.shape({
+    key: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    render: PropTypes.func,
+    headerClassName: PropTypes.string,
+    cellClassName: PropTypes.string
+  })).isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  loading: PropTypes.bool,
+  error: PropTypes.string,
+  emptyMessage: PropTypes.string,
+  renderActions: PropTypes.func,
+  renderCell: PropTypes.func
+};
 
 export default CRUDTable;

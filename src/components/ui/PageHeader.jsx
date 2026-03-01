@@ -1,15 +1,10 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Row, Col, Button } from 'react-bootstrap';
 import { FaPlus } from 'react-icons/fa';
 
 /**
  * Reusable Page Header Component
- * @param {Object} props
- * @param {Component} props.icon - Icon component
- * @param {string} props.title - Page title
- * @param {Function} props.onAddClick - Handler for add button
- * @param {string} props.addButtonText - Text for add button
- * @param {boolean} props.showAddButton - Whether to show add button
  */
 const PageHeader = React.memo(({
   icon: Icon,
@@ -42,5 +37,18 @@ const PageHeader = React.memo(({
 });
 
 PageHeader.displayName = 'PageHeader';
+
+PageHeader.propTypes = {
+  /** Icon component to display */
+  icon: PropTypes.elementType,
+  /** Page title (required) */
+  title: PropTypes.string.isRequired,
+  /** Handler for add button click */
+  onAddClick: PropTypes.func,
+  /** Text for add button */
+  addButtonText: PropTypes.string,
+  /** Whether to show add button */
+  showAddButton: PropTypes.bool
+};
 
 export default PageHeader;
