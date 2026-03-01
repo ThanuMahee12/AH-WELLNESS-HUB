@@ -4,6 +4,7 @@
 
 /* --- CSS Custom Properties --- */
 :root {
+  /* Theme Colors */
   --theme-primary: #0891B2;
   --theme-primary-light: #06B6D4;
   --theme-secondary: #14B8A6;
@@ -13,22 +14,38 @@
   --theme-cyan-dark: #0E7490;
   --theme-cyan-400: #22D3EE;
 
+  /* Backgrounds */
   --theme-bg-light-cyan: #e0f2fe;
   --theme-bg-light: #f8fafc;
   --theme-bg-light-blue: #f0f9ff;
   --theme-bg-gray: #f8f9fa;
   --theme-bg-slate: #f1f5f9;
 
+  /* Borders */
   --theme-border: #e2e8f0;
   --theme-border-light: #dee2e6;
   --theme-border-cyan: #bae6fd;
 
+  /* Text Colors */
   --theme-text-muted: #64748b;
   --theme-text-muted-light: #94a3b8;
   --theme-text-dark: #334155;
   --theme-text-body: #475569;
 
+  /* Gradient */
   --theme-gradient: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-light));
+
+  /* Layout - Sidebar & Navbar */
+  --sidebar-width: 250px;
+  --navbar-height: 60px;
+
+  /* Breakpoints (for reference in JS - actual media queries use px values) */
+  --breakpoint-xs: 0;
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-xxl: 1400px;
 }
 
 /* --- Text Colors --- */
@@ -903,4 +920,50 @@
 }
 .btn-filter-lg {
   font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
+
+/* --- Main Content Layout --- */
+.main-content {
+  margin-left: 0;
+  padding-left: var(--sidebar-width);
+  width: 100%;
+  max-width: 100vw;
+  overflow: auto;
+  transition: padding-left 0.3s ease;
+}
+
+.main-content.no-sidebar {
+  padding-left: 0;
+}
+
+@media (max-width: 991.98px) {
+  .main-content {
+    padding-left: 0;
+  }
+}
+
+/* --- Chart Responsive Margins --- */
+.chart-pie-mobile {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.chart-pie-desktop {
+  margin-left: 80px;
+  margin-right: 80px;
+}
+
+/* --- Dashboard Chart Button Groups --- */
+.chart-btn-group .btn {
+  font-size: clamp(0.7rem, 1.5vw, 0.875rem);
+}
+
+@media (max-width: 575.98px) {
+  .chart-btn-group {
+    width: 100%;
+  }
+  .chart-btn-group .btn {
+    flex: 1;
+    padding: 0.25rem 0.5rem;
+  }
 }
