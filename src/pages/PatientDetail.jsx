@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Badge, Collapse, Form } from 'react-bootstrap'
-import { FaArrowLeft, FaUserInjured, FaMale, FaFemale, FaUser, FaWeight, FaRulerVertical, FaChevronDown, FaChevronRight } from 'react-icons/fa'
+import { FaUserInjured, FaMale, FaFemale, FaUser, FaWeight, FaRulerVertical, FaChevronDown, FaChevronRight } from 'react-icons/fa'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { selectAllPatients, addPatient, updatePatient, deletePatient, fetchPatients } from '../store/patientsSlice'
 import { selectAllCheckups } from '../store/checkupsSlice'
@@ -10,6 +10,7 @@ import { selectAllTests } from '../store/testsSlice'
 import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
+import { Breadcrumb } from '../components/ui'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
@@ -188,16 +189,14 @@ function PatientDetail() {
   if (!isNew && !patient && patients.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
+        <Breadcrumb
+          items={[{ label: 'Patients', path: '/patients' }]}
+          current="Not Found"
+        />
         <Card>
           <Card.Body className="text-center py-5">
             <h4>Patient not found</h4>
-            <Button
-              onClick={() => navigate('/patients')}
-              className="btn-theme"
-            >
-              <FaArrowLeft className="me-2" />
-              Back to Patients
-            </Button>
+            <p className="text-muted">The patient you're looking for doesn't exist or has been removed.</p>
           </Card.Body>
         </Card>
       </Container>
@@ -209,6 +208,11 @@ function PatientDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
+      <Breadcrumb
+        items={[{ label: 'Patients', path: '/patients' }]}
+        current={isNew ? 'New Patient' : (patient?.name || 'Patient Details')}
+      />
+
       {/* Header */}
       <Row className="mb-4">
         <Col>
@@ -229,7 +233,6 @@ function PatientDetail() {
             formErrors={form.errors}
             onFormChange={form.handleChange}
             onSubmit={form.handleSubmit}
-            onCancel={() => navigate('/patients')}
             onDelete={canDelete ? handleDelete : undefined}
             loading={form.isSubmitting || loading}
             isEditing={!isNew}

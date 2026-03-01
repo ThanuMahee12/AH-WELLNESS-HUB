@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
-import { FaArrowLeft, FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa'
+import { FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa'
+import { Breadcrumb } from '../components/ui'
 import Select from 'react-select'
 import { selectAllCheckups, fetchCheckups, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
 import { selectAllPatients, fetchPatients } from '../store/patientsSlice'
@@ -598,16 +599,14 @@ function CheckupDetail() {
   if ((!checkup || !patient) && checkups.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
+        <Breadcrumb
+          items={[{ label: 'Checkups', path: '/checkups' }]}
+          current="Not Found"
+        />
         <Card>
           <Card.Body className="text-center py-5">
             <h4>Checkup not found</h4>
-            <Button
-              onClick={() => navigate('/checkups')}
-              className="btn-theme"
-            >
-              <FaArrowLeft className="me-2" />
-              Back to Checkups
-            </Button>
+            <p className="text-muted">The checkup you're looking for doesn't exist or has been removed.</p>
           </Card.Body>
         </Card>
       </Container>
@@ -621,18 +620,15 @@ function CheckupDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
+      <Breadcrumb
+        items={[{ label: 'Checkups', path: '/checkups' }]}
+        current={checkup?.billNo || 'Checkup Details'}
+      />
+
       {/* Action Buttons */}
       <Row className="mb-3 no-print">
         <Col>
           <div className="d-flex gap-2 flex-wrap align-items-center">
-            <Button
-              onClick={() => navigate('/checkups')}
-              size="sm"
-              className="no-print btn-theme-outline"
-            >
-              <FaArrowLeft className="me-2" />
-              Back to Checkups
-            </Button>
             {!isEditing ? (
               <>
                 <Button

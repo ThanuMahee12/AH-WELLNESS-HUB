@@ -281,6 +281,73 @@
   text-decoration: underline;
 }
 
+/* --- Breadcrumb --- */
+.breadcrumb-theme,
+.breadcrumb-theme.breadcrumb {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex-wrap: wrap;
+  background-color: var(--theme-bg-light-cyan) !important;
+  padding: 0.5rem 1rem !important;
+  margin-bottom: 1rem !important;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  list-style: none;
+}
+
+.breadcrumb-theme .breadcrumb-item {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+.breadcrumb-theme .breadcrumb-item a {
+  color: var(--theme-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-theme .breadcrumb-item a:hover {
+  color: var(--theme-cyan-dark);
+  text-decoration: underline;
+}
+
+.breadcrumb-theme .breadcrumb-item.active {
+  color: var(--theme-text-muted);
+}
+
+.breadcrumb-theme .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--theme-text-muted-light);
+}
+
+/* Mobile breadcrumb styles */
+@media (max-width: 767px) {
+  .breadcrumb-theme,
+  .breadcrumb-theme.breadcrumb {
+    display: flex !important;
+    visibility: visible !important;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+    border: 1px solid var(--theme-border-cyan);
+  }
+
+  .breadcrumb-theme .breadcrumb-item + .breadcrumb-item {
+    padding-left: 0.4rem;
+  }
+
+  .breadcrumb-theme .breadcrumb-item + .breadcrumb-item::before {
+    padding-right: 0.4rem;
+  }
+}
+
+/* Ensure breadcrumb is never hidden */
+@media screen {
+  .breadcrumb-theme {
+    display: flex !important;
+  }
+}
+
 /* --- Table Header --- */
 .thead-theme {
   background-color: var(--theme-bg-light-cyan) !important;

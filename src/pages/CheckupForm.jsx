@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card, Button, Form, Badge } from 'react-bootstrap'
-import { FaClipboardCheck, FaArrowLeft, FaSave, FaTrash, FaPlus } from 'react-icons/fa'
+import { FaClipboardCheck, FaSave, FaTrash, FaPlus } from 'react-icons/fa'
+import { Breadcrumb } from '../components/ui'
 import Select from 'react-select'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsSlice'
@@ -174,16 +175,14 @@ function CheckupForm() {
   if (!isNew && !checkup && checkups.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
+        <Breadcrumb
+          items={[{ label: 'Checkups', path: '/checkups' }]}
+          current="Not Found"
+        />
         <Card>
           <Card.Body className="text-center py-5">
             <h4>Checkup not found</h4>
-            <Button
-              onClick={() => navigate('/checkups')}
-              className="btn-theme"
-            >
-              <FaArrowLeft className="me-2" />
-              Back to Checkups
-            </Button>
+            <p className="text-muted">The checkup you're looking for doesn't exist or has been removed.</p>
           </Card.Body>
         </Card>
       </Container>
@@ -242,6 +241,11 @@ function CheckupForm() {
 
   return (
     <Container fluid className="p-3 p-md-4">
+      <Breadcrumb
+        items={[{ label: 'Checkups', path: '/checkups' }]}
+        current={isNew ? 'New Checkup' : (checkup?.billNo || 'Edit Checkup')}
+      />
+
       <Row className="mb-4">
         <Col>
           <h2 className="fs-responsive-lg">
@@ -514,17 +518,7 @@ function CheckupForm() {
                 </div>
               </Card.Body>
 
-              <Card.Footer className="entity-form-footer">
-                <Button
-                  variant="outline-secondary"
-                  onClick={() => navigate(isNew ? '/checkups' : `/checkups/${id}`)}
-                  disabled={isSubmitting}
-                  className="entity-form-btn"
-                >
-                  <FaArrowLeft className="me-1" />
-                  {isNew ? 'Back' : 'Cancel'}
-                </Button>
-
+              <Card.Footer className="entity-form-footer justify-content-end">
                 <div className="entity-form-actions">
                   {canDelete && (
                     <Button
@@ -546,7 +540,6 @@ function CheckupForm() {
                     {isSubmitting ? 'Saving...' : (isNew ? 'Create Checkup' : 'Update Checkup')}
                   </Button>
                 </div>
-
               </Card.Footer>
             </Form>
           </Card>
