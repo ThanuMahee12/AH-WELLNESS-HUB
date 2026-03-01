@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { Table, Button, Card, Form, Row, Col, Pagination, InputGroup } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaSearch, FaSortUp, FaSortDown, FaSort } from 'react-icons/fa';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -312,5 +313,6 @@ const EnhancedCRUDTable = React.memo(({
 });
 
 EnhancedCRUDTable.displayName = 'EnhancedCRUDTable';
+EnhancedCRUDTable.propTypes = {  data: PropTypes.arrayOf(PropTypes.object),  columns: PropTypes.arrayOf(PropTypes.shape({    key: PropTypes.string.isRequired,    label: PropTypes.string.isRequired,    sortable: PropTypes.bool,    render: PropTypes.func  })).isRequired,  onEdit: PropTypes.func,  onDelete: PropTypes.func,  loading: PropTypes.bool,  error: PropTypes.string,  emptyMessage: PropTypes.string,  renderActions: PropTypes.func,  renderCell: PropTypes.func,  itemsPerPage: PropTypes.number,  searchFields: PropTypes.arrayOf(PropTypes.string)};
 
 export default EnhancedCRUDTable;

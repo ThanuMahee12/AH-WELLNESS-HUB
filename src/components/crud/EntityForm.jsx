@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Card, Button, Form, Row, Col, Spinner } from 'react-bootstrap';
 import { FaArrowLeft, FaSave, FaTrash } from 'react-icons/fa';
 import FormField from '../ui/FormField';
@@ -124,5 +125,6 @@ const EntityForm = React.memo(({
 });
 
 EntityForm.displayName = 'EntityForm';
+EntityForm.propTypes = {  title: PropTypes.string.isRequired,  fields: PropTypes.arrayOf(PropTypes.shape({    name: PropTypes.string.isRequired,    label: PropTypes.string,    type: PropTypes.string,    required: PropTypes.bool,    placeholder: PropTypes.string,    options: PropTypes.array,    colSize: PropTypes.number  })),  formData: PropTypes.object,  formErrors: PropTypes.object,  onFormChange: PropTypes.func.isRequired,  onSubmit: PropTypes.func.isRequired,  onBack: PropTypes.func,  onDelete: PropTypes.func,  loading: PropTypes.bool,  isEditing: PropTypes.bool,  showDelete: PropTypes.bool,  children: PropTypes.node};
 
 export default EntityForm;

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import FormField from '../ui/FormField';
 import RichTextEditor from '../ui/RichTextEditor';
@@ -130,5 +131,6 @@ const CRUDModal = React.memo(({
 });
 
 CRUDModal.displayName = 'CRUDModal';
+CRUDModal.propTypes = {  show: PropTypes.bool.isRequired,  title: PropTypes.string.isRequired,  isEditing: PropTypes.bool,  fields: PropTypes.arrayOf(PropTypes.shape({    name: PropTypes.string.isRequired,    label: PropTypes.string,    type: PropTypes.string,    required: PropTypes.bool,    placeholder: PropTypes.string,    options: PropTypes.array,    colSize: PropTypes.number  })),  formData: PropTypes.object,  formErrors: PropTypes.object,  onFormChange: PropTypes.func.isRequired,  onSubmit: PropTypes.func.isRequired,  onClose: PropTypes.func.isRequired,  loading: PropTypes.bool,  size: PropTypes.oneOf(['sm', 'lg', 'xl']),  children: PropTypes.node};
 
 export default CRUDModal;
