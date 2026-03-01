@@ -43,12 +43,8 @@ html, body {
   }
 }
 
-/* Mobile-friendly table */
+/* Mobile-friendly table - card layout */
 @media (max-width: 767.98px) {
-  .table-mobile-responsive thead {
-    display: none;
-  }
-
   .table-mobile-responsive tbody tr {
     display: block;
     margin-bottom: 1rem;
@@ -122,19 +118,32 @@ html, body {
 }
 
 /* Card table headers - matches theme.css cyan gradient */
-.table thead {
-  background: linear-gradient(135deg, var(--theme-primary, #0891B2) 0%, var(--theme-primary-light, #06B6D4) 100%);
-  color: #fff;
+.table thead,
+.table-mobile-responsive thead,
+table.table thead {
+  background: linear-gradient(135deg, var(--theme-primary, #0891B2) 0%, var(--theme-primary-light, #06B6D4) 100%) !important;
+  color: #fff !important;
+  display: table-header-group;
 }
 
-.table thead th {
-  border: none;
+.table thead th,
+.table-mobile-responsive thead th,
+table.table thead th {
+  border: none !important;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.85rem;
   letter-spacing: 0.5px;
   padding: 1rem;
-  color: #fff;
+  color: #fff !important;
+  background: transparent !important;
+}
+
+/* Only hide thead on mobile for card layout */
+@media (max-width: 767.98px) {
+  .table-mobile-responsive thead {
+    display: none !important;
+  }
 }
 
 /* Responsive form columns */
