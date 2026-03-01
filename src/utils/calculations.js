@@ -229,6 +229,98 @@ export const getTestDistribution = (checkups = [], testsData = [], limit = 5) =>
     .slice(0, limit);
 };
 
+/**
+ * Get comparison period checkups for performance stats
+ * @param {Array} checkups - Array of checkup objects
+ * @param {string} range - Range type: 'today', 'yesterday', 'week', 'month', 'year'
+ * @returns {Array} Comparison period checkups
+ */
+export const getComparisonCheckups = (checkups = [], range = 'today') => {
+  const now = new Date();
+
+  switch (range) {
+    case 'today': {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      return checkups.filter(c =>
+        new Date(c.timestamp).toDateString() === yesterday.toDateString()
+      );
+    }
+
+    case 'yesterday': {
+      const dayBefore = new Date();
+      dayBefore.setDate(dayBefore.getDate() - 2);
+      return checkups.filter(c =>
+        new Date(c.timestamp).toDateString() === dayBefore.toDateString()
+      );
+    }
+
+    case 'week': {
+      const lastWeekStart = new Date();
+      lastWeekStart.setDate(now.getDate() - now.getDay() - 7);
+      lastWeekStart.setHours(0, 0, 0, 0);
+      const lastWeekEnd = new Date();
+      lastWeekEnd.setDate(now.getDate() - now.getDay() - 1);
+      lastWeekEnd.setHours(23, 59, 59, 999);
+      return checkups.filter(c => {
+        const date = new Date(c.timestamp);
+        return date >= lastWeekStart && date <= lastWeekEnd;
+      });
+    }
+
+    case 'month': {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      return checkups.filter(c => {
+        const date = new Date(c.timestamp);
+        return date >= lastMonth && date <= lastMonthEnd;
+      });
+    }
+
+    case 'year': {
+      const lastYear = new Date(now.getFullYear() - 1, 0, 1);
+      const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31);
+      return checkups.filter(c => {
+        const date = new Date(c.timestamp);
+        return date >= lastYear && date <= lastYearEnd;
+      });
+    }
+
+    default:
+      return [];
+  }
+};
+
+/**
+ * Get year options from start year to current year
+ * @param {number} startYear - Starting year
+ * @returns {Array} Array of years
+ */
+export const getYearOptions = (startYear = 2025) => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let year = startYear; year <= currentYear; year++) {
+    years.push(year);
+  }
+  return years;
+};
+
+/**
+ * Get comparison label based on performance range
+ * @param {string} range - Range type
+ * @returns {string} Comparison label
+ */
+export const getComparisonLabel = (range) => {
+  const labels = {
+    today: 'Yesterday',
+    yesterday: 'Day Before',
+    week: 'Last Week',
+    month: 'Last Month',
+    year: 'Last Year'
+  };
+  return labels[range] || '';
+};
+
 export default {
   calculateTestCommission,
   calculateCheckupCommission,
@@ -238,7 +330,10 @@ export default {
   getHighestBill,
   filterCheckupsByDateRange,
   filterCheckupsByPerformanceRange,
+  getComparisonCheckups,
   getDateRangeChartData,
   getMonthlyRevenueData,
-  getTestDistribution
+  getTestDistribution,
+  getYearOptions,
+  getComparisonLabel
 };

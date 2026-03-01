@@ -121,9 +121,9 @@ html, body {
   }
 }
 
-/* Card table headers */
+/* Card table headers - matches theme.css cyan gradient */
 .table thead {
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  background: linear-gradient(135deg, var(--theme-primary, #0891B2) 0%, var(--theme-primary-light, #06B6D4) 100%);
   color: #fff;
 }
 
@@ -134,6 +134,7 @@ html, body {
   font-size: 0.85rem;
   letter-spacing: 0.5px;
   padding: 1rem;
+  color: #fff;
 }
 
 /* Responsive form columns */
@@ -175,10 +176,11 @@ html, body {
   }
 }
 
-/* Fix content area padding on mobile */
+/* Fix content area padding on mobile - uses main-content class from theme.css */
 @media (max-width: 991.98px) {
-  .flex-grow-1 {
-    padding-left: 0 !important;
+  .main-content,
+  .main-content.no-sidebar {
+    padding-left: 0;
   }
 }
 
