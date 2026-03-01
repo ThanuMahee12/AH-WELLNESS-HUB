@@ -1,23 +1,10 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Form } from 'react-bootstrap';
 
 /**
  * Reusable Form Field Component
  * Handles text, email, number, tel, textarea, select inputs
- *
- * @param {Object} props
- * @param {string} props.label - Field label
- * @param {string} props.name - Field name
- * @param {string} props.type - Input type
- * @param {any} props.value - Field value
- * @param {Function} props.onChange - Change handler
- * @param {Function} props.onBlur - Blur handler
- * @param {string} props.error - Error message
- * @param {boolean} props.required - Whether field is required
- * @param {string} props.placeholder - Placeholder text
- * @param {Array} props.options - Options for select input
- * @param {boolean} props.disabled - Whether field is disabled
- * @param {number} props.rows - Rows for textarea
  */
 const FormField = React.memo(({
   label,
@@ -163,5 +150,40 @@ const FormField = React.memo(({
 });
 
 FormField.displayName = 'FormField';
+
+FormField.propTypes = {
+  /** Field label */
+  label: PropTypes.string,
+  /** Field name (required) */
+  name: PropTypes.string.isRequired,
+  /** Input type */
+  type: PropTypes.oneOf(['text', 'email', 'number', 'tel', 'password', 'textarea', 'select', 'checkbox', 'radio', 'date', 'time', 'datetime-local']),
+  /** Field value */
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.bool]),
+  /** Change handler */
+  onChange: PropTypes.func,
+  /** Blur handler */
+  onBlur: PropTypes.func,
+  /** Error message */
+  error: PropTypes.string,
+  /** Whether field is required */
+  required: PropTypes.bool,
+  /** Placeholder text */
+  placeholder: PropTypes.string,
+  /** Options for select/radio inputs */
+  options: PropTypes.arrayOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        label: PropTypes.string.isRequired
+      })
+    ])
+  ),
+  /** Whether field is disabled */
+  disabled: PropTypes.bool,
+  /** Rows for textarea */
+  rows: PropTypes.number
+};
 
 export default FormField;
