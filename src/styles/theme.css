@@ -783,3 +783,124 @@
 .home-footer p {
   color: rgba(255, 255, 255, 0.85);
 }
+
+
+/* ============================================
+   Additional Utility Classes
+   ============================================ */
+
+/* --- Z-Index Utilities --- */
+.z-dropdown { z-index: 9999; }
+.z-modal { z-index: 10000; }
+.z-tooltip { z-index: 10001; }
+
+/* --- Border Utilities --- */
+.border-theme { border-color: var(--theme-primary) !important; }
+.border-theme-light { border-color: var(--theme-border-light) !important; }
+.border-bottom-theme { border-bottom: 2px solid var(--theme-primary) !important; }
+
+/* --- Cursor Utilities --- */
+.cursor-pointer { cursor: pointer; }
+.cursor-default { cursor: default; }
+
+/* --- Transition Utilities --- */
+.transition-bg { transition: background-color 0.2s ease; }
+.transition-all { transition: all 0.2s ease; }
+
+/* --- Notification Bell Styles --- */
+.notification-dropdown-menu {
+  width: 350px;
+  max-width: calc(100vw - 16px);
+  max-height: 500px;
+  padding: 0;
+  border: 1px solid var(--theme-border-light);
+  border-radius: 0.5rem;
+}
+.notification-header {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+.notification-content {
+  max-height: 440px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.notification-item {
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+}
+.notification-item:hover {
+  background-color: var(--theme-bg-light-blue);
+}
+.notification-item.unread {
+  background-color: var(--theme-bg-gray);
+}
+.notification-icon {
+  font-size: 1.5rem;
+  margin-right: 10px;
+  min-width: 30px;
+}
+.notification-title {
+  font-size: 0.9rem;
+}
+.notification-message {
+  font-size: 0.85rem;
+  color: #333;
+}
+.notification-time {
+  font-size: 0.75rem;
+}
+
+@media (max-width: 575px) {
+  .notification-dropdown-menu {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 80px);
+  }
+  .notification-content {
+    max-height: calc(100vh - 140px);
+  }
+  .notification-item {
+    padding: 8px 12px;
+  }
+  .notification-icon {
+    font-size: 1.2rem;
+    margin-right: 8px;
+    min-width: 24px;
+  }
+  .notification-title {
+    font-size: 0.85rem;
+  }
+  .notification-message {
+    font-size: 0.8rem;
+  }
+  .notification-time {
+    font-size: 0.7rem;
+  }
+}
+
+
+/* --- Dashboard Filter Buttons --- */
+.btn-filter {
+  background-color: transparent;
+  border-color: white;
+  color: white;
+  font-weight: normal;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+.btn-filter:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: white;
+  color: white;
+}
+.btn-filter.active {
+  background-color: white;
+  border-color: white;
+  color: var(--theme-primary);
+  font-weight: 600;
+}
+.btn-filter-lg {
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
