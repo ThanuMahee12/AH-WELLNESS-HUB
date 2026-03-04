@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Card, Button, Form, Row, Col, Spinner } from 'react-bootstrap';
-import { FaArrowLeft, FaSave, FaTrash } from 'react-icons/fa';
+import { FaSave, FaTrash } from 'react-icons/fa';
 import FormField from '../ui/FormField';
 import RichTextEditor from '../ui/RichTextEditor';
 
@@ -12,7 +12,6 @@ const EntityForm = React.memo(({
   formErrors = {},
   onFormChange,
   onSubmit,
-  onCancel,
   onDelete,
   loading = false,
   isEditing = false,
@@ -76,17 +75,7 @@ const EntityForm = React.memo(({
           )}
         </Card.Body>
 
-        <Card.Footer className="entity-form-footer">
-          <Button
-            variant="outline-secondary"
-            onClick={onCancel}
-            disabled={loading}
-            className="entity-form-btn"
-          >
-            <FaArrowLeft className="me-1" />
-            Back
-          </Button>
-
+        <Card.Footer className="entity-form-footer justify-content-end">
           <div className="entity-form-actions">
             {isEditing && onDelete && (
               <Button
@@ -117,7 +106,6 @@ const EntityForm = React.memo(({
               )}
             </Button>
           </div>
-
         </Card.Footer>
       </Form>
     </Card>
@@ -125,6 +113,25 @@ const EntityForm = React.memo(({
 });
 
 EntityForm.displayName = 'EntityForm';
-EntityForm.propTypes = {  title: PropTypes.string.isRequired,  fields: PropTypes.arrayOf(PropTypes.shape({    name: PropTypes.string.isRequired,    label: PropTypes.string,    type: PropTypes.string,    required: PropTypes.bool,    placeholder: PropTypes.string,    options: PropTypes.array,    colSize: PropTypes.number  })),  formData: PropTypes.object,  formErrors: PropTypes.object,  onFormChange: PropTypes.func.isRequired,  onSubmit: PropTypes.func.isRequired,  onBack: PropTypes.func,  onDelete: PropTypes.func,  loading: PropTypes.bool,  isEditing: PropTypes.bool,  showDelete: PropTypes.bool,  children: PropTypes.node};
+EntityForm.propTypes = {
+  title: PropTypes.string.isRequired,
+  fields: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    label: PropTypes.string,
+    type: PropTypes.string,
+    required: PropTypes.bool,
+    placeholder: PropTypes.string,
+    options: PropTypes.array,
+    colSize: PropTypes.number
+  })),
+  formData: PropTypes.object,
+  formErrors: PropTypes.object,
+  onFormChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func,
+  loading: PropTypes.bool,
+  isEditing: PropTypes.bool,
+  children: PropTypes.node
+};
 
 export default EntityForm;

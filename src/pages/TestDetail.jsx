@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button } from 'react-bootstrap'
-import { FaFlask, FaArrowLeft } from 'react-icons/fa'
+import { Container, Row, Col, Card } from 'react-bootstrap'
+import { FaFlask } from 'react-icons/fa'
 import { selectAllTests, addTest, updateTest, deleteTest, fetchTests } from '../store/testsSlice'
 import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
+import { Breadcrumb } from '../components/ui'
 import { usePermission } from '../components/auth/PermissionGate'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 
@@ -130,16 +131,14 @@ function TestDetail() {
   if (!isNew && !test && tests.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
+        <Breadcrumb
+          items={[{ label: 'Tests', path: '/tests' }]}
+          current="Not Found"
+        />
         <Card>
           <Card.Body className="text-center py-5">
             <h4>Test not found</h4>
-            <Button
-              onClick={() => navigate('/tests')}
-              className="btn-theme"
-            >
-              <FaArrowLeft className="me-2" />
-              Back to Tests
-            </Button>
+            <p className="text-muted">The test you're looking for doesn't exist or has been removed.</p>
           </Card.Body>
         </Card>
       </Container>
@@ -151,6 +150,11 @@ function TestDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
+      <Breadcrumb
+        items={[{ label: 'Tests', path: '/tests' }]}
+        current={isNew ? 'New Test' : (test?.name || 'Test Details')}
+      />
+
       <Row className="mb-4">
         <Col>
           <h2 className="fs-responsive-lg">
@@ -169,7 +173,6 @@ function TestDetail() {
             formErrors={form.errors}
             onFormChange={form.handleChange}
             onSubmit={form.handleSubmit}
-            onCancel={() => navigate('/tests')}
             onDelete={canDelete ? handleDelete : undefined}
             loading={form.isSubmitting || loading}
             isEditing={!isNew}

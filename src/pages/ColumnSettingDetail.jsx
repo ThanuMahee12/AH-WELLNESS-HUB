@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap'
-import { FaCog, FaArrowLeft } from 'react-icons/fa'
+import { FaCog } from 'react-icons/fa'
+import { Breadcrumb } from '../components/ui'
 import { updateSettings } from '../store/settingsSlice'
 import { useSettings } from '../hooks'
 import { ENTITY_LABELS, FIELD_TYPE_OPTIONS, COL_SIZE_OPTIONS, ALL_ROLES } from '../constants/defaultSettings'
@@ -114,12 +115,14 @@ function ColumnSettingDetail() {
   if (!isNew && !existing && settings?.tables?.[entity]) {
     return (
       <Container fluid className="p-3 p-md-4">
+        <Breadcrumb
+          items={[{ label: 'Settings', path: '/settings' }]}
+          current="Not Found"
+        />
         <Card>
           <Card.Body className="text-center py-5">
             <h4>Column not found</h4>
-            <Button onClick={() => navigate('/settings')} className="btn-theme">
-              <FaArrowLeft className="me-2" /> Back to Settings
-            </Button>
+            <p className="text-muted">The column you're looking for doesn't exist or has been removed.</p>
           </Card.Body>
         </Card>
       </Container>
@@ -128,6 +131,11 @@ function ColumnSettingDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
+      <Breadcrumb
+        items={[{ label: 'Settings', path: '/settings' }]}
+        current={isNew ? 'New Column' : (columnKey || 'Edit Column')}
+      />
+
       {/* Header */}
       <Row className="mb-4">
         <Col>
@@ -304,13 +312,7 @@ function ColumnSettingDetail() {
                 </Form.Group>
               </Form>
             </Card.Body>
-            <Card.Footer className="entity-form-footer d-flex justify-content-between flex-wrap gap-2">
-              <Button
-                variant="outline-secondary"
-                onClick={() => navigate('/settings')}
-              >
-                <FaArrowLeft className="me-2" /> Back
-              </Button>
+            <Card.Footer className="entity-form-footer justify-content-end">
               <Button
                 className="btn-theme"
                 onClick={handleSave}

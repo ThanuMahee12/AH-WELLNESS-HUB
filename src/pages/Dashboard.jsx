@@ -1,14 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Container, Row, Col, Card, ButtonGroup, Button } from 'react-bootstrap'
-import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaFilter, FaEye } from 'react-icons/fa'
+import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaEye } from 'react-icons/fa'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchUsers, selectAllUsers } from '../store/usersSlice'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import { useResponsive } from '../hooks'
+import {
+  calculateTotalRevenue,
+  calculateTotalCommission,
+  calculateAverageBill,
+  getHighestBill,
+  filterCheckupsByDateRange,
+  filterCheckupsByPerformanceRange,
+  getComparisonCheckups,
+  getDateRangeChartData,
+  getMonthlyRevenueData,
+  getTestDistribution,
+  getYearOptions,
+  getComparisonLabel
+} from '../utils/calculations'
 
 function Dashboard() {
   const dispatch = useDispatch()
@@ -21,6 +36,7 @@ function Dashboard() {
   const { loading: testsLoading } = useSelector(state => state.tests)
   const { loading: checkupsLoading } = useSelector(state => state.checkups)
   const { loading: usersLoading } = useSelector(state => state.users)
+  const { isMobile, isTablet } = useResponsive()
 
   const [dateRange, setDateRange] = useState(7) // Default: Past 7 days
   const [performanceRange, setPerformanceRange] = useState('today') // today, yesterday, week, month, year
@@ -35,222 +51,45 @@ function Dashboard() {
 
   const loading = patientsLoading || testsLoading || checkupsLoading || usersLoading
 
+  // Memoized calculations using utility functions
+  const totalRevenue = useMemo(() => calculateTotalRevenue(checkups), [checkups])
+  const totalCommission = useMemo(() => calculateTotalCommission(checkups, tests), [checkups, tests])
+  const filteredCheckups = useMemo(() => filterCheckupsByDateRange(checkups, dateRange), [checkups, dateRange])
+  const chartData = useMemo(() => getDateRangeChartData(checkups, tests, dateRange), [checkups, tests, dateRange])
+
+  const testDistribution = useMemo(() => getTestDistribution(checkups, tests), [checkups, tests])
+  const monthlyRevenue = useMemo(() => getMonthlyRevenueData(checkups, selectedYear), [checkups, selectedYear])
+  const yearOptions = useMemo(() => getYearOptions(), [])
+
+  // Performance stats using utility functions
+  const performanceCheckups = useMemo(
+    () => filterCheckupsByPerformanceRange(checkups, performanceRange),
+    [checkups, performanceRange]
+  )
+  const comparisonCheckups = useMemo(
+    () => getComparisonCheckups(checkups, performanceRange),
+    [checkups, performanceRange]
+  )
+  const performanceRevenue = useMemo(
+    () => calculateTotalRevenue(performanceCheckups),
+    [performanceCheckups]
+  )
+  const performanceCommission = useMemo(
+    () => calculateTotalCommission(performanceCheckups, tests),
+    [performanceCheckups, tests]
+  )
+  const avgBillAmount = useMemo(
+    () => calculateAverageBill(performanceCheckups),
+    [performanceCheckups]
+  )
+  const highestBill = useMemo(
+    () => getHighestBill(performanceCheckups),
+    [performanceCheckups]
+  )
+
   if (loading && patients.length === 0) {
     return <LoadingSpinner text="Loading dashboard..." />
   }
-
-  // Filter checkups by date range
-  const getFilteredCheckups = () => {
-    const now = new Date()
-    const startDate = new Date()
-    startDate.setDate(now.getDate() - dateRange)
-
-    return checkups.filter(c => {
-      const checkupDate = new Date(c.timestamp)
-      return checkupDate >= startDate && checkupDate <= now
-    })
-  }
-
-  const filteredCheckups = getFilteredCheckups()
-  const totalRevenue = checkups.reduce((sum, c) => sum + (c.total || 0), 0)
-  const filteredRevenue = filteredCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
-
-  // Calculate commission revenue
-  const calculateCommission = (checkup) => {
-    return checkup.tests?.reduce((sum, testItem) => {
-      const test = tests.find(t => t.id === testItem.testId)
-      if (test) {
-        const testPrice = test.price || 0
-        const testPercentage = test.percentage || 20
-        const commission = (testPrice * testPercentage) / 100
-        return sum + commission
-      }
-      return sum
-    }, 0) || 0
-  }
-
-  const totalCommission = checkups.reduce((sum, c) => sum + calculateCommission(c), 0)
-  const filteredCommission = filteredCheckups.reduce((sum, c) => sum + calculateCommission(c), 0)
-
-  // Prepare chart data based on selected date range
-  const getDateRangeData = () => {
-    const data = []
-    for (let i = dateRange - 1; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-
-      const dayCheckups = checkups.filter(c => {
-        const checkupDate = new Date(c.timestamp)
-        return checkupDate.toDateString() === date.toDateString()
-      })
-
-      const dayRevenue = dayCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
-      const dayCommission = dayCheckups.reduce((sum, c) => sum + calculateCommission(c), 0)
-
-      data.push({
-        date: dateStr,
-        checkups: dayCheckups.length,
-        revenue: dayRevenue,
-        commission: dayCommission
-      })
-    }
-    return data
-  }
-
-  const getTestDistribution = () => {
-    const testCounts = {}
-    // Use all checkups, not filtered
-    checkups.forEach(checkup => {
-      checkup.tests?.forEach(testItem => {
-        const test = tests.find(t => t.id === testItem.testId)
-        if (test) {
-          testCounts[test.name] = (testCounts[test.name] || 0) + 1
-        }
-      })
-    })
-
-    return Object.entries(testCounts).map(([name, count]) => ({
-      name,
-      value: count
-    })).slice(0, 5)
-  }
-
-  const getMonthlyRevenue = (year) => {
-    // Create array for all 12 months
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-    // Initialize all months with 0 revenue
-    const monthlyData = monthNames.map(month => ({
-      month,
-      revenue: 0
-    }))
-
-    // Fill in actual revenue data - Use all checkups for the selected year
-    checkups.forEach(checkup => {
-      const date = new Date(checkup.timestamp)
-      if (date.getFullYear() === year) {
-        const monthIndex = date.getMonth()
-        monthlyData[monthIndex].revenue += checkup.total || 0
-      }
-    })
-
-    return monthlyData.map(data => ({
-      month: data.month,
-      revenue: Math.round(data.revenue)
-    }))
-  }
-
-  // Generate year options from 2025 to current year
-  const getYearOptions = () => {
-    const currentYear = new Date().getFullYear()
-    const startYear = 2025
-    const years = []
-    for (let year = startYear; year <= currentYear; year++) {
-      years.push(year)
-    }
-    return years
-  }
-
-  const chartData = getDateRangeData()
-  const testDistribution = getTestDistribution()
-  const monthlyRevenue = getMonthlyRevenue(selectedYear)
-  const yearOptions = getYearOptions()
-
-  // Helper function to get date range for performance stats
-  const getPerformanceCheckups = (range) => {
-    const now = new Date()
-    let startDate = new Date()
-    let endDate = new Date()
-
-    switch (range) {
-      case 'today':
-        return checkups.filter(c => new Date(c.timestamp).toDateString() === now.toDateString())
-
-      case 'yesterday':
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-        return checkups.filter(c => new Date(c.timestamp).toDateString() === yesterday.toDateString())
-
-      case 'week':
-        startDate.setDate(now.getDate() - now.getDay()) // Start of week (Sunday)
-        startDate.setHours(0, 0, 0, 0)
-        return checkups.filter(c => {
-          const checkupDate = new Date(c.timestamp)
-          return checkupDate >= startDate && checkupDate <= now
-        })
-
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-        return checkups.filter(c => {
-          const checkupDate = new Date(c.timestamp)
-          return checkupDate >= startDate && checkupDate <= now
-        })
-
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1)
-        return checkups.filter(c => {
-          const checkupDate = new Date(c.timestamp)
-          return checkupDate >= startDate && checkupDate <= now
-        })
-
-      default:
-        return []
-    }
-  }
-
-  // Get comparison period checkups
-  const getComparisonCheckups = (range) => {
-    const now = new Date()
-
-    switch (range) {
-      case 'today':
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-        return checkups.filter(c => new Date(c.timestamp).toDateString() === yesterday.toDateString())
-
-      case 'yesterday':
-        const dayBefore = new Date()
-        dayBefore.setDate(dayBefore.getDate() - 2)
-        return checkups.filter(c => new Date(c.timestamp).toDateString() === dayBefore.toDateString())
-
-      case 'week':
-        const lastWeekStart = new Date()
-        lastWeekStart.setDate(now.getDate() - now.getDay() - 7)
-        lastWeekStart.setHours(0, 0, 0, 0)
-        const lastWeekEnd = new Date()
-        lastWeekEnd.setDate(now.getDate() - now.getDay() - 1)
-        lastWeekEnd.setHours(23, 59, 59, 999)
-        return checkups.filter(c => {
-          const checkupDate = new Date(c.timestamp)
-          return checkupDate >= lastWeekStart && checkupDate <= lastWeekEnd
-        })
-
-      case 'month':
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
-        return checkups.filter(c => {
-          const checkupDate = new Date(c.timestamp)
-          return checkupDate >= lastMonth && checkupDate <= lastMonthEnd
-        })
-
-      case 'year':
-        const lastYear = new Date(now.getFullYear() - 1, 0, 1)
-        const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31)
-        return checkups.filter(c => {
-          const checkupDate = new Date(c.timestamp)
-          return checkupDate >= lastYear && checkupDate <= lastYearEnd
-        })
-
-      default:
-        return []
-    }
-  }
-
-  const performanceCheckups = getPerformanceCheckups(performanceRange)
-  const comparisonCheckups = getComparisonCheckups(performanceRange)
-  const performanceRevenue = performanceCheckups.reduce((sum, c) => sum + (c.total || 0), 0)
-  const performanceCommission = performanceCheckups.reduce((sum, c) => sum + calculateCommission(c), 0)
 
   const COLORS = ['#0891B2', '#06B6D4', '#22D3EE', '#F59E0B', '#14B8A6']
 
@@ -358,60 +197,28 @@ function Dashboard() {
                   Checkups & Revenue Trend
                 </h5>
                 <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 w-100 w-lg-auto">
-                  <ButtonGroup size="sm" className="w-100 w-sm-auto">
+                  <ButtonGroup size="sm" className="w-100 w-sm-auto chart-btn-group">
                     <Button
-                      variant={dateRange === 7 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(7)}
-                      className="flex-grow-1 flex-sm-grow-0"
-                      style={{
-                        backgroundColor: dateRange === 7 ? 'white' : 'transparent',
-                        borderColor: 'white',
-                        color: dateRange === 7 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 7 ? '600' : 'normal',
-                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
-                      }}
+                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 7 ? ' active' : ''}`}
                     >
                       7d
                     </Button>
                     <Button
-                      variant={dateRange === 30 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(30)}
-                      className="flex-grow-1 flex-sm-grow-0"
-                      style={{
-                        backgroundColor: dateRange === 30 ? 'white' : 'transparent',
-                        borderColor: 'white',
-                        color: dateRange === 30 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 30 ? '600' : 'normal',
-                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
-                      }}
+                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 30 ? ' active' : ''}`}
                     >
                       30d
                     </Button>
                     <Button
-                      variant={dateRange === 60 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(60)}
-                      className="flex-grow-1 flex-sm-grow-0"
-                      style={{
-                        backgroundColor: dateRange === 60 ? 'white' : 'transparent',
-                        borderColor: 'white',
-                        color: dateRange === 60 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 60 ? '600' : 'normal',
-                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
-                      }}
+                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 60 ? ' active' : ''}`}
                     >
                       60d
                     </Button>
                     <Button
-                      variant={dateRange === 90 ? 'light' : 'outline-light'}
                       onClick={() => setDateRange(90)}
-                      className="flex-grow-1 flex-sm-grow-0"
-                      style={{
-                        backgroundColor: dateRange === 90 ? 'white' : 'transparent',
-                        borderColor: 'white',
-                        color: dateRange === 90 ? '#0891B2' : 'white',
-                        fontWeight: dateRange === 90 ? '600' : 'normal',
-                        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
-                      }}
+                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 90 ? ' active' : ''}`}
                     >
                       90d
                     </Button>
@@ -481,7 +288,7 @@ function Dashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={320}>
-                  <PieChart margin={{ top: 10, right: window.innerWidth < 576 ? 10 : 80, bottom: 10, left: window.innerWidth < 576 ? 10 : 80 }}>
+                  <PieChart margin={{ top: 10, right: isMobile ? 10 : 80, bottom: 10, left: isMobile ? 10 : 80 }}>
                     <Pie
                       data={testDistribution}
                       cx="50%"
@@ -489,11 +296,10 @@ function Dashboard() {
                       labelLine={{
                         stroke: '#666',
                         strokeWidth: 1,
-                        length: window.innerWidth < 576 ? 10 : 20
+                        length: isMobile ? 10 : 20
                       }}
                       label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
                         const RADIAN = Math.PI / 180;
-                        const isMobile = window.innerWidth < 576;
                         const radius = outerRadius + (isMobile ? 20 : 35);
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -510,7 +316,7 @@ function Dashboard() {
                           </text>
                         );
                       }}
-                      outerRadius={70}
+                      outerRadius={isMobile ? 60 : 70}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -575,69 +381,34 @@ function Dashboard() {
             <Card.Header className="bg-theme-gradient text-white">
               <div className="d-flex flex-column gap-2">
                 <h5 className="mb-0"><FaCalendarAlt className="me-2" />Performance Stats</h5>
-                <ButtonGroup size="sm">
+                <ButtonGroup size="sm" className="chart-btn-group">
                   <Button
-                    variant={performanceRange === 'today' ? 'light' : 'outline-light'}
                     onClick={() => setPerformanceRange('today')}
-                    style={{
-                      backgroundColor: performanceRange === 'today' ? 'white' : 'transparent',
-                      borderColor: 'white',
-                      color: performanceRange === 'today' ? '#0891B2' : 'white',
-                      fontWeight: performanceRange === 'today' ? '600' : 'normal',
-                      fontSize: '0.75rem'
-                    }}
+                    className={`btn-filter${performanceRange === 'today' ? ' active' : ''}`}
                   >
                     Today
                   </Button>
                   <Button
-                    variant={performanceRange === 'yesterday' ? 'light' : 'outline-light'}
                     onClick={() => setPerformanceRange('yesterday')}
-                    style={{
-                      backgroundColor: performanceRange === 'yesterday' ? 'white' : 'transparent',
-                      borderColor: 'white',
-                      color: performanceRange === 'yesterday' ? '#0891B2' : 'white',
-                      fontWeight: performanceRange === 'yesterday' ? '600' : 'normal',
-                      fontSize: '0.75rem'
-                    }}
+                    className={`btn-filter${performanceRange === 'yesterday' ? ' active' : ''}`}
                   >
                     Yesterday
                   </Button>
                   <Button
-                    variant={performanceRange === 'week' ? 'light' : 'outline-light'}
                     onClick={() => setPerformanceRange('week')}
-                    style={{
-                      backgroundColor: performanceRange === 'week' ? 'white' : 'transparent',
-                      borderColor: 'white',
-                      color: performanceRange === 'week' ? '#0891B2' : 'white',
-                      fontWeight: performanceRange === 'week' ? '600' : 'normal',
-                      fontSize: '0.75rem'
-                    }}
+                    className={`btn-filter${performanceRange === 'week' ? ' active' : ''}`}
                   >
                     Week
                   </Button>
                   <Button
-                    variant={performanceRange === 'month' ? 'light' : 'outline-light'}
                     onClick={() => setPerformanceRange('month')}
-                    style={{
-                      backgroundColor: performanceRange === 'month' ? 'white' : 'transparent',
-                      borderColor: 'white',
-                      color: performanceRange === 'month' ? '#0891B2' : 'white',
-                      fontWeight: performanceRange === 'month' ? '600' : 'normal',
-                      fontSize: '0.75rem'
-                    }}
+                    className={`btn-filter${performanceRange === 'month' ? ' active' : ''}`}
                   >
                     Month
                   </Button>
                   <Button
-                    variant={performanceRange === 'year' ? 'light' : 'outline-light'}
                     onClick={() => setPerformanceRange('year')}
-                    style={{
-                      backgroundColor: performanceRange === 'year' ? 'white' : 'transparent',
-                      borderColor: 'white',
-                      color: performanceRange === 'year' ? '#0891B2' : 'white',
-                      fontWeight: performanceRange === 'year' ? '600' : 'normal',
-                      fontSize: '0.75rem'
-                    }}
+                    className={`btn-filter${performanceRange === 'year' ? ' active' : ''}`}
                   >
                     Year
                   </Button>
@@ -665,10 +436,7 @@ function Dashboard() {
                       </td>
                       <td className="py-3 px-4 text-end">
                         <div className="small text-muted">
-                          vs {performanceRange === 'today' ? 'Yesterday' :
-                             performanceRange === 'yesterday' ? 'Day Before' :
-                             performanceRange === 'week' ? 'Last Week' :
-                             performanceRange === 'month' ? 'Last Month' : 'Last Year'}
+                          vs {getComparisonLabel(performanceRange)}
                         </div>
                         <div className={`badge ${performanceCheckups.length - comparisonCheckups.length >= 0 ? 'bg-success' : 'bg-danger'}`}>
                           {(() => {
@@ -712,7 +480,7 @@ function Dashboard() {
                           <div>
                             <div className="text-muted small">Avg. Bill Amount</div>
                             <strong className="fs-5 text-info">
-                              Rs. {performanceCheckups.length > 0 ? (performanceRevenue / performanceCheckups.length).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                              Rs. {avgBillAmount.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </strong>
                           </div>
                         </div>
@@ -720,7 +488,7 @@ function Dashboard() {
                       <td className="py-3 px-4 text-end">
                         <div className="small text-muted">Highest Bill</div>
                         <div className="fw-bold text-theme-amber">
-                          Rs. {performanceCheckups.length > 0 ? Math.max(...performanceCheckups.map(c => c.total || 0)).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                          Rs. {highestBill.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </td>
                     </tr>

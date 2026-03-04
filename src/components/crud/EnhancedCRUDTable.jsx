@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Table, Button, Card, Form, Row, Col, Pagination, InputGroup } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaSearch, FaSortUp, FaSortDown, FaSort } from 'react-icons/fa';
+import { Table, Button, Card, Form, Row, Col, Pagination, InputGroup, Dropdown } from 'react-bootstrap';
+import { FaEdit, FaTrash, FaSearch, FaSortUp, FaSortDown, FaSort, FaSortAmountDown } from 'react-icons/fa';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
 
@@ -116,6 +116,17 @@ const EnhancedCRUDTable = React.memo(({
       : <FaSortDown className="ms-1 text-theme" />;
   };
 
+  // Get sortable columns for mobile dropdown
+  const sortableColumns = columns.filter(col => col.sortable !== false);
+
+  // Get current sort label for mobile dropdown
+  const getCurrentSortLabel = () => {
+    if (!sortConfig.key) return 'Sort by...';
+    const column = columns.find(c => c.key === sortConfig.key);
+    const direction = sortConfig.direction === 'asc' ? '↑' : '↓';
+    return `${column?.label || sortConfig.key} ${direction}`;
+  };
+
   const defaultRenderActions = (item) => (
     <>
       {onEdit && (
@@ -191,6 +202,57 @@ const EnhancedCRUDTable = React.memo(({
             </small>
           </Col>
         </Row>
+
+        {/* Mobile Sort Dropdown - Only visible on mobile */}
+        {sortableColumns.length > 0 && (
+          <Row className="mt-2 d-md-none">
+            <Col xs={12}>
+              <Dropdown className="mobile-sort-dropdown">
+                <Dropdown.Toggle
+                  variant="outline-secondary"
+                  size="sm"
+                  className="w-100 d-flex align-items-center justify-content-between"
+                >
+                  <span>
+                    <FaSortAmountDown className="me-2" />
+                    {getCurrentSortLabel()}
+                  </span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="w-100">
+                  {sortConfig.key && (
+                    <>
+                      <Dropdown.Item
+                        onClick={() => setSortConfig({ key: null, direction: null })}
+                        className="text-muted"
+                      >
+                        Clear sort
+                      </Dropdown.Item>
+                      <Dropdown.Divider />
+                    </>
+                  )}
+                  {sortableColumns.map((column) => (
+                    <React.Fragment key={column.key}>
+                      <Dropdown.Item
+                        onClick={() => setSortConfig({ key: column.key, direction: 'asc' })}
+                        active={sortConfig.key === column.key && sortConfig.direction === 'asc'}
+                      >
+                        <FaSortUp className="me-2" />
+                        {column.label} (A-Z)
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setSortConfig({ key: column.key, direction: 'desc' })}
+                        active={sortConfig.key === column.key && sortConfig.direction === 'desc'}
+                      >
+                        <FaSortDown className="me-2" />
+                        {column.label} (Z-A)
+                      </Dropdown.Item>
+                    </React.Fragment>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Col>
+          </Row>
+        )}
       </Card.Header>
 
       {/* Table */}

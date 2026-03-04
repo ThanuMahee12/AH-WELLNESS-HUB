@@ -26,8 +26,8 @@ function Medicines() {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/medicines/${item.id}`)}
-          className="clickable-link text-theme fs-responsive-base"
-          style={{ whiteSpace: 'nowrap' }}
+          className="clickable-link text-theme"
+          style={{ whiteSpace: 'nowrap', fontSize: '0.875rem' }}
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
         >
@@ -42,7 +42,7 @@ function Medicines() {
           wordWrap: 'break-word',
           maxWidth: window.innerWidth < 768 ? '120px' : '200px',
           display: 'inline-block',
-          fontSize: 'clamp(0.85rem, 2vw, 1rem)'
+          fontSize: '0.875rem'
         }}>
           {value}
         </strong>
@@ -50,10 +50,7 @@ function Medicines() {
     },
     brand: {
       render: (value) => (
-        <span style={{
-          whiteSpace: 'nowrap',
-          fontSize: 'clamp(0.85rem, 2vw, 1rem)'
-        }}>
+        <span style={{ whiteSpace: 'nowrap', fontSize: '0.875rem' }}>
           {value}
         </span>
       )
@@ -61,15 +58,12 @@ function Medicines() {
     dosage: {
       render: (value) => {
         const dosages = Array.isArray(value) ? value : (value ? [value] : [])
-        return dosages.length > 0 ? dosages.join(', ') : '-'
+        return <span style={{ fontSize: '0.875rem' }}>{dosages.length > 0 ? dosages.join(', ') : '-'}</span>
       }
     },
     unit: {
       render: (value) => (
-        <span style={{
-          whiteSpace: 'nowrap',
-          fontSize: 'clamp(0.85rem, 2vw, 1rem)'
-        }}>
+        <span style={{ whiteSpace: 'nowrap', fontSize: '0.875rem' }}>
           {value}
         </span>
       )
@@ -80,7 +74,7 @@ function Medicines() {
           whiteSpace: 'pre-wrap',
           wordWrap: 'break-word',
           maxWidth: window.innerWidth < 768 ? '120px' : '250px',
-          fontSize: 'clamp(0.85rem, 2vw, 0.95rem)',
+          fontSize: '0.85rem',
           lineHeight: '1.4'
         }}>
           {value || '-'}

@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Spinner } from 'react-bootstrap'
-import { FaUsers, FaArrowLeft, FaKey, FaBan, FaCheckCircle } from 'react-icons/fa'
+import { FaUsers, FaKey, FaBan, FaCheckCircle } from 'react-icons/fa'
+import { Breadcrumb } from '../components/ui'
 import { fetchUsers, updateUser, deleteUser, toggleUserStatus, selectAllUsers } from '../store/usersSlice'
 import { registerUser } from '../store/authSlice'
 import { authService } from '../services/authService'
@@ -178,16 +179,14 @@ function UserDetail() {
   if (!isNew && !user && users.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
+        <Breadcrumb
+          items={[{ label: 'Users', path: '/users' }]}
+          current="Not Found"
+        />
         <Card>
           <Card.Body className="text-center py-5">
             <h4>User not found</h4>
-            <Button
-              onClick={() => navigate('/users')}
-              className="btn-theme"
-            >
-              <FaArrowLeft className="me-2" />
-              Back to Users
-            </Button>
+            <p className="text-muted">The user you're looking for doesn't exist or has been removed.</p>
           </Card.Body>
         </Card>
       </Container>
@@ -199,6 +198,11 @@ function UserDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
+      <Breadcrumb
+        items={[{ label: 'Users', path: '/users' }]}
+        current={isNew ? 'New User' : (user?.username || 'User Details')}
+      />
+
       <Row className="mb-4">
         <Col>
           <h2 className="fs-responsive-lg">
@@ -217,7 +221,6 @@ function UserDetail() {
             formErrors={form.errors}
             onFormChange={form.handleChange}
             onSubmit={form.handleSubmit}
-            onCancel={() => navigate('/users')}
             onDelete={canDelete ? handleDelete : undefined}
             loading={form.isSubmitting || loading}
             isEditing={!isNew}

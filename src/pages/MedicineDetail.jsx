@@ -1,12 +1,13 @@
 import { useEffect, useCallback, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button, Form, Badge } from 'react-bootstrap'
-import { FaPills, FaArrowLeft, FaTimes } from 'react-icons/fa'
+import { Container, Row, Col, Card, Form, Badge } from 'react-bootstrap'
+import { FaPills, FaTimes } from 'react-icons/fa'
 import { selectAllMedicines, addMedicine, updateMedicine, deleteMedicine, fetchMedicines } from '../store/medicinesSlice'
 import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
+import { Breadcrumb } from '../components/ui'
 import { usePermission } from '../components/auth/PermissionGate'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 import FormField from '../components/ui/FormField'
@@ -244,16 +245,14 @@ function MedicineDetail() {
   if (!isNew && !medicine && medicines.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
+        <Breadcrumb
+          items={[{ label: 'Medicines', path: '/medicines' }]}
+          current="Not Found"
+        />
         <Card>
           <Card.Body className="text-center py-5">
             <h4>Medicine not found</h4>
-            <Button
-              onClick={() => navigate('/medicines')}
-              className="btn-theme"
-            >
-              <FaArrowLeft className="me-2" />
-              Back to Medicines
-            </Button>
+            <p className="text-muted">The medicine you're looking for doesn't exist or has been removed.</p>
           </Card.Body>
         </Card>
       </Container>
@@ -266,6 +265,11 @@ function MedicineDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
+      <Breadcrumb
+        items={[{ label: 'Medicines', path: '/medicines' }]}
+        current={isNew ? 'New Medicine' : (medicine?.name || 'Medicine Details')}
+      />
+
       <Row className="mb-4">
         <Col>
           <h2 className="fs-responsive-lg">
@@ -283,7 +287,6 @@ function MedicineDetail() {
             formErrors={form.errors}
             onFormChange={form.handleChange}
             onSubmit={form.handleSubmit}
-            onCancel={() => navigate('/medicines')}
             onDelete={canDelete ? handleDelete : undefined}
             loading={form.isSubmitting || loading}
             isEditing={!isNew}

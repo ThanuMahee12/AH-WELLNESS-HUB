@@ -89,14 +89,7 @@ function AppContent() {
       <div className="d-flex flex-grow-1" style={{ marginTop: showNavbar ? '60px' : '0', overflow: 'hidden', width: '100%' }}>
         {showSidebar && <Sidebar />}
         <div
-          className="flex-grow-1"
-          style={{
-            marginLeft: 0,
-            paddingLeft: showSidebar ? '250px' : '0',
-            width: '100%',
-            maxWidth: '100vw',
-            overflow: 'auto'
-          }}
+          className={`flex-grow-1 main-content${showSidebar ? '' : ' no-sidebar'}`}
         >
           <Suspense fallback={<LoadingSpinner text="Loading page..." />}>
             <Routes>
