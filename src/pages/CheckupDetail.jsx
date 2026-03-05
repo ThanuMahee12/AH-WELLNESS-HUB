@@ -462,7 +462,9 @@ function CheckupDetail() {
   }
 
   const handleGeneratePDF = async () => {
+    console.log('[PDF] === INVOICE PDF GENERATION START ===')
     if (!billRef.current) {
+      console.error('[PDF] billRef.current is null')
       alert('Invoice content not found. Please refresh the page and try again.')
       return
     }
@@ -472,6 +474,10 @@ function CheckupDetail() {
     try {
       // Ensure the element is visible and has content
       const element = billRef.current
+      console.log('[PDF] element offsetHeight:', element.offsetHeight, 'offsetWidth:', element.offsetWidth)
+      console.log('[PDF] element offsetParent:', element.offsetParent)
+      console.log('[PDF] element innerHTML length:', element.innerHTML.length)
+
       if (!element.offsetParent && element.offsetHeight === 0) {
         throw new Error('Invoice element is not visible')
       }
@@ -481,6 +487,8 @@ function CheckupDetail() {
       const pageWidthPx = Math.round(pageWidthMm * 96 / 25.4)
       const clonePadding = pageWidthMm < 100 ? '8px' : pageWidthMm <= 160 ? '15px' : '25px'
       const cloneFontSize = pageWidthMm < 100 ? '0.65rem' : pageWidthMm <= 160 ? '0.75rem' : '0.85rem'
+      console.log('[PDF] pageWidthMm:', pageWidthMm, 'pageWidthPx:', pageWidthPx)
+      console.log('[PDF] clonePadding:', clonePadding, 'cloneFontSize:', cloneFontSize)
 
       // Clone the bill content to avoid modifying the original
       const billClone = element.cloneNode(true)
@@ -496,18 +504,29 @@ function CheckupDetail() {
       billClone.style.visibility = 'visible'
       document.body.appendChild(billClone)
 
+      console.log('[PDF] Clone appended. scrollWidth:', billClone.scrollWidth, 'scrollHeight:', billClone.scrollHeight)
+      console.log('[PDF] Clone offsetWidth:', billClone.offsetWidth, 'offsetHeight:', billClone.offsetHeight)
+      console.log('[PDF] Clone clientWidth:', billClone.clientWidth, 'clientHeight:', billClone.clientHeight)
+      console.log('[PDF] Clone children count:', billClone.children.length)
+      console.log('[PDF] Clone classList:', [...billClone.classList])
+      console.log('[PDF] Clone computed width:', window.getComputedStyle(billClone).width)
+      console.log('[PDF] Clone computed display:', window.getComputedStyle(billClone).display)
+      console.log('[PDF] Clone computed visibility:', window.getComputedStyle(billClone).visibility)
+
       // Wait for images to load
       const images = billClone.getElementsByTagName('img')
+      console.log('[PDF] Images found:', images.length)
       await Promise.all(
-        Array.from(images).map(img => {
+        Array.from(images).map((img, i) => {
+          console.log(`[PDF] Image ${i}: src=${img.src}, complete=${img.complete}, naturalWidth=${img.naturalWidth}`)
           if (img.complete) return Promise.resolve()
-          return new Promise((resolve, reject) => {
-            img.onload = resolve
+          return new Promise((resolve) => {
+            img.onload = () => { console.log(`[PDF] Image ${i} loaded`); resolve() }
             img.onerror = () => {
-              console.warn('Image failed to load:', img.src)
+              console.warn(`[PDF] Image ${i} failed to load:`, img.src)
               resolve()
             }
-            setTimeout(resolve, 3000)
+            setTimeout(() => { console.log(`[PDF] Image ${i} timeout`); resolve() }, 3000)
           })
         })
       )
@@ -515,8 +534,11 @@ function CheckupDetail() {
       // Allow layout to settle before capturing
       await new Promise(resolve => setTimeout(resolve, 200))
 
+      console.log('[PDF] After settle - scrollWidth:', billClone.scrollWidth, 'scrollHeight:', billClone.scrollHeight)
+      console.log('[PDF] After settle - offsetWidth:', billClone.offsetWidth, 'offsetHeight:', billClone.offsetHeight)
+
       // Generate canvas from the clone — windowWidth >= 800 to avoid mobile media queries
-      const canvas = await html2canvas(billClone, {
+      const html2canvasOptions = {
         scale: 2,
         useCORS: true,
         logging: true,
@@ -525,16 +547,23 @@ function CheckupDetail() {
         windowWidth: Math.max(pageWidthPx, 800),
         width: billClone.scrollWidth,
         height: billClone.scrollHeight,
-      })
+      }
+      console.log('[PDF] html2canvas options:', JSON.stringify(html2canvasOptions))
+
+      const canvas = await html2canvas(billClone, html2canvasOptions)
+
+      console.log('[PDF] Canvas generated. width:', canvas?.width, 'height:', canvas?.height)
 
       // Remove the clone
       document.body.removeChild(billClone)
 
       if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        console.error('[PDF] Canvas is empty! canvas:', canvas)
         throw new Error('Failed to generate canvas from invoice')
       }
 
       const imgData = canvas.toDataURL('image/png')
+      console.log('[PDF] imgData length:', imgData?.length, 'starts with:', imgData?.substring(0, 30))
 
       if (!imgData || imgData === 'data:,') {
         throw new Error('Failed to convert canvas to image')
