@@ -309,6 +309,7 @@ function CheckupDetail() {
       const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : rxPageWidthMm <= 160 ? '0.75rem' : '0.85rem'
 
       const prescriptionClone = element.cloneNode(true)
+      prescriptionClone.classList.add('printing')
       prescriptionClone.style.position = 'absolute'
       prescriptionClone.style.left = '-9999px'
       prescriptionClone.style.top = '0'
@@ -339,10 +340,10 @@ function CheckupDetail() {
       const canvas = await html2canvas(prescriptionClone, {
         scale: 2,
         useCORS: true,
-        logging: true,
+        logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: Math.max(rxPageWidthPx, 800),
+        windowWidth: rxPageWidthPx,
         width: prescriptionClone.scrollWidth,
         height: prescriptionClone.scrollHeight,
       })
@@ -370,10 +371,10 @@ function CheckupDetail() {
       const imgWidth = canvas.width
       const imgHeight = canvas.height
 
-      const marginTop = 10
-      const marginBottom = 10
+      const marginTop = 5
+      const marginBottom = 5
       const availableHeight = pdfHeight - marginTop - marginBottom
-      const availableWidth = pdfWidth - 10
+      const availableWidth = pdfWidth - 6
 
       const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
       const imgScaledWidth = imgWidth * ratio
@@ -479,6 +480,7 @@ function CheckupDetail() {
 
       // Clone the bill content to avoid modifying the original
       const billClone = element.cloneNode(true)
+      billClone.classList.add('printing')
       billClone.style.position = 'absolute'
       billClone.style.left = '-9999px'
       billClone.style.top = '0'
@@ -510,10 +512,10 @@ function CheckupDetail() {
       const canvas = await html2canvas(billClone, {
         scale: 2,
         useCORS: true,
-        logging: true,
+        logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: Math.max(pageWidthPx, 800),
+        windowWidth: pageWidthPx,
         width: billClone.scrollWidth,
         height: billClone.scrollHeight,
       })
@@ -543,11 +545,11 @@ function CheckupDetail() {
       const imgWidth = canvas.width
       const imgHeight = canvas.height
 
-      // Calculate dimensions to fit content on ONE page with margins
-      const marginTop = 10
-      const marginBottom = 10
+      // Calculate dimensions to fit content on ONE page with minimal margins
+      const marginTop = 5
+      const marginBottom = 5
       const availableHeight = pdfHeight - marginTop - marginBottom
-      const availableWidth = pdfWidth - 10 // 5mm margin on each side
+      const availableWidth = pdfWidth - 6 // 3mm margin on each side
 
       // Scale to fit within page bounds
       const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
@@ -814,10 +816,11 @@ function CheckupDetail() {
           overflow: visible;
         }
 
-        /* === PDF / Print: A5 & general printing === */
+        /* === PDF / Print: compact professional layout === */
         .bill-content.printing {
           overflow: visible;
           page-break-inside: avoid;
+          padding: 12px !important;
         }
         .bill-content.printing * {
           box-sizing: border-box;
@@ -826,28 +829,112 @@ function CheckupDetail() {
           max-width: 100%;
           height: auto;
         }
+
+        /* Header */
         .bill-content.printing .header-section img {
-          height: 40px !important;
+          height: 35px !important;
+        }
+        .bill-content.printing .template-logo-asiri {
+          height: 28px !important;
         }
         .bill-content.printing .header-section h4 {
-          font-size: 0.85rem !important;
+          font-size: 0.8rem !important;
         }
         .bill-content.printing .header-section p,
         .bill-content.printing .header-section div {
-          font-size: 0.6rem !important;
-        }
-        .bill-content.printing .footer-section {
           font-size: 0.55rem !important;
         }
-        .bill-content.printing .footer-section img {
-          height: 12px !important;
+
+        /* Patient info */
+        .bill-content.printing .template-patient {
+          font-size: 0.65rem !important;
         }
+
+        /* Tables — compact rows */
         .bill-content.printing table {
-          font-size: 0.75rem !important;
+          font-size: 0.7rem !important;
         }
-        .bill-content.printing th,
+        .bill-content.printing th {
+          padding: 0.2rem 0.4rem !important;
+          font-size: 0.65rem !important;
+        }
         .bill-content.printing td {
-          padding: 0.3rem 0.4rem !important;
+          padding: 0.15rem 0.4rem !important;
+        }
+
+        /* Prescription table — even tighter */
+        .bill-content.printing .prescription-table {
+          font-size: 0.65rem !important;
+        }
+        .bill-content.printing .prescription-table th {
+          padding: 0.2rem 0.3rem !important;
+          font-size: 0.6rem !important;
+        }
+        .bill-content.printing .prescription-table td {
+          padding: 0.15rem 0.3rem !important;
+        }
+
+        /* Section headings */
+        .bill-content.printing h6 {
+          font-size: 0.7rem !important;
+          margin-bottom: 0.3rem !important;
+        }
+
+        /* Notes */
+        .bill-content.printing .notes-text {
+          font-size: 0.65rem !important;
+        }
+
+        /* Prescription 70/30 layout — ensure no overlap */
+        .bill-content.printing .prescription-body {
+          display: flex !important;
+          flex-direction: row !important;
+        }
+        .bill-content.printing .prescription-left {
+          flex: 0 0 68% !important;
+          max-width: 68% !important;
+          overflow: hidden !important;
+        }
+        .bill-content.printing .prescription-right {
+          flex: 0 0 30% !important;
+          max-width: 30% !important;
+          padding-left: 0.4rem !important;
+        }
+
+        /* Lab results grid — compact for print */
+        .bill-content.printing .lab-results-grid {
+          grid-template-columns: 1fr 1fr !important;
+          gap: 0px 4px !important;
+        }
+        .bill-content.printing .lab-results-grid strong,
+        .bill-content.printing .lab-results-grid span {
+          font-size: 0.55rem !important;
+        }
+
+        /* Footer */
+        .bill-content.printing .footer-section {
+          font-size: 0.5rem !important;
+        }
+        .bill-content.printing .footer-section img {
+          height: 10px !important;
+        }
+        .bill-content.printing .footer-contacts .me-1 {
+          font-size: 0.45rem !important;
+        }
+
+        /* PAID stamp */
+        .bill-content.printing .paid-stamp {
+          font-size: 0.7rem !important;
+          padding: 2px 10px !important;
+          letter-spacing: 2px !important;
+        }
+
+        /* Date/Signature lines */
+        .bill-content.printing .date-signature-row p {
+          font-size: 0.55rem !important;
+        }
+        .bill-content.printing .sig-line {
+          width: 100px !important;
         }
 
         /* Hide fixed/absolute positioned elements during PDF generation */
