@@ -337,15 +337,16 @@ function CheckupDetail() {
         })
       )
 
+      // Allow layout to settle before capturing
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       const canvas = await html2canvas(prescriptionClone, {
         scale: 2,
         useCORS: true,
         logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: rxPageWidthPx,
-        width: prescriptionClone.scrollWidth,
-        height: prescriptionClone.scrollHeight,
+        windowWidth: Math.max(rxPageWidthPx, 600),
       })
 
       document.body.removeChild(prescriptionClone)
@@ -508,6 +509,9 @@ function CheckupDetail() {
         })
       )
 
+      // Allow layout to settle before capturing
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       // Generate canvas from the clone
       const canvas = await html2canvas(billClone, {
         scale: 2,
@@ -515,9 +519,7 @@ function CheckupDetail() {
         logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: pageWidthPx,
-        width: billClone.scrollWidth,
-        height: billClone.scrollHeight,
+        windowWidth: Math.max(pageWidthPx, 600),
       })
 
       // Remove the clone
