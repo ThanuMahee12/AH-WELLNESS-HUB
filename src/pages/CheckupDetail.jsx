@@ -310,15 +310,12 @@ function CheckupDetail() {
 
       const prescriptionClone = element.cloneNode(true)
       prescriptionClone.classList.add('printing')
-      prescriptionClone.style.position = 'absolute'
-      prescriptionClone.style.left = '-9999px'
-      prescriptionClone.style.top = '0'
-      prescriptionClone.style.width = rxPageWidthMm + 'mm'
-      prescriptionClone.style.padding = rxPadding
-      prescriptionClone.style.fontSize = rxFontSize
-      prescriptionClone.style.backgroundColor = '#ffffff'
-      prescriptionClone.style.display = 'block'
-      prescriptionClone.style.visibility = 'visible'
+      prescriptionClone.style.cssText = `
+        position: fixed; left: 0; top: 0; z-index: -9999;
+        width: ${rxPageWidthMm}mm; padding: ${rxPadding}; font-size: ${rxFontSize};
+        background: #ffffff; display: block; visibility: visible; opacity: 0;
+        overflow: visible; pointer-events: none;
+      `
       document.body.appendChild(prescriptionClone)
 
       // Wait for images to load
@@ -338,15 +335,16 @@ function CheckupDetail() {
       )
 
       // Allow layout to settle before capturing
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 200))
 
+      // windowWidth >= 800 to avoid mobile media queries
       const canvas = await html2canvas(prescriptionClone, {
         scale: 2,
         useCORS: true,
         logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: Math.max(rxPageWidthPx, 600),
+        windowWidth: Math.max(rxPageWidthPx, 800),
       })
 
       document.body.removeChild(prescriptionClone)
@@ -482,15 +480,12 @@ function CheckupDetail() {
       // Clone the bill content to avoid modifying the original
       const billClone = element.cloneNode(true)
       billClone.classList.add('printing')
-      billClone.style.position = 'absolute'
-      billClone.style.left = '-9999px'
-      billClone.style.top = '0'
-      billClone.style.width = pageWidthMm + 'mm'
-      billClone.style.padding = clonePadding
-      billClone.style.fontSize = cloneFontSize
-      billClone.style.backgroundColor = '#ffffff'
-      billClone.style.display = 'block'
-      billClone.style.visibility = 'visible'
+      billClone.style.cssText = `
+        position: fixed; left: 0; top: 0; z-index: -9999;
+        width: ${pageWidthMm}mm; padding: ${clonePadding}; font-size: ${cloneFontSize};
+        background: #ffffff; display: block; visibility: visible; opacity: 0;
+        overflow: visible; pointer-events: none;
+      `
       document.body.appendChild(billClone)
 
       // Wait for images to load
@@ -510,16 +505,16 @@ function CheckupDetail() {
       )
 
       // Allow layout to settle before capturing
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 200))
 
-      // Generate canvas from the clone
+      // Generate canvas from the clone — windowWidth >= 800 to avoid mobile media queries
       const canvas = await html2canvas(billClone, {
         scale: 2,
         useCORS: true,
         logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: Math.max(pageWidthPx, 600),
+        windowWidth: Math.max(pageWidthPx, 800),
       })
 
       // Remove the clone
