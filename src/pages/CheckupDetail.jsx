@@ -973,9 +973,9 @@ function CheckupDetail() {
           width: 100px !important;
         }
 
-        /* Hide fixed/absolute positioned elements during PDF generation */
-        body:has(.printing) *[style*="position: fixed"],
-        body:has(.printing) *[style*="position: absolute"]:not(.bill-content *) {
+        /* Hide fixed/absolute positioned elements during PDF generation (but not the clone itself) */
+        body:has(.printing) *[style*="position: fixed"]:not(.bill-content),
+        body:has(.printing) *[style*="position: absolute"]:not(.bill-content):not(.bill-content *) {
           display: none !important;
           visibility: hidden !important;
         }
