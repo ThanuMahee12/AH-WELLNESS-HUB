@@ -185,14 +185,14 @@ function CheckupDetail() {
       <div className="mb-2 pb-1 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
         <div className="header-row" style={{ display: 'flex', alignItems: 'center' }}>
           <div className="header-logo-left" style={{ flex: '0 0 20%' }}>
-            <img src={bloodLabLogo} alt="AWH Logo" className="template-logo-main" style={{ height: '50px', objectFit: 'contain' }} />
+            <img src={bloodLabLogo} alt="AWH Logo" className="template-logo-main" style={{ height: 'clamp(35px, 5vw, 50px)', objectFit: 'contain' }} />
           </div>
           <div className="header-center" style={{ flex: '1 1 60%', textAlign: 'center' }}>
-            <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: '0.9rem' }}>
+            <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: 'clamp(0.65rem, 2vw, 0.9rem)' }}>
               AH WELLNESS HUB & ASIRI LABORATORIES
             </h4>
-            <p style={{ color: '#64748b', fontSize: '0.65rem', marginBottom: '0.15rem' }}>Complete Health Care Solutions</p>
-            <div style={{ fontSize: '0.6rem', color: '#64748b' }}>
+            <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>Complete Health Care Solutions</p>
+            <div style={{ fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)', color: '#64748b' }}>
               <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
               {' | '}
               <span>{new Date(checkup.timestamp).toLocaleDateString()}</span>
@@ -201,15 +201,17 @@ function CheckupDetail() {
             </div>
           </div>
           <div className="header-logo-right" style={{ flex: '0 0 20%', textAlign: 'right' }}>
-            <img src={asiriLogo} alt="ASIRI Logo" className="template-logo-asiri" style={{ height: '40px', objectFit: 'contain', opacity: 0.8 }} />
+            <img src={asiriLogo} alt="ASIRI Logo" className="template-logo-asiri" style={{ height: 'clamp(25px, 4vw, 40px)', objectFit: 'contain', opacity: 0.8 }} />
           </div>
         </div>
       </div>
 
       {/* Patient Info */}
-      <div className="mb-2 template-patient" style={{ fontSize: '0.75rem', lineHeight: '1.3' }}>
-        <div className="patient-row" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <span><strong>Patient:</strong> {patient.name} | <strong>Age:</strong> {patient.age}yr | <strong>Gender:</strong> {patient.gender}</span>
+      <div className="mb-2 template-patient" style={{ fontSize: 'clamp(0.6rem, 1.8vw, 0.75rem)', lineHeight: '1.5' }}>
+        <div className="patient-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '0 clamp(0.5rem, 2vw, 1rem)' }}>
+          <span><strong>Patient:</strong> {patient.name}</span>
+          <span><strong>Age:</strong> {patient.age}yr</span>
+          <span><strong>Gender:</strong> {patient.gender}</span>
           <span><strong>Mobile:</strong> {patient.mobile}</span>
         </div>
       </div>
@@ -218,35 +220,35 @@ function CheckupDetail() {
       {children}
 
       {/* Contact Footer */}
-      <div className="mt-2 pt-1 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: '0.6rem' }}>
+      <div className="mt-2 pt-1 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)' }}>
         <div className="footer-contacts" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', borderTop: '1px solid #e2e8f0', paddingTop: '0.25rem' }}>
           <div>
             <p className="mb-0">
-              <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
               <strong>Mobile:</strong> +94 72 338 8793
             </p>
             <p className="mb-0">
-              <FaEnvelope className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <FaEnvelope className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
               <strong>Email:</strong> vijayjena@yahoo.com
             </p>
           </div>
           <div style={{ textAlign: 'right' }}>
             <p className="mb-0">
-              <FaInstagram className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <FaInstagram className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
               <strong>IG:</strong> wijayjena2
             </p>
             <p className="mb-0">
-              <FaFacebook className="me-1" style={{ color: '#0891B2', fontSize: '0.55rem' }} />
+              <FaFacebook className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
               <strong>FB:</strong> drwjanakan
             </p>
           </div>
         </div>
         <div className="text-center mt-1 pt-1 footer-thankyou" style={{ borderTop: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '0.15rem' }}>
-            <p style={{ fontSize: '0.55rem', color: '#94a3b8', marginBottom: 0 }}>
+            <p style={{ fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)', color: '#94a3b8', marginBottom: 0 }}>
               Thank you for choosing AH Wellness Hub & Asiri Laboratories
             </p>
-            <img src={asiriLogo} alt="Powered by ASIRI" className="footer-asiri-logo" style={{ height: '15px', opacity: 0.7, objectFit: 'contain' }} title="Powered by ASIRI Laboratories" />
+            <img src={asiriLogo} alt="Powered by ASIRI" className="footer-asiri-logo" style={{ height: 'clamp(10px, 2vw, 15px)', opacity: 0.7, objectFit: 'contain' }} title="Powered by ASIRI Laboratories" />
           </div>
         </div>
       </div>
@@ -895,12 +897,9 @@ function CheckupDetail() {
             height: 22px !important;
           }
 
-          /* --- Patient info: stack name above details --- */
+          /* --- Patient info: wrap naturally on mobile --- */
           .bill-content .template-patient {
-            font-size: 0.65rem !important;
-          }
-          .bill-content .patient-row {
-            flex-direction: column !important;
+            font-size: 0.6rem !important;
           }
 
           /* --- Footer: stacked contacts, centered thank you --- */
@@ -940,28 +939,51 @@ function CheckupDetail() {
           }
           .bill-content .lab-results-grid {
             grid-template-columns: 1fr 1fr 1fr !important;
-            gap: 1px 12px !important;
+            gap: 0px 8px !important;
+          }
+          .bill-content .lab-results-grid strong,
+          .bill-content .lab-results-grid span {
+            font-size: 0.55rem !important;
           }
 
           /* --- Tables --- */
           .bill-content table {
-            font-size: 0.7rem !important;
+            font-size: 0.65rem !important;
           }
           .bill-content th,
           .bill-content td {
-            padding: 0.25rem 0.4rem !important;
+            padding: 0.15rem 0.25rem !important;
           }
+          .bill-content th {
+            font-size: 0.6rem !important;
+            font-weight: 600 !important;
+            text-transform: none !important;
+          }
+
+          /* --- Prescription table: compact for mobile --- */
           .prescription-table {
-            font-size: 0.7rem !important;
+            font-size: 0.6rem !important;
           }
-          .prescription-table th,
+          .prescription-table th {
+            font-size: 0.55rem !important;
+            padding: 0.15rem 0.2rem !important;
+            white-space: nowrap !important;
+          }
           .prescription-table td {
-            padding: 0.25rem !important;
+            padding: 0.15rem 0.2rem !important;
+            font-size: 0.6rem !important;
+          }
+          /* Hide instructions column on very small screens */
+          @media (max-width: 420px) {
+            .prescription-table th:nth-child(4),
+            .prescription-table td:nth-child(4) {
+              display: none !important;
+            }
           }
 
           /* --- Section headings --- */
           .bill-content h6 {
-            font-size: 0.8rem !important;
+            font-size: 0.7rem !important;
           }
 
           /* --- Date / Signature lines --- */
@@ -984,7 +1006,7 @@ function CheckupDetail() {
 
           /* --- Notes text --- */
           .bill-content .notes-text {
-            font-size: 0.75rem !important;
+            font-size: 0.65rem !important;
           }
 
           /* --- Lab results children row on narrow screens --- */
@@ -1099,17 +1121,17 @@ function CheckupDetail() {
             ` : ''}
           `}</style>
           <Card className="shadow-sm">
-            <Card.Body ref={billRef} className="bill-content" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
+            <Card.Body ref={billRef} className="bill-content" style={{ padding: 'clamp(0.75rem, 3vw, 2.5rem)', backgroundColor: 'white' }}>
               {renderTemplate(
                 <>
                   {/* Tests Table */}
                   <div className="mb-3">
-                    <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Tests Performed</h6>
-                    <Table bordered style={{ marginBottom: '0', fontSize: '0.85rem' }}>
+                    <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>Tests Performed</h6>
+                    <Table borderless style={{ marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)' }}>
                       <thead style={{ backgroundColor: '#e0f2fe' }}>
                         <tr>
-                          <th style={{ width: '70%', color: '#0891B2', padding: '0.4rem 0.6rem' }}>Test Name</th>
-                          <th style={{ width: '30%', color: '#0891B2', textAlign: 'right', padding: '0.4rem 0.6rem' }}>Price (Rs.)</th>
+                          <th style={{ width: '70%', color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Test Name</th>
+                          <th style={{ width: '30%', color: '#0891B2', textAlign: 'right', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Price (Rs.)</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1117,16 +1139,16 @@ function CheckupDetail() {
                           const test = tests.find(t => t.id === testItem.testId)
                           return test ? (
                             <tr key={testItem.testId}>
-                              <td style={{ padding: '0.4rem 0.6rem' }}>
+                              <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>
                                 <strong style={{ color: '#0891B2' }}>{test.code}</strong> - {test.name}
                               </td>
-                              <td style={{ textAlign: 'right', padding: '0.4rem 0.6rem' }}>Rs. {test.price.toFixed(2)}</td>
+                              <td style={{ textAlign: 'right', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Rs. {test.price.toFixed(2)}</td>
                             </tr>
                           ) : null
                         })}
                         <tr style={{ backgroundColor: '#0891B2', color: 'white', fontWeight: 'bold' }}>
-                          <td style={{ padding: '0.5rem 0.6rem' }}>Total Amount</td>
-                          <td style={{ textAlign: 'right', padding: '0.5rem 0.6rem' }}>Rs. {checkup.total.toFixed(2)}</td>
+                          <td style={{ padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Total Amount</td>
+                          <td style={{ textAlign: 'right', padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Rs. {checkup.total.toFixed(2)}</td>
                         </tr>
                       </tbody>
                     </Table>
@@ -1163,7 +1185,7 @@ function CheckupDetail() {
                   {/* General Notes */}
                   {(checkup.notes || isEditing) && (
                     <div className="mb-3">
-                      <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Notes</h6>
+                      <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>Notes</h6>
                       {isEditing ? (
                         <Form.Control
                           as="textarea"
@@ -1174,7 +1196,7 @@ function CheckupDetail() {
                           style={{ fontSize: '0.85rem' }}
                         />
                       ) : (
-                        <p className="notes-text" style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
+                        <p className="notes-text" style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
                           {checkup.notes}
                         </p>
                       )}
@@ -1189,9 +1211,9 @@ function CheckupDetail() {
                       borderRadius: '6px',
                       color: '#16a34a',
                       fontWeight: '700',
-                      fontSize: '0.8rem',
-                      padding: '3px 14px',
-                      letterSpacing: '3px',
+                      fontSize: 'clamp(0.65rem, 1.8vw, 0.8rem)',
+                      padding: 'clamp(2px, 0.5vw, 3px) clamp(8px, 2vw, 14px)',
+                      letterSpacing: 'clamp(2px, 0.5vw, 3px)',
                       transform: 'rotate(-3deg)',
                       opacity: 0.8,
                       textTransform: 'uppercase',
@@ -1602,7 +1624,7 @@ function CheckupDetail() {
           <Row>
             <Col>
               <Card className="shadow-sm">
-                <Card.Body ref={prescriptionRef} className="bill-content" style={{ padding: '2.5rem', backgroundColor: 'white' }}>
+                <Card.Body ref={prescriptionRef} className="bill-content" style={{ padding: 'clamp(0.75rem, 3vw, 2.5rem)', backgroundColor: 'white' }}>
                   {renderTemplate(
                     <>
                       {/* Body: 70% left / 30% right */}
@@ -1612,14 +1634,14 @@ function CheckupDetail() {
                           {/* Medicines Table */}
                           {prescriptionMedicines.length > 0 && (
                             <div className="mb-3">
-                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>℞ Prescribed Medications</h6>
-                              <Table bordered className="prescription-table" style={{ marginBottom: '0', fontSize: '0.85rem' }}>
+                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>℞ Prescribed Medications</h6>
+                              <Table borderless className="prescription-table" style={{ marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)' }}>
                                 <thead style={{ backgroundColor: '#e0f2fe' }}>
                                   <tr>
-                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem' }}>Medicine (Brand)</th>
-                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Dosage</th>
-                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '15%' }}>Qty</th>
-                                    <th style={{ color: '#0891B2', padding: '0.4rem 0.6rem', width: '25%' }}>Instructions</th>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Medicine (Brand)</th>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%' }}>Dosage</th>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%' }}>Qty</th>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', width: '25%' }}>Instructions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -1627,14 +1649,14 @@ function CheckupDetail() {
                                     const medicine = medicines.find(m => m.id === med.medicineId)
                                     return medicine ? (
                                       <tr key={index}>
-                                        <td style={{ padding: '0.4rem 0.6rem' }}>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>
                                           <strong>{medicine.name}</strong>
                                           <br />
-                                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{medicine.brand}</span>
+                                          <span style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)', color: '#64748b' }}>{medicine.brand}</span>
                                         </td>
-                                        <td style={{ padding: '0.4rem 0.6rem', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
-                                        <td style={{ padding: '0.4rem 0.6rem' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
-                                        <td style={{ padding: '0.4rem 0.6rem' }}>{med.instructions || '-'}</td>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>{med.instructions || '-'}</td>
                                       </tr>
                                     ) : null
                                   })}
@@ -1646,8 +1668,8 @@ function CheckupDetail() {
                           {/* Additional Notes */}
                           {prescriptionNotes && (
                             <div className="mb-3">
-                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: '0.95rem' }}>Instructions</h6>
-                              <p className="notes-text" style={{ fontSize: '0.85rem', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>Instructions</h6>
+                              <p className="notes-text" style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
                                 {prescriptionNotes}
                               </p>
                             </div>
@@ -1690,17 +1712,17 @@ function CheckupDetail() {
                                 return children ? (
                                   <div key={key} style={{ gridColumn: '1 / -1' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
-                                      <strong style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                      <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                       {isEditing ? (
                                         <Form.Control
                                           size="sm"
                                           type="text"
                                           value={editedLabResults[key] || ''}
                                           onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
-                                          style={{ height: '18px', fontSize: '0.6rem', padding: '0 2px', flex: 1, minWidth: 0 }}
+                                          style={{ height: '18px', fontSize: 'clamp(0.5rem, 1.3vw, 0.6rem)', padding: '0 2px', flex: 1, minWidth: 0 }}
                                         />
                                       ) : (
-                                        <span style={{ fontSize: '0.65rem' }}>{val || emptyText(display)}</span>
+                                        <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
                                       )}
                                     </div>
                                     <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
@@ -1709,17 +1731,17 @@ function CheckupDetail() {
                                         if (!shouldShow(cd, cv)) return null
                                         return (
                                           <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
-                                            <span style={{ fontSize: '0.6rem', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
+                                            <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
                                             {isEditing ? (
                                               <Form.Control
                                                 size="sm"
                                                 type="text"
                                                 value={editedLabResults[ck] || ''}
                                                 onChange={(e) => setEditedLabResults(prev => ({ ...prev, [ck]: e.target.value }))}
-                                                style={{ height: '16px', fontSize: '0.55rem', padding: '0 2px', flex: 1, minWidth: 0 }}
+                                                style={{ height: '16px', fontSize: 'clamp(0.45rem, 1.1vw, 0.55rem)', padding: '0 2px', flex: 1, minWidth: 0 }}
                                               />
                                             ) : (
-                                              <span style={{ fontSize: '0.6rem' }}>{cv || emptyText(cd)}</span>
+                                              <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
                                             )}
                                           </div>
                                         )
@@ -1728,17 +1750,17 @@ function CheckupDetail() {
                                   </div>
                                 ) : (
                                   <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
-                                    <strong style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                    <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                     {isEditing ? (
                                       <Form.Control
                                         size="sm"
                                         type="text"
                                         value={editedLabResults[key] || ''}
                                         onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
-                                        style={{ height: '18px', fontSize: '0.6rem', padding: '0 2px', flex: 1, minWidth: 0 }}
+                                        style={{ height: '18px', fontSize: 'clamp(0.5rem, 1.3vw, 0.6rem)', padding: '0 2px', flex: 1, minWidth: 0 }}
                                       />
                                     ) : (
-                                      <span style={{ fontSize: '0.65rem' }}>{val || emptyText(display)}</span>
+                                      <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
                                     )}
                                   </div>
                                 )
@@ -1751,12 +1773,12 @@ function CheckupDetail() {
                       {/* Date / Signature lines */}
                       <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
                         <div>
-                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
-                          <p style={{ fontSize: '0.65rem', marginBottom: 0 }}>Date</p>
+                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
+                          <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Date</p>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: '120px', marginBottom: '0.25rem' }} />
-                          <p style={{ fontSize: '0.65rem', marginBottom: 0 }}>Signature</p>
+                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
+                          <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Signature</p>
                         </div>
                       </div>
                     </>
