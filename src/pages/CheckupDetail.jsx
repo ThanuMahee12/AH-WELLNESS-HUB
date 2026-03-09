@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button, Table, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
+import { Container, Row, Col, Card, Button, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
 import { FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa'
 import { Breadcrumb } from '../components/ui'
 import Select from 'react-select'
 import { selectAllCheckups, fetchCheckups, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
 import { selectAllPatients, fetchPatients } from '../store/patientsSlice'
-import { selectAllTests } from '../store/testsSlice'
+import { selectAllTests, fetchTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
 import { RichTextEditor } from '../components/ui'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
@@ -15,6 +15,7 @@ import { useSettings } from '../hooks/useSettings'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import asiriLogo from '../assets/asiri-logo.png'
+import paidStampImg from '../assets/paid-stamp.png'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -67,6 +68,7 @@ function CheckupDetail() {
   useEffect(() => {
     if (checkups.length === 0) dispatch(fetchCheckups())
     if (patients.length === 0) dispatch(fetchPatients())
+    if (tests.length === 0) dispatch(fetchTests())
     dispatch(fetchMedicines())
   }, [dispatch, checkups.length, patients.length])
 
@@ -178,9 +180,9 @@ function CheckupDetail() {
     setPrescriptionMedicines(prescriptionMedicines.filter((_, i) => i !== index))
   }
 
-  // Single shared template — header + children + contact footer
+  // Single shared template — header (top) + body (middle, fills space) + footer (bottom)
   const renderTemplate = (children) => (
-    <>
+    <div className="template-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Header */}
       <div className="mb-2 pb-1 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
         <div className="header-row" style={{ display: 'flex', alignItems: 'center' }}>
@@ -216,11 +218,13 @@ function CheckupDetail() {
         </div>
       </div>
 
-      {/* Body — unique per tab */}
-      {children}
+      {/* Body — unique per tab, fills remaining space */}
+      <div className="template-body" style={{ flex: '1 1 auto', paddingTop: 'clamp(0.5rem, 1.5vw, 1rem)', display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </div>
 
-      {/* Contact Footer */}
-      <div className="mt-2 pt-1 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)' }}>
+      {/* Contact Footer — always at bottom */}
+      <div className="mt-auto pt-1 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)' }}>
         <div className="footer-contacts" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', borderTop: '1px solid #e2e8f0', paddingTop: '0.25rem' }}>
           <div>
             <p className="mb-0">
@@ -252,7 +256,7 @@ function CheckupDetail() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 
   const handleMedicineChange = (index, field, value) => {
@@ -305,7 +309,7 @@ function CheckupDetail() {
       // Convert selected page width mm → pixels (96 DPI)
       const rxPageWidthMm = prescriptionPdfSettings.width
       const rxPageWidthPx = Math.round(rxPageWidthMm * 96 / 25.4)
-      const rxPadding = rxPageWidthMm < 100 ? '8px' : rxPageWidthMm <= 160 ? '15px' : '25px'
+      const rxPadding = '3% 10%'
       const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : rxPageWidthMm <= 160 ? '0.75rem' : '0.85rem'
 
       // Use wrapper to avoid body:has(.printing) display:none rule on the clone
@@ -314,9 +318,11 @@ function CheckupDetail() {
       const prescriptionClone = element.cloneNode(true)
       prescriptionClone.classList.add('printing')
       prescriptionClone.style.width = rxPageWidthMm + 'mm'
+      prescriptionClone.style.height = prescriptionPdfSettings.height + 'mm'
       prescriptionClone.style.padding = rxPadding
       prescriptionClone.style.fontSize = rxFontSize
       prescriptionClone.style.backgroundColor = '#ffffff'
+      prescriptionClone.style.boxSizing = 'border-box'
       rxWrapper.appendChild(prescriptionClone)
       document.body.appendChild(rxWrapper)
 
@@ -340,15 +346,16 @@ function CheckupDetail() {
       await new Promise(resolve => setTimeout(resolve, 200))
 
       // windowWidth >= 800 to avoid mobile media queries
+      const rxCaptureHeight = Math.max(prescriptionClone.scrollHeight, prescriptionClone.offsetHeight)
       const canvas = await html2canvas(prescriptionClone, {
         scale: 2,
         useCORS: true,
-        logging: true,
+        logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
         windowWidth: Math.max(rxPageWidthPx, 800),
         width: prescriptionClone.scrollWidth,
-        height: prescriptionClone.scrollHeight,
+        height: rxCaptureHeight,
       })
 
       document.body.removeChild(rxWrapper)
@@ -461,9 +468,7 @@ function CheckupDetail() {
   }
 
   const handleGeneratePDF = async () => {
-    console.log('[PDF] === INVOICE PDF GENERATION START ===')
     if (!billRef.current) {
-      console.error('[PDF] billRef.current is null')
       alert('Invoice content not found. Please refresh the page and try again.')
       return
     }
@@ -471,11 +476,7 @@ function CheckupDetail() {
     setIsGenerating(true)
 
     try {
-      // Ensure the element is visible and has content
       const element = billRef.current
-      console.log('[PDF] element offsetHeight:', element.offsetHeight, 'offsetWidth:', element.offsetWidth)
-      console.log('[PDF] element offsetParent:', element.offsetParent)
-      console.log('[PDF] element innerHTML length:', element.innerHTML.length)
 
       if (!element.offsetParent && element.offsetHeight === 0) {
         throw new Error('Invoice element is not visible')
@@ -484,10 +485,8 @@ function CheckupDetail() {
       // Convert selected page width mm → pixels (96 DPI)
       const pageWidthMm = pdfSettings.width
       const pageWidthPx = Math.round(pageWidthMm * 96 / 25.4)
-      const clonePadding = pageWidthMm < 100 ? '8px' : pageWidthMm <= 160 ? '15px' : '25px'
+      const clonePadding = '3% 10%'
       const cloneFontSize = pageWidthMm < 100 ? '0.65rem' : pageWidthMm <= 160 ? '0.75rem' : '0.85rem'
-      console.log('[PDF] pageWidthMm:', pageWidthMm, 'pageWidthPx:', pageWidthPx)
-      console.log('[PDF] clonePadding:', clonePadding, 'cloneFontSize:', cloneFontSize)
 
       // Clone the bill content — use a wrapper div to avoid the body:has(.printing) display:none rule
       const wrapper = document.createElement('div')
@@ -495,31 +494,26 @@ function CheckupDetail() {
       const billClone = element.cloneNode(true)
       billClone.classList.add('printing')
       billClone.style.width = pageWidthMm + 'mm'
+      billClone.style.height = pdfSettings.height + 'mm'
       billClone.style.padding = clonePadding
       billClone.style.fontSize = cloneFontSize
       billClone.style.backgroundColor = '#ffffff'
+      billClone.style.boxSizing = 'border-box'
       wrapper.appendChild(billClone)
       document.body.appendChild(wrapper)
 
-      console.log('[PDF] Clone appended. scrollWidth:', billClone.scrollWidth, 'scrollHeight:', billClone.scrollHeight)
-      console.log('[PDF] Clone offsetWidth:', billClone.offsetWidth, 'offsetHeight:', billClone.offsetHeight)
-      console.log('[PDF] Clone computed display:', window.getComputedStyle(billClone).display)
-      console.log('[PDF] Wrapper computed display:', window.getComputedStyle(wrapper).display)
-
       // Wait for images to load
       const images = billClone.getElementsByTagName('img')
-      console.log('[PDF] Images found:', images.length)
       await Promise.all(
-        Array.from(images).map((img, i) => {
-          console.log(`[PDF] Image ${i}: src=${img.src}, complete=${img.complete}, naturalWidth=${img.naturalWidth}`)
+        Array.from(images).map(img => {
           if (img.complete) return Promise.resolve()
           return new Promise((resolve) => {
-            img.onload = () => { console.log(`[PDF] Image ${i} loaded`); resolve() }
+            img.onload = resolve
             img.onerror = () => {
-              console.warn(`[PDF] Image ${i} failed to load:`, img.src)
+              console.warn('Image failed to load:', img.src)
               resolve()
             }
-            setTimeout(() => { console.log(`[PDF] Image ${i} timeout`); resolve() }, 3000)
+            setTimeout(resolve, 3000)
           })
         })
       )
@@ -527,8 +521,7 @@ function CheckupDetail() {
       // Allow layout to settle before capturing
       await new Promise(resolve => setTimeout(resolve, 200))
 
-      console.log('[PDF] After settle - scrollWidth:', billClone.scrollWidth, 'scrollHeight:', billClone.scrollHeight)
-
+      const captureHeight = Math.max(billClone.scrollHeight, billClone.offsetHeight)
       const canvas = await html2canvas(billClone, {
         scale: 2,
         useCORS: true,
@@ -537,10 +530,8 @@ function CheckupDetail() {
         backgroundColor: '#ffffff',
         windowWidth: Math.max(pageWidthPx, 800),
         width: billClone.scrollWidth,
-        height: billClone.scrollHeight,
+        height: captureHeight,
       })
-
-      console.log('[PDF] Canvas generated. width:', canvas?.width, 'height:', canvas?.height)
 
       // Remove the wrapper (which contains the clone)
       document.body.removeChild(wrapper)
@@ -550,7 +541,6 @@ function CheckupDetail() {
       }
 
       const imgData = canvas.toDataURL('image/png')
-      console.log('[PDF] imgData length:', imgData?.length)
 
       if (!imgData || imgData === 'data:,') {
         throw new Error('Failed to convert canvas to image')
@@ -838,15 +828,24 @@ function CheckupDetail() {
           box-sizing: border-box;
           overflow: visible;
         }
+        .bill-content table,
+        .bill-content th,
+        .bill-content td {
+          border: none !important;
+        }
 
         /* === PDF / Print: compact professional layout === */
         .bill-content.printing {
           overflow: visible;
           page-break-inside: avoid;
-          padding: 12px !important;
+          padding: 3% 10% !important;
         }
         .bill-content.printing * {
           box-sizing: border-box;
+        }
+        .bill-content.printing .template-wrapper {
+          min-height: 100% !important;
+          height: 100% !important;
         }
         .bill-content.printing img {
           max-width: 100%;
@@ -855,109 +854,127 @@ function CheckupDetail() {
 
         /* Header */
         .bill-content.printing .header-section img {
-          height: 35px !important;
-        }
-        .bill-content.printing .template-logo-asiri {
           height: 28px !important;
         }
+        .bill-content.printing .template-logo-asiri {
+          height: 22px !important;
+        }
         .bill-content.printing .header-section h4 {
-          font-size: 0.8rem !important;
+          font-size: 8pt !important;
         }
         .bill-content.printing .header-section p,
         .bill-content.printing .header-section div {
-          font-size: 0.55rem !important;
+          font-size: 5.5pt !important;
         }
 
         /* Patient info */
         .bill-content.printing .template-patient {
-          font-size: 0.65rem !important;
+          font-size: 6.5pt !important;
         }
 
-        /* Tables — compact rows */
+        /* Tables — compact rows, no borders */
         .bill-content.printing table {
-          font-size: 0.7rem !important;
+          font-size: 7pt !important;
+          border: none !important;
+        }
+        .bill-content.printing th,
+        .bill-content.printing td {
+          border: none !important;
         }
         .bill-content.printing th {
-          padding: 0.2rem 0.4rem !important;
-          font-size: 0.65rem !important;
+          padding: 4px 6px !important;
+          font-size: 6.5pt !important;
+          vertical-align: middle !important;
         }
         .bill-content.printing td {
-          padding: 0.15rem 0.4rem !important;
+          padding: 3px 6px !important;
+          vertical-align: middle !important;
         }
 
-        /* Prescription table — even tighter */
+        /* Prescription table */
         .bill-content.printing .prescription-table {
-          font-size: 0.65rem !important;
+          font-size: 6.5pt !important;
         }
         .bill-content.printing .prescription-table th {
-          padding: 0.2rem 0.3rem !important;
-          font-size: 0.6rem !important;
+          padding: 4px 5px !important;
+          font-size: 6pt !important;
+          white-space: nowrap !important;
+          vertical-align: middle !important;
         }
         .bill-content.printing .prescription-table td {
-          padding: 0.15rem 0.3rem !important;
+          padding: 3px 5px !important;
+          font-size: 6.5pt !important;
+          vertical-align: middle !important;
         }
 
         /* Section headings */
         .bill-content.printing h6 {
-          font-size: 0.7rem !important;
-          margin-bottom: 0.3rem !important;
+          font-size: 7pt !important;
+          margin-bottom: 3px !important;
         }
 
         /* Notes */
         .bill-content.printing .notes-text {
-          font-size: 0.65rem !important;
+          font-size: 6.5pt !important;
         }
 
-        /* Prescription 70/30 layout — ensure no overlap */
+        /* Prescription layout — full width stacked on small formats */
         .bill-content.printing .prescription-body {
           display: flex !important;
-          flex-direction: row !important;
+          flex-direction: column !important;
+          gap: 0.5rem !important;
         }
         .bill-content.printing .prescription-left {
-          flex: 0 0 68% !important;
-          max-width: 68% !important;
-          overflow: hidden !important;
+          flex: 1 1 auto !important;
+          max-width: 100% !important;
+          overflow: visible !important;
         }
         .bill-content.printing .prescription-right {
-          flex: 0 0 30% !important;
-          max-width: 30% !important;
-          padding-left: 0.4rem !important;
+          flex: 1 1 auto !important;
+          max-width: 100% !important;
+          padding-left: 0 !important;
+          border-left: none !important;
+          border-top: 1px solid #e2e8f0 !important;
+          padding-top: 0.4rem !important;
         }
 
-        /* Lab results grid — compact for print */
+        /* Lab results grid — wider in full-width layout */
         .bill-content.printing .lab-results-grid {
-          grid-template-columns: 1fr 1fr !important;
-          gap: 0px 4px !important;
+          grid-template-columns: 1fr 1fr 1fr !important;
+          gap: 1px 6px !important;
         }
-        .bill-content.printing .lab-results-grid strong,
+        .bill-content.printing .lab-results-grid strong {
+          font-size: 5.5pt !important;
+        }
         .bill-content.printing .lab-results-grid span {
-          font-size: 0.55rem !important;
+          font-size: 5.5pt !important;
+        }
+        .bill-content.printing .lab-results-grid .lab-children-row span {
+          font-size: 5pt !important;
         }
 
         /* Footer */
         .bill-content.printing .footer-section {
-          font-size: 0.5rem !important;
+          font-size: 5pt !important;
+        }
+        .bill-content.printing .footer-section p {
+          font-size: 5pt !important;
         }
         .bill-content.printing .footer-section img {
-          height: 10px !important;
-        }
-        .bill-content.printing .footer-contacts .me-1 {
-          font-size: 0.45rem !important;
+          height: 8px !important;
         }
 
         /* PAID stamp */
-        .bill-content.printing .paid-stamp {
-          font-size: 0.7rem !important;
-          padding: 2px 10px !important;
-          letter-spacing: 2px !important;
+        .bill-content.printing .paid-stamp img {
+          height: 65px !important;
         }
 
         /* Date/Signature lines */
         .bill-content.printing .date-signature-row p {
-          font-size: 0.55rem !important;
+          font-size: 5.5pt !important;
         }
         .bill-content.printing .sig-line {
-          width: 100px !important;
+          width: 80px !important;
         }
 
         /* Hide fixed/absolute UI elements during PDF generation (sidebar, navbar, FAB, etc.) */
@@ -1110,10 +1127,8 @@ function CheckupDetail() {
           }
 
           /* --- PAID stamp --- */
-          .bill-content .paid-stamp {
-            font-size: 0.7rem !important;
-            padding: 2px 10px !important;
-            letter-spacing: 2px !important;
+          .bill-content .paid-stamp img {
+            height: 50px !important;
           }
 
           /* --- Notes text --- */
@@ -1239,11 +1254,11 @@ function CheckupDetail() {
                   {/* Tests Table */}
                   <div className="mb-3">
                     <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>Tests Performed</h6>
-                    <Table borderless style={{ marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)' }}>
-                      <thead style={{ backgroundColor: '#e0f2fe' }}>
-                        <tr>
-                          <th style={{ width: '70%', color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Test Name</th>
-                          <th style={{ width: '30%', color: '#0891B2', textAlign: 'right', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Price (Rs.)</th>
+                    <table style={{ width: '100%', marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', border: 'none', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #0891B2' }}>
+                          <th style={{ width: '60%', color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>Test Name</th>
+                          <th style={{ width: '40%', color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'right' }}>Price (Rs.)</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1251,19 +1266,19 @@ function CheckupDetail() {
                           const test = tests.find(t => t.id === testItem.testId)
                           return test ? (
                             <tr key={testItem.testId}>
-                              <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>
+                              <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>
                                 <strong style={{ color: '#0891B2' }}>{test.code}</strong> - {test.name}
                               </td>
-                              <td style={{ textAlign: 'right', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Rs. {test.price.toFixed(2)}</td>
+                              <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'right' }}>Rs. {test.price.toFixed(2)}</td>
                             </tr>
                           ) : null
                         })}
-                        <tr style={{ backgroundColor: '#0891B2', color: 'white', fontWeight: 'bold' }}>
-                          <td style={{ padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Total Amount</td>
-                          <td style={{ textAlign: 'right', padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Rs. {checkup.total.toFixed(2)}</td>
+                        <tr style={{ color: '#0891B2', fontWeight: 'bold', borderTop: '1px solid #0891B2' }}>
+                          <td style={{ padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>Total Amount</td>
+                          <td style={{ padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'right' }}>Rs. {checkup.total.toFixed(2)}</td>
                         </tr>
                       </tbody>
-                    </Table>
+                    </table>
                   </div>
 
                   {/* Individual Test Notes - Only visible when editing */}
@@ -1316,22 +1331,8 @@ function CheckupDetail() {
                   )}
 
                   {/* PAID Stamp */}
-                  <div className="text-end mb-1" style={{ paddingRight: '0.5rem' }}>
-                    <span className="paid-stamp" style={{
-                      display: 'inline-block',
-                      border: '2.5px solid #16a34a',
-                      borderRadius: '6px',
-                      color: '#16a34a',
-                      fontWeight: '700',
-                      fontSize: 'clamp(0.65rem, 1.8vw, 0.8rem)',
-                      padding: 'clamp(2px, 0.5vw, 3px) clamp(8px, 2vw, 14px)',
-                      letterSpacing: 'clamp(2px, 0.5vw, 3px)',
-                      transform: 'rotate(-3deg)',
-                      opacity: 0.8,
-                      textTransform: 'uppercase',
-                    }}>
-                      PAID
-                    </span>
+                  <div className="text-center mb-1 paid-stamp" style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
+                    <img src={paidStampImg} alt="PAID" style={{ height: 'clamp(60px, 12vw, 100px)', opacity: 0.85 }} />
                   </div>
                 </>
               )}
@@ -1747,13 +1748,13 @@ function CheckupDetail() {
                           {prescriptionMedicines.length > 0 && (
                             <div className="mb-3">
                               <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>℞ Prescribed Medications</h6>
-                              <Table borderless className="prescription-table" style={{ marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)' }}>
-                                <thead style={{ backgroundColor: '#e0f2fe' }}>
-                                  <tr>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>Medicine (Brand)</th>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%' }}>Dosage</th>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%' }}>Qty</th>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', width: '25%' }}>Instructions</th>
+                              <table className="prescription-table" style={{ width: '100%', marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', border: 'none', borderCollapse: 'collapse', textAlign: 'center' }}>
+                                <thead>
+                                  <tr style={{ borderBottom: '2px solid #0891B2' }}>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>Medicine (Brand)</th>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%', border: 'none', textAlign: 'center' }}>Dosage</th>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%', border: 'none', textAlign: 'center' }}>Qty</th>
+                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '25%', border: 'none', textAlign: 'center' }}>Instructions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -1761,19 +1762,19 @@ function CheckupDetail() {
                                     const medicine = medicines.find(m => m.id === med.medicineId)
                                     return medicine ? (
                                       <tr key={index}>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>
                                           <strong>{medicine.name}</strong>
                                           <br />
                                           <span style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)', color: '#64748b' }}>{medicine.brand}</span>
                                         </td>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', fontWeight: '600', color: '#059669' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)' }}>{med.instructions || '-'}</td>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', fontWeight: '600', color: '#059669', border: 'none', textAlign: 'center' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'center' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
+                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'center' }}>{med.instructions || '-'}</td>
                                       </tr>
                                     ) : null
                                   })}
                                 </tbody>
-                              </Table>
+                              </table>
                             </div>
                           )}
 
@@ -1883,7 +1884,7 @@ function CheckupDetail() {
                       </div>
 
                       {/* Date / Signature lines */}
-                      <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
+                      <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', paddingTop: '1rem' }}>
                         <div>
                           <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
                           <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Date</p>
