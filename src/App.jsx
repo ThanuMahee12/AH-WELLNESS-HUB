@@ -139,7 +139,7 @@ function AppContent() {
                 }
               />
               <Route
-                path="/checkups/:id/edit"
+                path="/checkups/:id"
                 element={
                   <ProtectedRoute>
                     <CheckupForm />
@@ -147,7 +147,7 @@ function AppContent() {
                 }
               />
               <Route
-                path="/checkups/:id"
+                path="/checkups/:id/details"
                 element={
                   <ProtectedRoute>
                     <CheckupDetail />

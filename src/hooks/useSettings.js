@@ -202,6 +202,26 @@ export function useSettings() {
     return settings?.tables?.[entity]?.itemsPerPage || 10
   }, [settings])
 
+  // Get visible general test fields sorted by order
+  const getGeneralTestFields = useCallback(() => {
+    const fields = settings?.generalTests?.fields
+    if (!fields) return []
+    return Object.entries(fields)
+      .filter(([, cfg]) => cfg.visible !== false && !cfg.parent)
+      .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+      .map(([key, cfg]) => ({
+        key,
+        label: cfg.label || key,
+        order: cfg.order || 0,
+        display: cfg.display || 'default',
+        children: cfg.children
+          ? cfg.children
+              .filter(ck => fields[ck] && fields[ck].visible !== false)
+              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default' }))
+          : null,
+      }))
+  }, [settings])
+
   // Get visible lab result fields sorted by order (excludes children — they're accessed via parent.children)
   const getLabResultFields = useCallback(() => {
     const fields = settings?.labResults?.fields
@@ -247,6 +267,7 @@ export function useSettings() {
     getInitialFormData,
     getSearchFields,
     getItemsPerPage,
+    getGeneralTestFields,
     getLabResultFields,
     checkPermission,
   }

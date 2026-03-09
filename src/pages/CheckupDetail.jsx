@@ -1,15 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button, Form, Collapse, Tabs, Tab } from 'react-bootstrap'
-import { FaFilePdf, FaPrint, FaWhatsapp, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaCog, FaStickyNote, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa'
+import { Container, Row, Col, Card, Button, Tabs, Tab } from 'react-bootstrap'
+import { FaFilePdf, FaPrint, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaPrescriptionBottleAlt } from 'react-icons/fa'
 import { Breadcrumb } from '../components/ui'
-import Select from 'react-select'
-import { selectAllCheckups, fetchCheckups, updateCheckup, deleteCheckup } from '../store/checkupsSlice'
+import { selectAllCheckups, fetchCheckups } from '../store/checkupsSlice'
 import { selectAllPatients, fetchPatients } from '../store/patientsSlice'
 import { selectAllTests, fetchTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
-import { RichTextEditor } from '../components/ui'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 import { useSettings } from '../hooks/useSettings'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -24,6 +22,7 @@ function CheckupDetail() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const billRef = useRef()
+  const prescriptionRef = useRef()
 
   const checkups = useSelector(selectAllCheckups)
   const patients = useSelector(selectAllPatients)
@@ -36,34 +35,16 @@ function CheckupDetail() {
   const [checkup, setCheckup] = useState(null)
   const [patient, setPatient] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedNotes, setEditedNotes] = useState('')
-  const [editedTestNotes, setEditedTestNotes] = useState({})
-  const [editedCommonNotes, setEditedCommonNotes] = useState('')
-  const [editedPrescription, setEditedPrescription] = useState('')
-  const [prescriptionMedicines, setPrescriptionMedicines] = useState([])
-  const [prescriptionNotes, setPrescriptionNotes] = useState('')
-  const [selectedTestForNote, setSelectedTestForNote] = useState(null)
   const [activeTab, setActiveTab] = useState('details')
-  const [showPdfSettings, setShowPdfSettings] = useState(false)
-  const [showPrescriptionPdfSettings, setShowPrescriptionPdfSettings] = useState(false)
-  const [pdfSettings, setPdfSettings] = useState({
-    format: 'a5',
-    width: 148,
-    height: 210,
-    orientation: 'portrait'
-  })
-  const [prescriptionPdfSettings, setPrescriptionPdfSettings] = useState({
-    format: 'a5',
-    width: 148,
-    height: 210,
-    orientation: 'portrait'
-  })
-  const prescriptionRef = useRef()
-  const [editedLabResults, setEditedLabResults] = useState({})
-  const { settings, getLabResultFields } = useSettings()
+
+  const { settings, getLabResultFields, getGeneralTestFields } = useSettings()
+  const generalTestFields = getGeneralTestFields()
   const labResultFields = getLabResultFields()
   const labResultsShowEmpty = settings?.labResults?.showEmpty || 'hide'
+
+  // PDF settings from Firestore
+  const pdfSettings = settings?.checkupPdf?.invoice || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
+  const prescriptionPdfSettings = settings?.checkupPdf?.prescription || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
 
   useEffect(() => {
     if (checkups.length === 0) dispatch(fetchCheckups())
@@ -79,19 +60,6 @@ function CheckupDetail() {
     if (foundCheckup) {
       const foundPatient = patients.find(p => p.id === foundCheckup.patientId)
       setPatient(foundPatient)
-
-      // Initialize edit states
-      setEditedNotes(foundCheckup.notes || '')
-      setEditedCommonNotes(foundCheckup.commonNotes || '')
-      setEditedPrescription(foundCheckup.prescription || '')
-      setPrescriptionMedicines(foundCheckup.prescriptionMedicines || [])
-      setPrescriptionNotes(foundCheckup.prescriptionNotes || '')
-      const testNotesMap = {}
-      foundCheckup.tests.forEach(testItem => {
-        testNotesMap[testItem.testId] = testItem.notes || ''
-      })
-      setEditedTestNotes(testNotesMap)
-      setEditedLabResults(foundCheckup.labResults || {})
     }
   }, [id, checkups, patients])
 
@@ -109,103 +77,24 @@ function CheckupDetail() {
     }
   }, [checkup?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleEdit = () => {
-    setIsEditing(true)
-  }
-
-  const handleCancel = () => {
-    setIsEditing(false)
-    // Reset to original values
-    setEditedNotes(checkup.notes || '')
-    setEditedCommonNotes(checkup.commonNotes || '')
-    setEditedPrescription(checkup.prescription || '')
-    setPrescriptionMedicines(checkup.prescriptionMedicines || [])
-    setPrescriptionNotes(checkup.prescriptionNotes || '')
-    const testNotesMap = {}
-    checkup.tests.forEach(testItem => {
-      testNotesMap[testItem.testId] = testItem.notes || ''
-    })
-    setEditedTestNotes(testNotesMap)
-    setEditedLabResults(checkup.labResults || {})
-  }
-
-  const handleSave = async () => {
-    try {
-      // Update the tests array with new notes
-      const updatedTests = checkup.tests.map(testItem => ({
-        ...testItem,
-        notes: editedTestNotes[testItem.testId] || ''
-      }))
-
-      // Dispatch update action
-      await dispatch(updateCheckup({
-        id: checkup.id,
-        notes: editedNotes,
-        commonNotes: editedCommonNotes,
-        prescription: editedPrescription,
-        prescriptionMedicines: prescriptionMedicines,
-        prescriptionNotes: prescriptionNotes,
-        tests: updatedTests,
-        labResults: editedLabResults
-      })).unwrap()
-
-      setIsEditing(false)
-      alert('Checkup updated successfully!')
-    } catch (error) {
-      console.error('Error updating checkup:', error)
-      alert('Failed to update checkup')
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this checkup?')) return
-    try {
-      await dispatch(deleteCheckup(id)).unwrap()
-      navigate('/checkups')
-    } catch (error) {
-      console.error('Error deleting checkup:', error)
-      alert('Failed to delete checkup')
-    }
-  }
-
-  const handleAddMedicine = () => {
-    setPrescriptionMedicines([...prescriptionMedicines, {
-      medicineId: '',
-      quantity: '',
-      instructions: ''
-    }])
-  }
-
-  const handleRemoveMedicine = (index) => {
-    setPrescriptionMedicines(prescriptionMedicines.filter((_, i) => i !== index))
-  }
-
   // Single shared template — header (top) + body (middle, fills space) + footer (bottom)
   const renderTemplate = (children) => (
     <div className="template-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Header */}
-      <div className="mb-2 pb-1 header-section" style={{ borderBottom: '2px solid #0891B2' }}>
-        <div className="header-row" style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="header-logo-left" style={{ flex: '0 0 20%' }}>
-            <img src={bloodLabLogo} alt="AWH Logo" className="template-logo-main" style={{ height: 'clamp(35px, 5vw, 50px)', objectFit: 'contain' }} />
-          </div>
-          <div className="header-center" style={{ flex: '1 1 60%', textAlign: 'center' }}>
-            <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: 'clamp(0.65rem, 2vw, 0.9rem)' }}>
-              AH WELLNESS HUB & ASIRI LABORATORIES
-            </h4>
-            <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>Complete Health Care Solutions</p>
-            <div style={{ fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)', color: '#64748b' }}>
-              <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
-              {' | '}
-              <span>{new Date(checkup.timestamp).toLocaleDateString()}</span>
-              {' | '}
-              <span>{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-          </div>
-          <div className="header-logo-right" style={{ flex: '0 0 20%', textAlign: 'right' }}>
-            <img src={asiriLogo} alt="ASIRI Logo" className="template-logo-asiri" style={{ height: 'clamp(25px, 4vw, 40px)', objectFit: 'contain', opacity: 0.8 }} />
-          </div>
+      <div className="mb-2 pb-1 header-section" style={{ borderBottom: '2px solid #0891B2', textAlign: 'center' }}>
+        <img src={bloodLabLogo} alt="AWH Logo" className="template-logo-main" style={{ height: 'clamp(35px, 5vw, 50px)', objectFit: 'contain', marginBottom: '0.25rem' }} />
+        <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: 'clamp(0.65rem, 2vw, 0.9rem)' }}>
+          AH WELLNESS HUB & ASIRI LABORATORIES
+        </h4>
+        <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>Complete Health Care Solutions</p>
+        <div style={{ fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)', color: '#64748b', marginBottom: '0.25rem' }}>
+          <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
+          {' | '}
+          <span>{new Date(checkup.timestamp).toLocaleDateString()}</span>
+          {' | '}
+          <span>{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
+        <img src={asiriLogo} alt="ASIRI Logo" className="template-logo-asiri" style={{ height: 'clamp(20px, 3vw, 30px)', objectFit: 'contain', opacity: 0.8 }} />
       </div>
 
       {/* Patient Info */}
@@ -259,24 +148,16 @@ function CheckupDetail() {
     </div>
   )
 
-  const handleMedicineChange = (index, field, value) => {
-    const updated = [...prescriptionMedicines]
-    updated[index] = { ...updated[index], [field]: value }
-    setPrescriptionMedicines(updated)
-  }
-
-  const handlePrescriptionFormatChange = (format) => {
-    const presets = {
-      a4: { width: 210, height: 297, orientation: 'portrait' },
-      a5: { width: 148, height: 210, orientation: 'portrait' },
-      letter: { width: 215.9, height: 279.4, orientation: 'portrait' },
-      custom: { width: prescriptionPdfSettings.width, height: prescriptionPdfSettings.height, orientation: prescriptionPdfSettings.orientation }
+  const handlePrint = () => {
+    if (billRef.current) {
+      billRef.current.classList.add('printing')
     }
-
-    setPrescriptionPdfSettings({
-      format,
-      ...presets[format]
-    })
+    window.print()
+    setTimeout(() => {
+      if (billRef.current) {
+        billRef.current.classList.remove('printing')
+      }
+    }, 100)
   }
 
   const handlePrintPrescription = () => {
@@ -287,182 +168,6 @@ function CheckupDetail() {
     setTimeout(() => {
       if (prescriptionRef.current) {
         prescriptionRef.current.classList.remove('printing')
-      }
-    }, 100)
-  }
-
-  const handleGeneratePrescriptionPDF = async () => {
-    if (!prescriptionRef.current) {
-      alert('Prescription content not found. Please refresh the page and try again.')
-      return
-    }
-
-    setIsGenerating(true)
-
-    try {
-      // Ensure the element is visible and has content
-      const element = prescriptionRef.current
-      if (!element.offsetParent && element.offsetHeight === 0) {
-        throw new Error('Prescription element is not visible')
-      }
-
-      // Convert selected page width mm → pixels (96 DPI)
-      const rxPageWidthMm = prescriptionPdfSettings.width
-      const rxPageWidthPx = Math.round(rxPageWidthMm * 96 / 25.4)
-      const rxPadding = '3% 10%'
-      const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : rxPageWidthMm <= 160 ? '0.75rem' : '0.85rem'
-
-      // Use wrapper to avoid body:has(.printing) display:none rule on the clone
-      const rxWrapper = document.createElement('div')
-      rxWrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;'
-      const prescriptionClone = element.cloneNode(true)
-      prescriptionClone.classList.add('printing')
-      prescriptionClone.style.width = rxPageWidthMm + 'mm'
-      prescriptionClone.style.height = prescriptionPdfSettings.height + 'mm'
-      prescriptionClone.style.padding = rxPadding
-      prescriptionClone.style.fontSize = rxFontSize
-      prescriptionClone.style.backgroundColor = '#ffffff'
-      prescriptionClone.style.boxSizing = 'border-box'
-      rxWrapper.appendChild(prescriptionClone)
-      document.body.appendChild(rxWrapper)
-
-      // Wait for images to load
-      const images = prescriptionClone.getElementsByTagName('img')
-      await Promise.all(
-        Array.from(images).map(img => {
-          if (img.complete) return Promise.resolve()
-          return new Promise((resolve) => {
-            img.onload = resolve
-            img.onerror = () => {
-              console.warn('Image failed to load:', img.src)
-              resolve()
-            }
-            setTimeout(resolve, 3000)
-          })
-        })
-      )
-
-      // Allow layout to settle before capturing
-      await new Promise(resolve => setTimeout(resolve, 200))
-
-      // windowWidth >= 800 to avoid mobile media queries
-      const rxCaptureHeight = Math.max(prescriptionClone.scrollHeight, prescriptionClone.offsetHeight)
-      const canvas = await html2canvas(prescriptionClone, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        windowWidth: Math.max(rxPageWidthPx, 800),
-        width: prescriptionClone.scrollWidth,
-        height: rxCaptureHeight,
-      })
-
-      document.body.removeChild(rxWrapper)
-
-      if (!canvas || canvas.width === 0 || canvas.height === 0) {
-        throw new Error('Failed to generate canvas from prescription')
-      }
-
-      const imgData = canvas.toDataURL('image/png')
-
-      if (!imgData || imgData === 'data:,') {
-        throw new Error('Failed to convert canvas to image')
-      }
-
-      const pdf = new jsPDF({
-        orientation: prescriptionPdfSettings.orientation,
-        unit: 'mm',
-        format: prescriptionPdfSettings.format === 'custom' ? [prescriptionPdfSettings.width, prescriptionPdfSettings.height] : prescriptionPdfSettings.format
-      })
-
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = canvas.width
-      const imgHeight = canvas.height
-
-      const marginTop = 5
-      const marginBottom = 5
-      const availableHeight = pdfHeight - marginTop - marginBottom
-      const availableWidth = pdfWidth - 6
-
-      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
-      const imgScaledWidth = imgWidth * ratio
-      const imgScaledHeight = imgHeight * ratio
-
-      const marginX = (pdfWidth - imgScaledWidth) / 2
-
-      pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
-      pdf.save(`Prescription_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
-
-      // Log PDF generation activity
-      if (user) {
-        await logActivity({
-          userId: user.uid,
-          username: user.username || user.email,
-          userRole: user.role,
-          activityType: ACTIVITY_TYPES.CHECKUP_PDF_PRESCRIPTION,
-          description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_PDF_PRESCRIPTION, {
-            billNo: checkup.billNo,
-            patientName: patient?.name
-          }),
-          metadata: {
-            checkupId: checkup.id,
-            billNo: checkup.billNo,
-            patientId: checkup.patientId,
-            patientName: patient?.name,
-            pdfType: 'prescription',
-            medicinesCount: prescriptionMedicines.length,
-            format: prescriptionPdfSettings.format,
-            orientation: prescriptionPdfSettings.orientation
-          }
-        })
-      }
-
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      alert(`Failed to generate PDF.\n\nError: ${error.message}\n\nPlease try:\n1. Refreshing the page\n2. Using the Print button instead\n3. Taking a screenshot of the prescription`)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const handleTestNoteChange = (testId, value) => {
-    setEditedTestNotes(prev => ({
-      ...prev,
-      [testId]: value
-    }))
-  }
-
-  const handleFormatChange = (format) => {
-    const presets = {
-      a4: { width: 210, height: 297, orientation: 'portrait' },
-      a5: { width: 148, height: 210, orientation: 'portrait' },
-      letter: { width: 215.9, height: 279.4, orientation: 'portrait' },
-      thermal80: { width: 80, height: 200, orientation: 'portrait' },
-      thermal58: { width: 58, height: 150, orientation: 'portrait' },
-      custom: { width: pdfSettings.width, height: pdfSettings.height, orientation: pdfSettings.orientation }
-    }
-
-    setPdfSettings({
-      format,
-      ...presets[format]
-    })
-  }
-
-  const handlePrint = () => {
-    // Add print class to adjust layout
-    if (billRef.current) {
-      billRef.current.classList.add('printing')
-    }
-
-    // Trigger browser print dialog
-    window.print()
-
-    // Remove print class after printing
-    setTimeout(() => {
-      if (billRef.current) {
-        billRef.current.classList.remove('printing')
       }
     }, 100)
   }
@@ -607,6 +312,141 @@ function CheckupDetail() {
     }
   }
 
+  const handleGeneratePrescriptionPDF = async () => {
+    if (!prescriptionRef.current) {
+      alert('Prescription content not found. Please refresh the page and try again.')
+      return
+    }
+
+    setIsGenerating(true)
+
+    try {
+      const element = prescriptionRef.current
+      if (!element.offsetParent && element.offsetHeight === 0) {
+        throw new Error('Prescription element is not visible')
+      }
+
+      // Convert selected page width mm → pixels (96 DPI)
+      const rxPageWidthMm = prescriptionPdfSettings.width
+      const rxPageWidthPx = Math.round(rxPageWidthMm * 96 / 25.4)
+      const rxPadding = '3% 10%'
+      const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : rxPageWidthMm <= 160 ? '0.75rem' : '0.85rem'
+
+      // Use wrapper to avoid body:has(.printing) display:none rule on the clone
+      const rxWrapper = document.createElement('div')
+      rxWrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;'
+      const prescriptionClone = element.cloneNode(true)
+      prescriptionClone.classList.add('printing')
+      prescriptionClone.style.width = rxPageWidthMm + 'mm'
+      prescriptionClone.style.height = prescriptionPdfSettings.height + 'mm'
+      prescriptionClone.style.padding = rxPadding
+      prescriptionClone.style.fontSize = rxFontSize
+      prescriptionClone.style.backgroundColor = '#ffffff'
+      prescriptionClone.style.boxSizing = 'border-box'
+      rxWrapper.appendChild(prescriptionClone)
+      document.body.appendChild(rxWrapper)
+
+      // Wait for images to load
+      const images = prescriptionClone.getElementsByTagName('img')
+      await Promise.all(
+        Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve()
+          return new Promise((resolve) => {
+            img.onload = resolve
+            img.onerror = () => {
+              console.warn('Image failed to load:', img.src)
+              resolve()
+            }
+            setTimeout(resolve, 3000)
+          })
+        })
+      )
+
+      // Allow layout to settle before capturing
+      await new Promise(resolve => setTimeout(resolve, 200))
+
+      // windowWidth >= 800 to avoid mobile media queries
+      const rxCaptureHeight = Math.max(prescriptionClone.scrollHeight, prescriptionClone.offsetHeight)
+      const canvas = await html2canvas(prescriptionClone, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        windowWidth: Math.max(rxPageWidthPx, 800),
+        width: prescriptionClone.scrollWidth,
+        height: rxCaptureHeight,
+      })
+
+      document.body.removeChild(rxWrapper)
+
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Failed to generate canvas from prescription')
+      }
+
+      const imgData = canvas.toDataURL('image/png')
+
+      if (!imgData || imgData === 'data:,') {
+        throw new Error('Failed to convert canvas to image')
+      }
+
+      const pdf = new jsPDF({
+        orientation: prescriptionPdfSettings.orientation,
+        unit: 'mm',
+        format: prescriptionPdfSettings.format === 'custom' ? [prescriptionPdfSettings.width, prescriptionPdfSettings.height] : prescriptionPdfSettings.format
+      })
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+
+      const marginTop = 5
+      const marginBottom = 5
+      const availableHeight = pdfHeight - marginTop - marginBottom
+      const availableWidth = pdfWidth - 6
+
+      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight)
+      const imgScaledWidth = imgWidth * ratio
+      const imgScaledHeight = imgHeight * ratio
+
+      const marginX = (pdfWidth - imgScaledWidth) / 2
+
+      pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
+      pdf.save(`Prescription_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
+
+      // Log PDF generation activity
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          username: user.username || user.email,
+          userRole: user.role,
+          activityType: ACTIVITY_TYPES.CHECKUP_PDF_PRESCRIPTION,
+          description: createActivityDescription(ACTIVITY_TYPES.CHECKUP_PDF_PRESCRIPTION, {
+            billNo: checkup.billNo,
+            patientName: patient?.name
+          }),
+          metadata: {
+            checkupId: checkup.id,
+            billNo: checkup.billNo,
+            patientId: checkup.patientId,
+            patientName: patient?.name,
+            pdfType: 'prescription',
+            medicinesCount: (checkup.prescriptionMedicines || []).length,
+            format: prescriptionPdfSettings.format,
+            orientation: prescriptionPdfSettings.orientation
+          }
+        })
+      }
+
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert(`Failed to generate PDF.\n\nError: ${error.message}\n\nPlease try:\n1. Refreshing the page\n2. Using the Print button instead\n3. Taking a screenshot of the prescription`)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   // Show loading while data is being fetched
   if ((checkupsLoading || patientsLoading) && checkups.length === 0) {
     return <LoadingSpinner text="Loading checkup..." />
@@ -635,6 +475,9 @@ function CheckupDetail() {
     return <LoadingSpinner text="Loading checkup..." />
   }
 
+  const prescriptionMedicines = checkup.prescriptionMedicines || []
+  const prescriptionNotes = checkup.prescriptionNotes || ''
+
   return (
     <Container fluid className="p-3 p-md-4">
       <Breadcrumb
@@ -642,99 +485,63 @@ function CheckupDetail() {
         current={checkup?.billNo || 'Checkup Details'}
       />
 
+      {/* Patient Details */}
+      <Card className="shadow-sm mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3" style={{ fontSize: 'clamp(0.8rem, 2vw, 0.95rem)' }}>
+            <span><strong>Patient:</strong> <a href={`/patients/${patient.id}`} onClick={(e) => { e.preventDefault(); navigate(`/patients/${patient.id}`) }} style={{ color: '#0891B2', textDecoration: 'none' }}>{patient.name}</a></span>
+            <span><strong>Age:</strong> {patient.age}yr</span>
+            <span><strong>Gender:</strong> {patient.gender}</span>
+            <span><strong>Mobile:</strong> {patient.mobile}</span>
+            <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
+            <span><strong>Date:</strong> {new Date(checkup.timestamp).toLocaleDateString()}</span>
+          </div>
+        </Card.Body>
+      </Card>
+
       {/* Action Buttons */}
       <Row className="mb-3 no-print">
         <Col>
           <div className="d-flex gap-2 flex-wrap align-items-center">
-            {!isEditing ? (
+            {activeTab === 'details' && (
               <>
                 <Button
-                  onClick={handleEdit}
-                  size="sm"
-                  className="no-print btn-theme"
-                >
-                  <FaEdit className="me-2" />
-                  {activeTab === 'details' ? 'Edit Invoice' : activeTab === 'notes' ? 'Edit Notes' : 'Edit Prescription'}
-                </Button>
-                {activeTab === 'details' && (
-                  <>
-                    <Button
-                      onClick={handlePrint}
-                      size="sm"
-                      className="no-print btn-theme-success"
-                    >
-                      <FaPrint className="me-2" />
-                      Print
-                    </Button>
-                    <Button
-                      onClick={handleGeneratePDF}
-                      disabled={isGenerating}
-                      size="sm"
-                      className="no-print btn-theme-primary"
-                    >
-                      <FaFilePdf className="me-2" />
-                      {isGenerating ? 'Generating PDF...' : 'Download PDF'}
-                    </Button>
-                    <Button
-                      onClick={() => setShowPdfSettings(!showPdfSettings)}
-                      size="sm"
-                      variant="outline-secondary"
-                      className="no-print"
-                    >
-                      <FaCog className="me-2" />
-                      Settings
-                    </Button>
-                  </>
-                )}
-                {activeTab === 'prescription' && (
-                  <>
-                    <Button
-                      onClick={handlePrintPrescription}
-                      size="sm"
-                      className="no-print btn-theme-success"
-                    >
-                      <FaPrint className="me-2" />
-                      Print
-                    </Button>
-                    <Button
-                      onClick={handleGeneratePrescriptionPDF}
-                      disabled={isGenerating}
-                      size="sm"
-                      className="no-print btn-theme-primary"
-                    >
-                      <FaFilePdf className="me-2" />
-                      {isGenerating ? 'Generating...' : 'Download PDF'}
-                    </Button>
-                    <Button
-                      onClick={() => setShowPrescriptionPdfSettings(!showPrescriptionPdfSettings)}
-                      size="sm"
-                      variant="outline-secondary"
-                      className="no-print"
-                    >
-                      <FaCog className="me-2" />
-                      Settings
-                    </Button>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <Button
-                  onClick={handleSave}
+                  onClick={handlePrint}
                   size="sm"
                   className="no-print btn-theme-success"
                 >
-                  <FaSave className="me-2" />
-                  Save Changes
+                  <FaPrint className="me-2" />
+                  Print
                 </Button>
                 <Button
-                  onClick={handleCancel}
+                  onClick={handleGeneratePDF}
+                  disabled={isGenerating}
                   size="sm"
-                  variant="secondary"
-                  className="no-print"
+                  className="no-print btn-theme-primary"
                 >
-                  <FaTimes className="me-2" />
-                  Cancel
+                  <FaFilePdf className="me-2" />
+                  {isGenerating ? 'Generating PDF...' : 'Download PDF'}
+                </Button>
+              </>
+            )}
+            {activeTab === 'prescription' && (
+              <>
+                <Button
+                  onClick={handlePrintPrescription}
+                  size="sm"
+                  className="no-print btn-theme-success"
+                >
+                  <FaPrint className="me-2" />
+                  Print
+                </Button>
+                <Button
+                  onClick={handleGeneratePrescriptionPDF}
+                  disabled={isGenerating}
+                  size="sm"
+                  className="no-print btn-theme-primary"
+                >
+                  <FaFilePdf className="me-2" />
+                  {isGenerating ? 'Generating...' : 'Download PDF'}
                 </Button>
               </>
             )}
@@ -742,84 +549,6 @@ function CheckupDetail() {
         </Col>
       </Row>
 
-      {/* PDF Settings Panel */}
-      <Collapse in={showPdfSettings}>
-        <Row className="mb-3 no-print">
-          <Col>
-            <Card className="settings-card">
-              <Card.Body className="py-2">
-                <Row className="align-items-center">
-                  <Col md={3}>
-                    <Form.Group className="mb-0">
-                      <Form.Label className="settings-label">Paper Size</Form.Label>
-                      <Form.Select
-                        size="sm"
-                        value={pdfSettings.format}
-                        onChange={(e) => handleFormatChange(e.target.value)}
-                        className="settings-control"
-                      >
-                        <option value="a4">A4 (210 x 297 mm)</option>
-                        <option value="a5">A5 (148 x 210 mm)</option>
-                        <option value="letter">Letter (8.5 x 11 in)</option>
-                        <option value="thermal80">Thermal 80mm</option>
-                        <option value="thermal58">Thermal 58mm</option>
-                        <option value="custom">Custom Size</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  {pdfSettings.format === 'custom' && (
-                    <>
-                      <Col md={2}>
-                        <Form.Group className="mb-0">
-                          <Form.Label className="settings-label">Width (mm)</Form.Label>
-                          <Form.Control
-                            type="number"
-                            size="sm"
-                            value={pdfSettings.width}
-                            onChange={(e) => setPdfSettings({...pdfSettings, width: parseFloat(e.target.value)})}
-                            className="settings-control"
-                          />
-                        </Form.Group>
-                      </Col>
-                      <Col md={2}>
-                        <Form.Group className="mb-0">
-                          <Form.Label className="settings-label">Height (mm)</Form.Label>
-                          <Form.Control
-                            type="number"
-                            size="sm"
-                            value={pdfSettings.height}
-                            onChange={(e) => setPdfSettings({...pdfSettings, height: parseFloat(e.target.value)})}
-                            className="settings-control"
-                          />
-                        </Form.Group>
-                      </Col>
-                      <Col md={2}>
-                        <Form.Group className="mb-0">
-                          <Form.Label className="settings-label">Orientation</Form.Label>
-                          <Form.Select
-                            size="sm"
-                            value={pdfSettings.orientation}
-                            onChange={(e) => setPdfSettings({...pdfSettings, orientation: e.target.value})}
-                            className="settings-control"
-                          >
-                            <option value="portrait">Portrait</option>
-                            <option value="landscape">Landscape</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                    </>
-                  )}
-                  <Col md={pdfSettings.format === 'custom' ? 3 : 9}>
-                    <div className="helper-text" style={{ marginTop: '1.25rem' }}>
-                      <strong>Current:</strong> {pdfSettings.width} x {pdfSettings.height} mm ({pdfSettings.orientation})
-                    </div>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Collapse>
 
       {/* Shared template styles for both invoice & prescription */}
       <style>{`
@@ -882,47 +611,20 @@ function CheckupDetail() {
           border: none !important;
         }
         .bill-content.printing th {
-          padding: 4px 6px !important;
-          font-size: 6.5pt !important;
+          padding: 3px 4px !important;
           vertical-align: middle !important;
         }
         .bill-content.printing td {
-          padding: 3px 6px !important;
+          padding: 2px 4px !important;
           vertical-align: middle !important;
         }
-
-        /* Prescription table */
         .bill-content.printing .prescription-table {
           font-size: 6.5pt !important;
         }
-        .bill-content.printing .prescription-table th {
-          padding: 4px 5px !important;
-          font-size: 6pt !important;
-          white-space: nowrap !important;
-          vertical-align: middle !important;
-        }
-        .bill-content.printing .prescription-table td {
-          padding: 3px 5px !important;
-          font-size: 6.5pt !important;
-          vertical-align: middle !important;
-        }
 
-        /* Section headings */
-        .bill-content.printing h6 {
-          font-size: 7pt !important;
-          margin-bottom: 3px !important;
-        }
-
-        /* Notes */
-        .bill-content.printing .notes-text {
-          font-size: 6.5pt !important;
-        }
-
-        /* Prescription layout — full width stacked on small formats */
+        /* Prescription layout — stacked when printing for better readability */
         .bill-content.printing .prescription-body {
-          display: flex !important;
           flex-direction: column !important;
-          gap: 0.5rem !important;
         }
         .bill-content.printing .prescription-left {
           flex: 1 1 auto !important;
@@ -992,22 +694,9 @@ function CheckupDetail() {
             padding: 0.75rem !important;
           }
 
-          /* --- Header: stacked, logo center, ASIRI top-right --- */
-          .bill-content .header-row {
-            flex-wrap: wrap !important;
-            position: relative !important;
-          }
-          .bill-content .header-logo-left {
-            flex: 0 0 100% !important;
-            text-align: center !important;
-            order: 1;
-          }
+          /* --- Header: centered stacked layout --- */
           .bill-content .template-logo-main {
-            height: 40px !important;
-          }
-          .bill-content .header-center {
-            flex: 0 0 100% !important;
-            order: 3;
+            height: 35px !important;
           }
           .bill-content .template-title {
             font-size: 0.7rem !important;
@@ -1016,14 +705,8 @@ function CheckupDetail() {
           .bill-content .header-section div {
             font-size: 0.55rem !important;
           }
-          .bill-content .header-logo-right {
-            position: absolute !important;
-            top: 0 !important;
-            right: 0 !important;
-            flex: none !important;
-          }
           .bill-content .template-logo-asiri {
-            height: 22px !important;
+            height: 18px !important;
           }
 
           /* --- Patient info: wrap naturally on mobile --- */
@@ -1141,26 +824,8 @@ function CheckupDetail() {
             flex-wrap: wrap !important;
             gap: 2px 8px !important;
           }
-
-          /* --- Prescription form cards --- */
-          .prescription-form-card {
-            padding: 0.5rem !important;
-          }
-          .prescription-form-card .row {
-            margin: 0 !important;
-          }
-          .prescription-form-card .col-md-5,
-          .prescription-form-card .col-md-2,
-          .prescription-form-card .col-md-4,
-          .prescription-form-card .col-md-1 {
-            padding: 0.25rem !important;
-            margin-bottom: 0.5rem;
-          }
         }
         @media (min-width: 768px) and (max-width: 991px) {
-          .prescription-form-card {
-            padding: 0.75rem !important;
-          }
           .prescription-table {
             font-size: 0.8rem !important;
           }
@@ -1187,17 +852,6 @@ function CheckupDetail() {
               {/* Invoice Tab Content */}
             </Tab>
             <Tab
-              eventKey="notes"
-              title={
-                <span>
-                  <FaStickyNote className="me-2" />
-                  Notes
-                </span>
-              }
-            >
-              {/* Notes Tab Content */}
-            </Tab>
-            <Tab
               eventKey="prescription"
               title={
                 <span>
@@ -1212,7 +866,7 @@ function CheckupDetail() {
         </Col>
       </Row>
 
-      {/* Bill Preview */}
+      {/* Invoice Preview */}
       {activeTab === 'details' && (
         <Row>
           <Col>
@@ -1281,52 +935,13 @@ function CheckupDetail() {
                     </table>
                   </div>
 
-                  {/* Individual Test Notes - Only visible when editing */}
-                  {isEditing && (
-                    <div className="mb-3 bg-theme-slate p-3 rounded">
-                      <h6 className="text-theme mb-3" style={{ fontSize: '0.9rem' }}>Edit Individual Test Notes (Not printed)</h6>
-                      {checkup.tests.map((testItem, index) => {
-                        const test = tests.find(t => t.id === testItem.testId)
-                        return test ? (
-                          <div key={testItem.testId} className="mb-2">
-                            <Form.Label style={{ fontSize: '0.85rem', color: '#0891B2', marginBottom: '0.25rem' }}>
-                              <strong>{test.code}</strong> - <strong>{test.name}</strong>
-                              <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#666' }}>
-                                (Rs. {test.price?.toFixed(2)})
-                              </span>
-                            </Form.Label>
-                            <Form.Control
-                              as="textarea"
-                              rows={2}
-                              value={editedTestNotes[testItem.testId] || ''}
-                              onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
-                              placeholder={`Internal notes for ${test.code} - ${test.name}...`}
-                              style={{ fontSize: '0.85rem' }}
-                            />
-                          </div>
-                        ) : null
-                      })}
-                    </div>
-                  )}
-
                   {/* General Notes */}
-                  {(checkup.notes || isEditing) && (
+                  {checkup.notes && (
                     <div className="mb-3">
                       <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>Notes</h6>
-                      {isEditing ? (
-                        <Form.Control
-                          as="textarea"
-                          rows={3}
-                          value={editedNotes}
-                          onChange={(e) => setEditedNotes(e.target.value)}
-                          placeholder="Add general notes for this checkup (will be printed)..."
-                          style={{ fontSize: '0.85rem' }}
-                        />
-                      ) : (
-                        <p className="notes-text" style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
-                          {checkup.notes}
-                        </p>
-                      )}
+                      <p className="notes-text" style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', color: '#475569', lineHeight: '1.5', marginBottom: 0 }}>
+                        {checkup.notes}
+                      </p>
                     </div>
                   )}
 
@@ -1342,615 +957,208 @@ function CheckupDetail() {
       </Row>
       )}
 
-      {/* Notes Tab */}
-      {activeTab === 'notes' && (
+      {/* Prescription Tab */}
+      {activeTab === 'prescription' && (
         <Row>
           <Col>
             <Card className="shadow-sm">
-              <Card.Body>
-                <h5 className="text-theme mb-4">
-                  <FaStickyNote className="me-2" />
-                  Checkup Notes
-                </h5>
+              <Card.Body ref={prescriptionRef} className="bill-content" style={{ padding: 'clamp(0.75rem, 3vw, 2.5rem)', backgroundColor: 'white' }}>
+                {renderTemplate(
+                  <>
+                    {/* Body: 70% left / 30% right */}
+                    <div className="prescription-body" style={{ display: 'flex', gap: '0.75rem' }}>
+                      {/* Left — main content */}
+                      <div className="prescription-left" style={{ flex: '0 0 70%', maxWidth: '70%' }}>
+                        {/* Medicines Table */}
+                        {prescriptionMedicines.length > 0 && (
+                          <div className="mb-3">
+                            <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>℞ Prescribed Medications</h6>
+                            <table className="prescription-table" style={{ width: '100%', marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', border: 'none', borderCollapse: 'collapse', textAlign: 'center' }}>
+                              <thead>
+                                <tr style={{ borderBottom: '2px solid #0891B2' }}>
+                                  <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>Medicine (Brand)</th>
+                                  <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%', border: 'none', textAlign: 'center' }}>Dosage</th>
+                                  <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%', border: 'none', textAlign: 'center' }}>Qty</th>
+                                  <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '25%', border: 'none', textAlign: 'center' }}>Instructions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {prescriptionMedicines.map((med, index) => {
+                                  const medicine = medicines.find(m => m.id === med.medicineId)
+                                  return medicine ? (
+                                    <tr key={index}>
+                                      <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>
+                                        <strong>{medicine.name}</strong>
+                                        <br />
+                                        <span style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)', color: '#64748b' }}>{medicine.brand}</span>
+                                      </td>
+                                      <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', fontWeight: '600', color: '#059669', border: 'none', textAlign: 'center' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
+                                      <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'center' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
+                                      <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'center' }}>{med.instructions || '-'}</td>
+                                    </tr>
+                                  ) : null
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
 
-                {/* Common Notes */}
-                <div className="mb-4">
-                  <h6 className="section-heading">
-                    Common Notes
-                  </h6>
-                  {isEditing ? (
-                    <RichTextEditor
-                      label=""
-                      value={editedCommonNotes}
-                      onChange={(value) => setEditedCommonNotes(value)}
-                      placeholder="Add common notes for this checkup..."
-                      height="250px"
-                    />
-                  ) : (
-                    <div className="note-display">
-                      {checkup.commonNotes ? (
-                        <div dangerouslySetInnerHTML={{ __html: checkup.commonNotes }} />
-                      ) : (
-                        <em className="text-theme-muted-light">No common notes added</em>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        {/* Additional Notes */}
+                        {prescriptionNotes && (
+                          <div className="mb-3">
+                            <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>Instructions</h6>
+                            <p className="notes-text" style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                              {prescriptionNotes}
+                            </p>
+                          </div>
+                        )}
 
-                {/* Test Notes - Only show if there are notes */}
-                {(Object.keys(editedTestNotes).filter(testId => editedTestNotes[testId]).length > 0 || isEditing) && (
-                  <div className="mb-3">
-                    <div className="d-flex justify-content-between align-items-center mb-3 section-heading">
-                      <h6 className="text-theme mb-0">
-                        Test Notes (Optional)
-                      </h6>
-                      {isEditing && (
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            const testSelect = document.getElementById('test-notes-dropdown')
-                            if (testSelect) {
-                              testSelect.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                              testSelect.focus()
-                            }
-                          }}
-                          className="btn-theme-success"
-                        >
-                          <FaPlus className="me-1" />
-                          Add Notes for Test
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Dropdown to select test for adding notes */}
-                    {isEditing && (
-                      <div className="mb-3 p-3 prescription-add-section">
-                        <Form.Group>
-                          <Form.Label className="form-label-theme">
-                            Select Test to Add Notes
-                          </Form.Label>
-                          <Select
-                            id="test-notes-dropdown"
-                            value={selectedTestForNote}
-                            options={checkup.tests
-                              .filter(testItem => !editedTestNotes[testItem.testId])
-                              .map(testItem => {
-                                const test = tests.find(t => t.id === testItem.testId)
-                                return test ? {
-                                  value: testItem.testId,
-                                  label: `${test.code} - ${test.name} (Rs. ${test.price?.toFixed(2)})`
-                                } : null
-                              }).filter(Boolean)}
-                            onChange={(option) => {
-                              setSelectedTestForNote(option)
-                              if (option) {
-                                // Auto-focus on the textarea
-                                setTimeout(() => {
-                                  const textarea = document.getElementById('new-test-note-input')
-                                  if (textarea) {
-                                    textarea.focus()
-                                  }
-                                }, 100)
-                              }
-                            }}
-                            placeholder="Select a test to add notes..."
-                            isClearable
-                            styles={{
-                              control: (base) => ({ ...base, fontSize: '0.9rem' }),
-                              menu: (base) => ({ ...base, fontSize: '0.9rem' })
-                            }}
-                          />
-                        </Form.Group>
-
-                        {/* Input field for new test note */}
-                        {selectedTestForNote && (
-                          <div className="mt-3">
-                            <Form.Label className="form-label-theme">
-                              Add Note for {selectedTestForNote.label}
-                            </Form.Label>
-                            <Form.Control
-                              id="new-test-note-input"
-                              as="textarea"
-                              rows={3}
-                              placeholder={`Add notes for ${selectedTestForNote.label}...`}
-                              style={{ fontSize: '0.9rem' }}
-                              onKeyDown={(e) => {
-                                // Save on Ctrl+Enter or Cmd+Enter
-                                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                                  const value = e.target.value.trim()
-                                  if (value) {
-                                    handleTestNoteChange(selectedTestForNote.value, value)
-                                    setSelectedTestForNote(null)
-                                  }
-                                }
-                              }}
-                            />
-                            <div className="d-flex gap-2 mt-2">
-                              <Button
-                                size="sm"
-                                className="btn-theme-success"
-                                onClick={() => {
-                                  const textarea = document.getElementById('new-test-note-input')
-                                  const value = textarea?.value.trim()
-                                  if (value) {
-                                    handleTestNoteChange(selectedTestForNote.value, value)
-                                    setSelectedTestForNote(null)
-                                  }
-                                }}
-                              >
-                                <FaPlus className="me-1" />
-                                Add Note
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => setSelectedTestForNote(null)}
-                              >
-                                <FaTimes className="me-1" />
-                                Cancel
-                              </Button>
-                            </div>
-                            <p className="helper-text mt-2 mb-0">
-                              Press Ctrl+Enter to quickly add the note
+                        {/* Empty State */}
+                        {prescriptionMedicines.length === 0 && !prescriptionNotes && (
+                          <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                            <FaPrescriptionBottleAlt size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                            <p style={{ fontSize: '0.9rem' }}>
+                              <em>No prescription added yet. Go to <a href={`/checkups/${id}`} onClick={(e) => { e.preventDefault(); navigate(`/checkups/${id}`) }} style={{ color: '#0891B2' }}>Edit Checkup</a> to add medicines and instructions.</em>
                             </p>
                           </div>
                         )}
                       </div>
-                    )}
 
-                    {/* Only show test notes that have content or are being edited */}
-                    {checkup.tests
-                      .filter(testItem => editedTestNotes[testItem.testId] !== undefined && editedTestNotes[testItem.testId] !== '')
-                      .map((testItem) => {
-                        const test = tests.find(t => t.id === testItem.testId)
-                        return test ? (
-                          <div
-                            key={testItem.testId}
-                            id={`test-note-${testItem.testId}`}
-                            className="mb-3 note-card"
-                          >
-                            <div className="mb-2 d-flex justify-content-between align-items-center">
-                              <div>
-                                <strong className="text-theme fs-6">{test.code}</strong>
-                                <span className="text-theme-muted ms-2">- {test.name}</span>
-                                <span className="text-theme-muted-light ms-2" style={{ fontSize: '0.85rem' }}>(Rs. {test.price?.toFixed(2)})</span>
-                              </div>
-                              {isEditing && (
-                                <Button
-                                  size="sm"
-                                  variant="outline-danger"
-                                  onClick={() => handleTestNoteChange(testItem.testId, '')}
-                                  title="Remove notes for this test"
-                                >
-                                  <FaTrash />
-                                </Button>
-                              )}
+                      {/* Right — general tests + lab results grid */}
+                      <div className="prescription-right" style={{ flex: '0 0 28%', maxWidth: '28%', borderLeft: '1px solid #e2e8f0', paddingLeft: '0.5rem' }}>
+                        {/* General Tests */}
+                        {generalTestFields.length > 0 && (
+                          <>
+                            <div style={{ marginBottom: '4px' }}>
+                              <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.7rem)', color: '#0891B2' }}>General</strong>
                             </div>
-                            {isEditing ? (
-                              <Form.Control
-                                as="textarea"
-                                rows={3}
-                                value={editedTestNotes[testItem.testId] || ''}
-                                onChange={(e) => handleTestNoteChange(testItem.testId, e.target.value)}
-                                placeholder={`Add notes for ${test.name}...`}
-                                style={{ fontSize: '0.9rem' }}
-                              />
-                            ) : (
-                              <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-                                {testItem.notes}
-                              </p>
-                            )}
+                            <div className="lab-results-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 6px', marginBottom: '6px' }}>
+                              {(() => {
+                                const genShowEmpty = settings?.generalTests?.showEmpty || 'hide'
+                                const shouldShow = (fieldDisplay, value) => {
+                                  const effective = fieldDisplay === 'default' ? genShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
+                                  if (value) return true
+                                  return effective !== 'hide'
+                                }
+                                const emptyText = (fieldDisplay) => {
+                                  const effective = fieldDisplay === 'default' ? genShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
+                                  return effective === 'na' ? 'N/A' : ''
+                                }
+                                return generalTestFields.map(({ key, label, display, children }) => {
+                                  const val = checkup.generalTests?.[key]
+                                  const childrenHaveValues = children?.some(({ key: ck }) => checkup.generalTests?.[ck])
+                                  const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
+                                    children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.generalTests?.[ck]))
+                                  if (!children && !shouldShow(display, val)) return null
+                                  if (children && !parentShouldShow) return null
+
+                                  return children ? (
+                                    <div key={key} style={{ gridColumn: '1 / -1' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
+                                        <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                        <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                      </div>
+                                      <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
+                                        {children.map(({ key: ck, label: cl, display: cd }) => {
+                                          const cv = checkup.generalTests?.[ck]
+                                          if (!shouldShow(cd, cv)) return null
+                                          return (
+                                            <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
+                                              <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
+                                              <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
+                                      <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                      <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                    </div>
+                                  )
+                                })
+                              })()}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Lab Results */}
+                        {labResultFields.length > 0 && (
+                          <div style={{ marginBottom: '4px' }}>
+                            <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.7rem)', color: '#0891B2' }}>Lab Results</strong>
                           </div>
-                        ) : null
-                      })}
-                  </div>
-                )}
+                        )}
+                        <div className="lab-results-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 6px' }}>
+                          {(() => {
+                            const shouldShow = (fieldDisplay, value) => {
+                              const effective = fieldDisplay === 'default' ? labResultsShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
+                              if (value) return true
+                              return effective !== 'hide'
+                            }
+                            const emptyText = (fieldDisplay) => {
+                              const effective = fieldDisplay === 'default' ? labResultsShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
+                              return effective === 'na' ? 'N/A' : ''
+                            }
 
-                {isEditing && (
-                  <div className="d-flex gap-2 justify-content-end mt-3">
-                    <Button
-                      onClick={handleSave}
-                      className="btn-theme-success"
-                    >
-                      <FaSave className="me-2" />
-                      Save Notes
-                    </Button>
-                    <Button
-                      onClick={handleCancel}
-                      variant="secondary"
-                    >
-                      <FaTimes className="me-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )}
+                            return labResultFields.map(({ key, label, display, children }) => {
+                              const val = checkup.labResults?.[key]
+                              const childrenHaveValues = children?.some(({ key: ck }) => checkup.labResults?.[ck])
+                              const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
+                                children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.labResults?.[ck]))
+                              if (!children && !shouldShow(display, val)) return null
+                              if (children && !parentShouldShow) return null
 
-      {/* Prescription Tab */}
-      {activeTab === 'prescription' && (
-        <>
-          {/* PDF Settings */}
-          <Collapse in={showPrescriptionPdfSettings}>
-            <Row className="mb-3 no-print">
-              <Col>
-                <Card className="settings-card">
-                  <Card.Body className="py-2">
-                    <Row className="align-items-center">
-                      <Col md={4}>
-                        <Form.Group className="mb-0">
-                          <Form.Label className="settings-label">Paper Size</Form.Label>
-                          <Form.Select
-                            size="sm"
-                            value={prescriptionPdfSettings.format}
-                            onChange={(e) => handlePrescriptionFormatChange(e.target.value)}
-                            className="settings-control"
-                          >
-                            <option value="a4">A4 (210 x 297 mm)</option>
-                            <option value="a5">A5 (148 x 210 mm)</option>
-                            <option value="letter">Letter (8.5 x 11 in)</option>
-                            <option value="custom">Custom Size</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                      {prescriptionPdfSettings.format === 'custom' && (
-                        <>
-                          <Col md={2}>
-                            <Form.Group className="mb-0">
-                              <Form.Label className="settings-label">Width (mm)</Form.Label>
-                              <Form.Control
-                                type="number"
-                                size="sm"
-                                value={prescriptionPdfSettings.width}
-                                onChange={(e) => setPrescriptionPdfSettings({...prescriptionPdfSettings, width: parseFloat(e.target.value)})}
-                                className="settings-control"
-                              />
-                            </Form.Group>
-                          </Col>
-                          <Col md={2}>
-                            <Form.Group className="mb-0">
-                              <Form.Label className="settings-label">Height (mm)</Form.Label>
-                              <Form.Control
-                                type="number"
-                                size="sm"
-                                value={prescriptionPdfSettings.height}
-                                onChange={(e) => setPrescriptionPdfSettings({...prescriptionPdfSettings, height: parseFloat(e.target.value)})}
-                                className="settings-control"
-                              />
-                            </Form.Group>
-                          </Col>
-                        </>
-                      )}
-                    </Row>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-          </Collapse>
-
-          {/* Medicine Selection Section - Only visible when editing */}
-          {isEditing && (
-            <Row className="mb-3 no-print">
-              <Col>
-                <Card className="settings-card" style={{ border: '1px solid #e0f2fe' }}>
-                  <Card.Body>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <h6 className="text-theme mb-0">Add Medicines to Prescription</h6>
-                      <Button
-                        size="sm"
-                        onClick={handleAddMedicine}
-                        className="btn-theme-success"
-                      >
-                        <FaPlus className="me-1" />
-                        Add Medicine
-                      </Button>
+                              return children ? (
+                                <div key={key} style={{ gridColumn: '1 / -1' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
+                                    <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                    <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                  </div>
+                                  <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
+                                    {children.map(({ key: ck, label: cl, display: cd }) => {
+                                      const cv = checkup.labResults?.[ck]
+                                      if (!shouldShow(cd, cv)) return null
+                                      return (
+                                        <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
+                                          <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
+                                          <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
+                                  <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
+                                  <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                </div>
+                              )
+                            })
+                          })()}
+                        </div>
+                      </div>
                     </div>
 
-                    {prescriptionMedicines.map((med, index) => {
-                      const selectedMedicine = medicines.find(m => m.id === med.medicineId)
-                      return (
-                        <Card key={index} className="mb-2 prescription-form-card" style={{ border: '1px solid #cbd5e1' }}>
-                          <Card.Body className="p-3">
-                            <Row>
-                              <Col md={5}>
-                                <Form.Group className="mb-2">
-                                  <Form.Label className="settings-label fw-semibold">Medicine (Name - Dosage - Brand)</Form.Label>
-                                  <Select
-                                    value={selectedMedicine ? {
-                                      value: selectedMedicine.id,
-                                      label: `${selectedMedicine.name} - ${Array.isArray(selectedMedicine.dosage) ? selectedMedicine.dosage.join(', ') : selectedMedicine.dosage} - ${selectedMedicine.brand}`
-                                    } : null}
-                                    onChange={(option) => handleMedicineChange(index, 'medicineId', option.value)}
-                                    options={medicines.map(m => ({
-                                      value: m.id,
-                                      label: `${m.name} - ${Array.isArray(m.dosage) ? m.dosage.join(', ') : m.dosage} - ${m.brand}`
-                                    }))}
-                                    placeholder="Select medicine with dosage..."
-                                    styles={{
-                                      control: (base) => ({ ...base, fontSize: '0.9rem' }),
-                                      menu: (base) => ({ ...base, fontSize: '0.9rem' })
-                                    }}
-                                  />
-                                </Form.Group>
-                              </Col>
-                              <Col md={2}>
-                                <Form.Group className="mb-2">
-                                  <Form.Label className="settings-label fw-semibold">Quantity</Form.Label>
-                                  <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={med.quantity}
-                                    onChange={(e) => handleMedicineChange(index, 'quantity', e.target.value)}
-                                    placeholder="e.g., 10"
-                                  />
-                                </Form.Group>
-                              </Col>
-                              <Col md={4}>
-                                <Form.Group className="mb-2">
-                                  <Form.Label className="settings-label fw-semibold">Instructions</Form.Label>
-                                  <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={med.instructions}
-                                    onChange={(e) => handleMedicineChange(index, 'instructions', e.target.value)}
-                                    placeholder="e.g., After meals, Twice daily"
-                                  />
-                                </Form.Group>
-                              </Col>
-                              <Col md={1} className="d-flex align-items-end">
-                                <Button
-                                  size="sm"
-                                  variant="danger"
-                                  onClick={() => handleRemoveMedicine(index)}
-                                  className="mb-2"
-                                >
-                                  <FaTrash />
-                                </Button>
-                              </Col>
-                            </Row>
-                          </Card.Body>
-                        </Card>
-                      )
-                    })}
-
-                    <Form.Group className="mt-3">
-                      <Form.Label className="form-label-theme">Additional Instructions / Notes</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={3}
-                        value={prescriptionNotes}
-                        onChange={(e) => setPrescriptionNotes(e.target.value)}
-                        placeholder="Add general instructions or notes for the prescription..."
-                        style={{ fontSize: '0.9rem' }}
-                      />
-                    </Form.Group>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-          )}
-
-          {/* Live Prescription Preview */}
-          <Row>
-            <Col>
-              <Card className="shadow-sm">
-                <Card.Body ref={prescriptionRef} className="bill-content" style={{ padding: 'clamp(0.75rem, 3vw, 2.5rem)', backgroundColor: 'white' }}>
-                  {renderTemplate(
-                    <>
-                      {/* Body: 70% left / 30% right */}
-                      <div className="prescription-body" style={{ display: 'flex', gap: '0.75rem' }}>
-                        {/* Left — main content */}
-                        <div className="prescription-left" style={{ flex: '0 0 70%', maxWidth: '70%' }}>
-                          {/* Medicines Table */}
-                          {prescriptionMedicines.length > 0 && (
-                            <div className="mb-3">
-                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>℞ Prescribed Medications</h6>
-                              <table className="prescription-table" style={{ width: '100%', marginBottom: '0', fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', border: 'none', borderCollapse: 'collapse', textAlign: 'center' }}>
-                                <thead>
-                                  <tr style={{ borderBottom: '2px solid #0891B2' }}>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>Medicine (Brand)</th>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%', border: 'none', textAlign: 'center' }}>Dosage</th>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '15%', border: 'none', textAlign: 'center' }}>Qty</th>
-                                    <th style={{ color: '#0891B2', padding: 'clamp(0.35rem, 1vw, 0.6rem) clamp(0.3rem, 1vw, 0.6rem)', width: '25%', border: 'none', textAlign: 'center' }}>Instructions</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {prescriptionMedicines.map((med, index) => {
-                                    const medicine = medicines.find(m => m.id === med.medicineId)
-                                    return medicine ? (
-                                      <tr key={index}>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'left' }}>
-                                          <strong>{medicine.name}</strong>
-                                          <br />
-                                          <span style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)', color: '#64748b' }}>{medicine.brand}</span>
-                                        </td>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', fontWeight: '600', color: '#059669', border: 'none', textAlign: 'center' }}>{Array.isArray(medicine.dosage) ? medicine.dosage.join(', ') : (medicine.dosage || '-')}</td>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'center' }}>{med.quantity ? `${med.quantity} ${medicine.unit}` : '-'}</td>
-                                        <td style={{ padding: 'clamp(0.2rem, 0.8vw, 0.4rem) clamp(0.3rem, 1vw, 0.6rem)', border: 'none', textAlign: 'center' }}>{med.instructions || '-'}</td>
-                                      </tr>
-                                    ) : null
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-
-                          {/* Additional Notes */}
-                          {prescriptionNotes && (
-                            <div className="mb-3">
-                              <h6 style={{ color: '#0891B2', marginBottom: '0.5rem', fontSize: 'clamp(0.75rem, 2vw, 0.95rem)' }}>Instructions</h6>
-                              <p className="notes-text" style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)', color: '#475569', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
-                                {prescriptionNotes}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Empty State */}
-                          {prescriptionMedicines.length === 0 && !prescriptionNotes && (
-                            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                              <FaPrescriptionBottleAlt size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                              <p style={{ fontSize: '0.9rem' }}>
-                                <em>No prescription added yet. Click "Edit Notes" to add medicines and instructions.</em>
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Right — lab results grid */}
-                        <div className="prescription-right" style={{ flex: '0 0 28%', maxWidth: '28%', borderLeft: '1px solid #e2e8f0', paddingLeft: '0.5rem' }}>
-                          <div className="lab-results-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 6px' }}>
-                            {(() => {
-                              const shouldShow = (fieldDisplay, value) => {
-                                if (isEditing) return true
-                                const effective = fieldDisplay === 'default' ? labResultsShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
-                                if (value) return true
-                                return effective !== 'hide'
-                              }
-                              const emptyText = (fieldDisplay) => {
-                                const effective = fieldDisplay === 'default' ? labResultsShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
-                                return effective === 'na' ? 'N/A' : ''
-                              }
-
-                              return labResultFields.map(({ key, label, display, children }) => {
-                                const val = checkup.labResults?.[key]
-                                const childrenHaveValues = children?.some(({ key: ck }) => checkup.labResults?.[ck])
-                                const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
-                                  children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.labResults?.[ck]))
-                                if (!children && !shouldShow(display, val)) return null
-                                if (children && !isEditing && !parentShouldShow) return null
-
-                                return children ? (
-                                  <div key={key} style={{ gridColumn: '1 / -1' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
-                                      <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
-                                      {isEditing ? (
-                                        <Form.Control
-                                          size="sm"
-                                          type="text"
-                                          value={editedLabResults[key] || ''}
-                                          onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
-                                          style={{ height: '18px', fontSize: 'clamp(0.5rem, 1.3vw, 0.6rem)', padding: '0 2px', flex: 1, minWidth: 0 }}
-                                        />
-                                      ) : (
-                                        <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
-                                      )}
-                                    </div>
-                                    <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
-                                      {children.map(({ key: ck, label: cl, display: cd }) => {
-                                        const cv = checkup.labResults?.[ck]
-                                        if (!shouldShow(cd, cv)) return null
-                                        return (
-                                          <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
-                                            <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
-                                            {isEditing ? (
-                                              <Form.Control
-                                                size="sm"
-                                                type="text"
-                                                value={editedLabResults[ck] || ''}
-                                                onChange={(e) => setEditedLabResults(prev => ({ ...prev, [ck]: e.target.value }))}
-                                                style={{ height: '16px', fontSize: 'clamp(0.45rem, 1.1vw, 0.55rem)', padding: '0 2px', flex: 1, minWidth: 0 }}
-                                              />
-                                            ) : (
-                                              <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
-                                            )}
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
-                                    <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
-                                    {isEditing ? (
-                                      <Form.Control
-                                        size="sm"
-                                        type="text"
-                                        value={editedLabResults[key] || ''}
-                                        onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
-                                        style={{ height: '18px', fontSize: 'clamp(0.5rem, 1.3vw, 0.6rem)', padding: '0 2px', flex: 1, minWidth: 0 }}
-                                      />
-                                    ) : (
-                                      <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
-                                    )}
-                                  </div>
-                                )
-                              })
-                            })()}
-                          </div>
-                        </div>
+                    {/* Date / Signature lines */}
+                    <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', paddingTop: '1rem' }}>
+                      <div>
+                        <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
+                        <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Date</p>
                       </div>
-
-                      {/* Date / Signature lines */}
-                      <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', paddingTop: '1rem' }}>
-                        <div>
-                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
-                          <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Date</p>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
-                          <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Signature</p>
-                        </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
+                        <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Signature</p>
                       </div>
-                    </>
-                  )}
-                </Card.Body>
-              </Card>
-
-              {/* Save/Cancel Buttons */}
-              {isEditing && (
-                <div className="d-flex gap-2 justify-content-end mt-3">
-                  <Button
-                    onClick={handleSave}
-                    className="btn-theme-success"
-                  >
-                    <FaSave className="me-2" />
-                    Save Prescription
-                  </Button>
-                  <Button onClick={handleCancel} variant="secondary">
-                    <FaTimes className="me-2" />
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </Col>
-          </Row>
-
-        </>
-      )}
-
-      {/* Edit & Delete Buttons at Bottom */}
-      {!isEditing && (
-        <Row className="mt-4 no-print">
-          <Col>
-            <Card>
-              <Card.Body className="d-flex gap-2 flex-wrap justify-content-end">
-                <Button
-                  onClick={() => navigate(`/checkups/${id}/edit`)}
-                  className="btn-theme-add"
-                >
-                  <FaEdit className="me-2" />
-                  Edit Checkup
-                </Button>
-                <Button
-                  onClick={handleDelete}
-                  style={{
-                    backgroundColor: '#ef4444',
-                    border: 'none',
-                    color: 'white',
-                    padding: '0.5rem 1.5rem',
-                  }}
-                >
-                  <FaTrash className="me-2" />
-                  Delete Checkup
-                </Button>
+                    </div>
+                  </>
+                )}
               </Card.Body>
             </Card>
           </Col>
         </Row>
       )}
+
     </Container>
   )
 }
