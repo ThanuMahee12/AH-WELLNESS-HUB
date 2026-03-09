@@ -308,18 +308,17 @@ function CheckupDetail() {
       const rxPadding = rxPageWidthMm < 100 ? '8px' : rxPageWidthMm <= 160 ? '15px' : '25px'
       const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : rxPageWidthMm <= 160 ? '0.75rem' : '0.85rem'
 
+      // Use wrapper to avoid body:has(.printing) display:none rule on the clone
+      const rxWrapper = document.createElement('div')
+      rxWrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;'
       const prescriptionClone = element.cloneNode(true)
       prescriptionClone.classList.add('printing')
-      prescriptionClone.style.position = 'absolute'
-      prescriptionClone.style.left = '-9999px'
-      prescriptionClone.style.top = '0'
       prescriptionClone.style.width = rxPageWidthMm + 'mm'
       prescriptionClone.style.padding = rxPadding
       prescriptionClone.style.fontSize = rxFontSize
       prescriptionClone.style.backgroundColor = '#ffffff'
-      prescriptionClone.style.display = 'block'
-      prescriptionClone.style.visibility = 'visible'
-      document.body.appendChild(prescriptionClone)
+      rxWrapper.appendChild(prescriptionClone)
+      document.body.appendChild(rxWrapper)
 
       // Wait for images to load
       const images = prescriptionClone.getElementsByTagName('img')
@@ -352,7 +351,7 @@ function CheckupDetail() {
         height: prescriptionClone.scrollHeight,
       })
 
-      document.body.removeChild(prescriptionClone)
+      document.body.removeChild(rxWrapper)
 
       if (!canvas || canvas.width === 0 || canvas.height === 0) {
         throw new Error('Failed to generate canvas from prescription')
@@ -490,28 +489,22 @@ function CheckupDetail() {
       console.log('[PDF] pageWidthMm:', pageWidthMm, 'pageWidthPx:', pageWidthPx)
       console.log('[PDF] clonePadding:', clonePadding, 'cloneFontSize:', cloneFontSize)
 
-      // Clone the bill content to avoid modifying the original
+      // Clone the bill content — use a wrapper div to avoid the body:has(.printing) display:none rule
+      const wrapper = document.createElement('div')
+      wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;'
       const billClone = element.cloneNode(true)
       billClone.classList.add('printing')
-      billClone.style.position = 'absolute'
-      billClone.style.left = '-9999px'
-      billClone.style.top = '0'
       billClone.style.width = pageWidthMm + 'mm'
       billClone.style.padding = clonePadding
       billClone.style.fontSize = cloneFontSize
       billClone.style.backgroundColor = '#ffffff'
-      billClone.style.display = 'block'
-      billClone.style.visibility = 'visible'
-      document.body.appendChild(billClone)
+      wrapper.appendChild(billClone)
+      document.body.appendChild(wrapper)
 
       console.log('[PDF] Clone appended. scrollWidth:', billClone.scrollWidth, 'scrollHeight:', billClone.scrollHeight)
       console.log('[PDF] Clone offsetWidth:', billClone.offsetWidth, 'offsetHeight:', billClone.offsetHeight)
-      console.log('[PDF] Clone clientWidth:', billClone.clientWidth, 'clientHeight:', billClone.clientHeight)
-      console.log('[PDF] Clone children count:', billClone.children.length)
-      console.log('[PDF] Clone classList:', [...billClone.classList])
-      console.log('[PDF] Clone computed width:', window.getComputedStyle(billClone).width)
       console.log('[PDF] Clone computed display:', window.getComputedStyle(billClone).display)
-      console.log('[PDF] Clone computed visibility:', window.getComputedStyle(billClone).visibility)
+      console.log('[PDF] Wrapper computed display:', window.getComputedStyle(wrapper).display)
 
       // Wait for images to load
       const images = billClone.getElementsByTagName('img')
@@ -535,35 +528,29 @@ function CheckupDetail() {
       await new Promise(resolve => setTimeout(resolve, 200))
 
       console.log('[PDF] After settle - scrollWidth:', billClone.scrollWidth, 'scrollHeight:', billClone.scrollHeight)
-      console.log('[PDF] After settle - offsetWidth:', billClone.offsetWidth, 'offsetHeight:', billClone.offsetHeight)
 
-      // Generate canvas from the clone — windowWidth >= 800 to avoid mobile media queries
-      const html2canvasOptions = {
+      const canvas = await html2canvas(billClone, {
         scale: 2,
         useCORS: true,
-        logging: true,
+        logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
         windowWidth: Math.max(pageWidthPx, 800),
         width: billClone.scrollWidth,
         height: billClone.scrollHeight,
-      }
-      console.log('[PDF] html2canvas options:', JSON.stringify(html2canvasOptions))
-
-      const canvas = await html2canvas(billClone, html2canvasOptions)
+      })
 
       console.log('[PDF] Canvas generated. width:', canvas?.width, 'height:', canvas?.height)
 
-      // Remove the clone
-      document.body.removeChild(billClone)
+      // Remove the wrapper (which contains the clone)
+      document.body.removeChild(wrapper)
 
       if (!canvas || canvas.width === 0 || canvas.height === 0) {
-        console.error('[PDF] Canvas is empty! canvas:', canvas)
         throw new Error('Failed to generate canvas from invoice')
       }
 
       const imgData = canvas.toDataURL('image/png')
-      console.log('[PDF] imgData length:', imgData?.length, 'starts with:', imgData?.substring(0, 30))
+      console.log('[PDF] imgData length:', imgData?.length)
 
       if (!imgData || imgData === 'data:,') {
         throw new Error('Failed to convert canvas to image')
@@ -973,9 +960,11 @@ function CheckupDetail() {
           width: 100px !important;
         }
 
-        /* Hide fixed/absolute positioned elements during PDF generation (but not the clone itself) */
-        body:has(.printing) *[style*="position: fixed"]:not(.bill-content),
-        body:has(.printing) *[style*="position: absolute"]:not(.bill-content):not(.bill-content *) {
+        /* Hide fixed/absolute UI elements during PDF generation (sidebar, navbar, FAB, etc.) */
+        body:has(.printing) .top-navbar,
+        body:has(.printing) .sidebar,
+        body:has(.printing) .sidebar-toggle,
+        body:has(.printing) .sidebar-overlay {
           display: none !important;
           visibility: hidden !important;
         }
