@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, onSnapshot, updateDoc, doc, orderBy, serverTimestamp, getDocs } from 'firebase/firestore'
+import { collection, addDoc, query, where, onSnapshot, updateDoc, doc, orderBy, serverTimestamp, getDocs, arrayUnion } from 'firebase/firestore'
 import { db } from '../config/firebase'
 
 const COLLECTION = 'notifications'
@@ -7,6 +7,7 @@ export const NOTIFICATION_TYPES = {
   ROLE_REQUEST_SUBMITTED: 'role_request_submitted',
   ROLE_REQUEST_APPROVED: 'role_request_approved',
   ROLE_REQUEST_REJECTED: 'role_request_rejected',
+  SYSTEM_RELEASE: 'system_release',
 }
 
 /**
@@ -46,29 +47,63 @@ export const createNotification = async (notificationData) => {
  */
 export const subscribeToNotifications = (userId, callback) => {
   try {
-    const q = query(
+    // User-specific notifications
+    const userQuery = query(
       collection(db, COLLECTION),
       where('recipientId', '==', userId),
       orderBy('createdAt', 'desc')
     )
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifications = []
-      snapshot.forEach((doc) => {
-        notifications.push({
-          id: doc.id,
-          ...doc.data()
+    // System-wide notifications (recipientId: 'all')
+    const systemQuery = query(
+      collection(db, COLLECTION),
+      where('recipientId', '==', 'all'),
+      orderBy('createdAt', 'desc')
+    )
+
+    let userNotifications = []
+    let systemNotifications = []
+
+    const mergeAndCallback = () => {
+      // For system notifications, treat as unread if user hasn't read it
+      const mappedSystem = systemNotifications.map(n => ({
+        ...n,
+        read: Array.isArray(n.readBy) && n.readBy.includes(userId),
+        isSystem: true,
+      }))
+      const merged = [...userNotifications, ...mappedSystem]
+        .sort((a, b) => {
+          const timeA = a.createdAt?.toMillis?.() || 0
+          const timeB = b.createdAt?.toMillis?.() || 0
+          return timeB - timeA
         })
+      callback(merged)
+    }
+
+    const unsubUser = onSnapshot(userQuery, (snapshot) => {
+      userNotifications = []
+      snapshot.forEach((doc) => {
+        userNotifications.push({ id: doc.id, ...doc.data() })
       })
-      callback(notifications)
+      mergeAndCallback()
     }, (error) => {
-      console.error('Error in notifications listener:', error)
+      console.error('Error in user notifications listener:', error)
     })
 
-    return unsubscribe
+    const unsubSystem = onSnapshot(systemQuery, (snapshot) => {
+      systemNotifications = []
+      snapshot.forEach((doc) => {
+        systemNotifications.push({ id: doc.id, ...doc.data() })
+      })
+      mergeAndCallback()
+    }, (error) => {
+      console.error('Error in system notifications listener:', error)
+    })
+
+    return () => { unsubUser(); unsubSystem() }
   } catch (error) {
     console.error('Error subscribing to notifications:', error)
-    return () => {} // Return empty function if subscription fails
+    return () => {}
   }
 }
 
@@ -77,13 +112,21 @@ export const subscribeToNotifications = (userId, callback) => {
  * @param {string} notificationId - The notification ID
  * @returns {Promise<Object>} - Success/error result
  */
-export const markAsRead = async (notificationId) => {
+export const markAsRead = async (notificationId, userId = null) => {
   try {
     const notificationRef = doc(db, COLLECTION, notificationId)
-    await updateDoc(notificationRef, {
-      read: true,
-      readAt: serverTimestamp()
-    })
+    if (userId) {
+      // System notification — add userId to readBy array
+      await updateDoc(notificationRef, {
+        readBy: arrayUnion(userId)
+      })
+    } else {
+      // User-specific notification
+      await updateDoc(notificationRef, {
+        read: true,
+        readAt: serverTimestamp()
+      })
+    }
 
     return {
       success: true,
@@ -105,24 +148,37 @@ export const markAsRead = async (notificationId) => {
  */
 export const markAllAsRead = async (userId) => {
   try {
-    const q = query(
+    // Mark user-specific notifications
+    const userQ = query(
       collection(db, COLLECTION),
       where('recipientId', '==', userId),
       where('read', '==', false)
     )
-
-    const snapshot = await getDocs(q)
-    const updatePromises = []
-
-    snapshot.forEach((document) => {
-      const notificationRef = doc(db, COLLECTION, document.id)
-      updatePromises.push(updateDoc(notificationRef, {
+    const userSnap = await getDocs(userQ)
+    const promises = []
+    userSnap.forEach((document) => {
+      promises.push(updateDoc(doc(db, COLLECTION, document.id), {
         read: true,
         readAt: serverTimestamp()
       }))
     })
 
-    await Promise.all(updatePromises)
+    // Mark system notifications as read for this user
+    const sysQ = query(
+      collection(db, COLLECTION),
+      where('recipientId', '==', 'all')
+    )
+    const sysSnap = await getDocs(sysQ)
+    sysSnap.forEach((document) => {
+      const data = document.data()
+      if (!Array.isArray(data.readBy) || !data.readBy.includes(userId)) {
+        promises.push(updateDoc(doc(db, COLLECTION, document.id), {
+          readBy: arrayUnion(userId)
+        }))
+      }
+    })
+
+    await Promise.all(promises)
 
     return {
       success: true,
@@ -206,4 +262,29 @@ export const notifyRoleRequestRejected = async (requestData, reason = null) => {
       reason: reason,
     }
   })
+}
+
+/**
+ * Create a system-wide release notification visible to all users
+ * @param {string} version - The new version string
+ * @returns {Promise<Object>} - Success/error result
+ */
+export const notifySystemRelease = async (version) => {
+  try {
+    const notification = {
+      type: NOTIFICATION_TYPES.SYSTEM_RELEASE,
+      recipientId: 'all',
+      title: 'New Release Available',
+      message: `Version ${version} has been published. Please refresh your browser to get the latest updates.`,
+      read: false,
+      readBy: [],
+      createdAt: serverTimestamp(),
+      metadata: { version },
+    }
+    const docRef = await addDoc(collection(db, COLLECTION), notification)
+    return { success: true, id: docRef.id }
+  } catch (error) {
+    console.error('Error creating system release notification:', error)
+    return { success: false, error: error.message }
+  }
 }

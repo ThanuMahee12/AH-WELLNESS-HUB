@@ -30,6 +30,7 @@ const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 const Settings = lazy(() => import('./pages/Settings'))
 const FieldSettingDetail = lazy(() => import('./pages/FieldSettingDetail'))
 const ColumnSettingDetail = lazy(() => import('./pages/ColumnSettingDetail'))
+const Notifications = lazy(() => import('./pages/Notifications'))
 
 // Create a wrapper component to access notification context
 function AppContent() {
@@ -139,7 +140,7 @@ function AppContent() {
                 }
               />
               <Route
-                path="/checkups/:id/edit"
+                path="/checkups/:id"
                 element={
                   <ProtectedRoute>
                     <CheckupForm />
@@ -147,7 +148,7 @@ function AppContent() {
                 }
               />
               <Route
-                path="/checkups/:id"
+                path="/checkups/:id/details"
                 element={
                   <ProtectedRoute>
                     <CheckupDetail />
@@ -223,6 +224,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute roles={['superadmin']}>
                     <ColumnSettingDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
                   </ProtectedRoute>
                 }
               />

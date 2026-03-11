@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Container, Tabs, Tab } from 'react-bootstrap'
-import { FaCog, FaWpforms, FaTable, FaShieldAlt, FaGlobe, FaFlask } from 'react-icons/fa'
+import { FaCog, FaWpforms, FaTable, FaShieldAlt, FaGlobe, FaStethoscope } from 'react-icons/fa'
 import { PageHeader } from '../components/ui'
 import { useSettings } from '../hooks/useSettings'
 
@@ -9,14 +9,14 @@ import FormsSettingsTab from './tabs/FormsSettingsTab'
 import TablesSettingsTab from './tabs/TablesSettingsTab'
 import PagesSettingsTab from './tabs/PagesSettingsTab'
 import PublicPageTab from './tabs/PublicPageTab'
-import LabResultsSettingsTab from './tabs/LabResultsSettingsTab'
+import CheckupSettingsTab from './tabs/LabResultsSettingsTab'
 
 const SETTINGS_TABS = [
   { key: 'forms',  icon: FaWpforms,   component: FormsSettingsTab },
   { key: 'tables', icon: FaTable,     component: TablesSettingsTab },
   { key: 'pages',  icon: FaShieldAlt, component: PagesSettingsTab },
   { key: 'public', icon: FaGlobe,     component: PublicPageTab },
-  { key: 'labResults', icon: FaFlask, component: LabResultsSettingsTab },
+  { key: 'checkup', icon: FaStethoscope, component: CheckupSettingsTab },
 ]
 
 function Settings() {

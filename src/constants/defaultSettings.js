@@ -175,7 +175,7 @@ export const DEFAULT_SETTINGS = {
         tables: { label: 'Table Columns',        roles: ['superadmin'] },
         pages:  { label: 'Page Access',          roles: ['superadmin'] },
         public: { label: 'Public Page Control',  roles: ['superadmin', 'maintainer', 'editor'] },
-        labResults: { label: 'Lab Results', roles: ['superadmin'] },
+        checkup: { label: 'Checkup', roles: ['superadmin'] },
       },
     },
   },
@@ -209,6 +209,21 @@ export const DEFAULT_SETTINGS = {
       create: ['superadmin', 'maintainer'],
       edit:   ['superadmin'],
       delete: ['superadmin'],
+    },
+  },
+  checkupPdf: {
+    invoice: { format: 'a5', width: 148, height: 210, orientation: 'portrait' },
+    prescription: { format: 'a5', width: 148, height: 210, orientation: 'portrait' },
+  },
+  generalTests: {
+    showEmpty: 'hide',
+    fields: {
+      bp:      { label: 'BP', visible: true, order: 1 },
+      pulse:   { label: 'Pulse', visible: true, order: 2 },
+      temp:    { label: 'Temp', visible: true, order: 3 },
+      spo2:    { label: 'SpO2', visible: true, order: 4 },
+      rbs:     { label: 'RBS', visible: true, order: 5 },
+      bmi:     { label: 'BMI', visible: true, order: 6 },
     },
   },
   labResults: {

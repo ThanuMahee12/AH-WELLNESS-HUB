@@ -1,28 +1,120 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Row, Col, Card, Table, Form, Button, Badge } from 'react-bootstrap'
-import { FaPlus, FaTrash } from 'react-icons/fa'
+import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
-function LabResultsSettingsTab() {
+function CheckupSettingsTab() {
   const dispatch = useDispatch()
   const { settings, loading } = useSettings()
   const { user } = useSelector(state => state.auth)
   const { error: showError } = useNotification()
 
-  const [newFieldKey, setNewFieldKey] = useState('')
-  const [newFieldLabel, setNewFieldLabel] = useState('')
-  const [newFieldParent, setNewFieldParent] = useState('')
+  // New field state for both sections
+  const [newLabFieldKey, setNewLabFieldKey] = useState('')
+  const [newLabFieldLabel, setNewLabFieldLabel] = useState('')
+  const [newLabFieldParent, setNewLabFieldParent] = useState('')
+  const [newGenFieldKey, setNewGenFieldKey] = useState('')
+  const [newGenFieldLabel, setNewGenFieldLabel] = useState('')
+  const [newGenFieldParent, setNewGenFieldParent] = useState('')
 
-  const fields = settings?.labResults?.fields || {}
-  const showEmpty = settings?.labResults?.showEmpty ?? false
-  const sortedFields = Object.entries(fields).sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+  // Rules expand state
+  const [expandedRules, setExpandedRules] = useState({})
+  const [newRule, setNewRule] = useState({})
+  const [editingRule, setEditingRule] = useState(null) // { id, index, ...ruleData }
 
-  // Get parent-capable fields (those without a parent themselves)
-  const parentOptions = sortedFields.filter(([, cfg]) => !cfg.parent)
+  const toggleRules = (settingsKey, fieldKey) => {
+    const id = `${settingsKey}.${fieldKey}`
+    setExpandedRules(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const buildRule = (r) => {
+    const rule = { operator: r.operator, label: r.label.trim(), display: r.display }
+    if (r.operator === 'between') {
+      rule.min = parseFloat(r.min)
+      rule.max = parseFloat(r.max)
+    } else {
+      rule.value = parseFloat(r.value)
+    }
+    return rule
+  }
+
+  const isRuleValid = (r) => {
+    if (!r || !r.operator || !r.label?.trim() || !r.display) return false
+    if (r.operator === 'between') return r.min !== '' && r.min !== undefined && r.max !== '' && r.max !== undefined && !isNaN(r.min) && !isNaN(r.max)
+    return r.value !== '' && r.value !== undefined && !isNaN(r.value)
+  }
+
+  const saveRules = async (settingsKey, fieldKey, updatedRules) => {
+    try {
+      await dispatch(updateSettings({
+        data: { [settingsKey]: { fields: { [fieldKey]: { rules: updatedRules } } } },
+        user,
+      })).unwrap()
+    } catch (err) {
+      showError('Failed to save rules: ' + (err || 'Unknown error'))
+    }
+  }
+
+  const handleAddRule = (settingsKey, fieldKey, rules) => {
+    const r = newRule[`${settingsKey}.${fieldKey}`] || {}
+    if (!isRuleValid(r)) return
+    const updated = [...(rules || []), buildRule(r)]
+    saveRules(settingsKey, fieldKey, updated)
+    setNewRule(prev => ({ ...prev, [`${settingsKey}.${fieldKey}`]: {} }))
+  }
+
+  const handleEditRule = (settingsKey, fieldKey, rules, index) => {
+    const r = editingRule
+    if (!r || !isRuleValid(r)) return
+    const updated = rules.map((rule, i) => i === index ? buildRule(r) : rule)
+    saveRules(settingsKey, fieldKey, updated)
+    setEditingRule(null)
+  }
+
+  const handleDeleteRule = (settingsKey, fieldKey, rules, index) => {
+    const updated = rules.filter((_, i) => i !== index)
+    saveRules(settingsKey, fieldKey, updated)
+    if (editingRule?.index === index) setEditingRule(null)
+  }
+
+  const DISPLAY_OPTIONS = [
+    { value: '*', label: '*' },
+    { value: 'B', label: 'B' },
+    { value: 'I', label: 'I' },
+    { value: 'U', label: 'U' },
+    { value: 'IB', label: 'IB' },
+    { value: 'UB', label: 'UB' },
+    { value: 'IU', label: 'IU' },
+  ]
+
+  const OPERATORS = [
+    { value: '>', label: '>' },
+    { value: '<', label: '<' },
+    { value: '>=', label: '>=' },
+    { value: '<=', label: '<=' },
+    { value: '==', label: '==' },
+    { value: 'between', label: 'Between' },
+  ]
+
+  // PDF settings
+  const invoicePdf = settings?.checkupPdf?.invoice || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
+  const prescriptionPdf = settings?.checkupPdf?.prescription || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
+
+  // Lab Results
+  const labFields = settings?.labResults?.fields || {}
+  const labShowEmpty = settings?.labResults?.showEmpty ?? 'hide'
+  const sortedLabFields = Object.entries(labFields).sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+  const labParentOptions = sortedLabFields.filter(([, cfg]) => !cfg.parent)
+
+  // General Tests
+  const genFields = settings?.generalTests?.fields || {}
+  const genShowEmpty = settings?.generalTests?.showEmpty ?? 'hide'
+  const sortedGenFields = Object.entries(genFields).sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+  const genParentOptions = sortedGenFields.filter(([, cfg]) => !cfg.parent)
 
   const handleUpdate = async (data) => {
     try {
@@ -32,39 +124,55 @@ function LabResultsSettingsTab() {
     }
   }
 
-  const handleShowEmptyToggle = (value) => {
-    handleUpdate({ labResults: { showEmpty: value } })
+  const PDF_PRESETS = {
+    a4: { width: 210, height: 297, orientation: 'portrait' },
+    a5: { width: 148, height: 210, orientation: 'portrait' },
+    letter: { width: 215.9, height: 279.4, orientation: 'portrait' },
+    thermal80: { width: 80, height: 200, orientation: 'portrait' },
+    thermal58: { width: 58, height: 150, orientation: 'portrait' },
   }
 
-  const handleToggleVisible = (fieldKey, value) => {
-    const update = { labResults: { fields: { [fieldKey]: { visible: value } } } }
-    handleUpdate(update)
+  const handlePdfChange = (type, field, value) => {
+    if (field === 'format' && value !== 'custom') {
+      handleUpdate({ checkupPdf: { [type]: { format: value, ...PDF_PRESETS[value] } } })
+    } else {
+      handleUpdate({ checkupPdf: { [type]: { [field]: field === 'width' || field === 'height' ? parseFloat(value) : value } } })
+    }
   }
 
-  const handleLabelChange = (fieldKey, label) => {
-    handleUpdate({ labResults: { fields: { [fieldKey]: { label } } } })
+  // Generic field handlers - settingsKey is 'labResults' or 'generalTests'
+  const handleShowEmptyToggle = (settingsKey, value) => {
+    handleUpdate({ [settingsKey]: { showEmpty: value } })
   }
 
-  const handleOrderChange = (fieldKey, value) => {
+  const handleToggleVisible = (settingsKey, fieldKey, value) => {
+    handleUpdate({ [settingsKey]: { fields: { [fieldKey]: { visible: value } } } })
+  }
+
+  const handleLabelChange = (settingsKey, fieldKey, label) => {
+    handleUpdate({ [settingsKey]: { fields: { [fieldKey]: { label } } } })
+  }
+
+  const handleOrderChange = (settingsKey, fieldKey, value) => {
     const num = parseInt(value, 10)
     if (isNaN(num)) return
-    handleUpdate({ labResults: { fields: { [fieldKey]: { order: num } } } })
+    handleUpdate({ [settingsKey]: { fields: { [fieldKey]: { order: num } } } })
   }
 
-  const handleParentChange = async (fieldKey, newParent) => {
+  const handleDisplayChange = (settingsKey, fieldKey, value) => {
+    handleUpdate({ [settingsKey]: { fields: { [fieldKey]: { display: value } } } })
+  }
+
+  const handleParentChange = (settingsKey, fields, fieldKey, newParent) => {
     const currentCfg = fields[fieldKey]
     const oldParent = currentCfg?.parent
-
-    // Build batch update
     const fieldUpdates = { [fieldKey]: { parent: newParent || null } }
 
-    // Remove from old parent's children
     if (oldParent && fields[oldParent]?.children) {
       const oldChildren = fields[oldParent].children.filter(c => c !== fieldKey)
       fieldUpdates[oldParent] = { children: oldChildren.length > 0 ? oldChildren : null }
     }
 
-    // Add to new parent's children
     if (newParent && fields[newParent]) {
       const existing = fields[newParent].children || []
       if (!existing.includes(fieldKey)) {
@@ -72,55 +180,47 @@ function LabResultsSettingsTab() {
       }
     }
 
-    handleUpdate({ labResults: { fields: fieldUpdates } })
+    handleUpdate({ [settingsKey]: { fields: fieldUpdates } })
   }
 
-  const handleAddField = async () => {
-    const key = newFieldKey.trim().replace(/\s+/g, '')
-    const label = newFieldLabel.trim()
-    if (!key || !label) return
-    if (fields[key]) {
-      showError(`Field "${key}" already exists`)
+  const handleAddField = async (settingsKey, fields, sortedFields, key, label, parent, resetFn) => {
+    const cleanKey = key.trim().replace(/\s+/g, '')
+    const cleanLabel = label.trim()
+    if (!cleanKey || !cleanLabel) return
+    if (fields[cleanKey]) {
+      showError(`Field "${cleanKey}" already exists`)
       return
     }
     const maxOrder = sortedFields.length > 0 ? Math.max(...sortedFields.map(([, c]) => c.order || 0)) : 0
-    const newField = { label, visible: true, order: maxOrder + 1 }
-    const fieldUpdates = { [key]: newField }
+    const newField = { label: cleanLabel, visible: true, order: maxOrder + 1 }
+    const fieldUpdates = { [cleanKey]: newField }
 
-    // If a parent is selected, wire up parent/children
-    if (newFieldParent && fields[newFieldParent]) {
-      newField.parent = newFieldParent
-      const existing = fields[newFieldParent].children || []
-      fieldUpdates[newFieldParent] = { children: [...existing, key] }
+    if (parent && fields[parent]) {
+      newField.parent = parent
+      const existing = fields[parent].children || []
+      fieldUpdates[parent] = { children: [...existing, cleanKey] }
     }
 
     try {
-      await dispatch(updateSettings({
-        data: { labResults: { fields: fieldUpdates } },
-        user,
-      })).unwrap()
-      setNewFieldKey('')
-      setNewFieldLabel('')
-      setNewFieldParent('')
+      await dispatch(updateSettings({ data: { [settingsKey]: { fields: fieldUpdates } }, user })).unwrap()
+      resetFn()
     } catch (err) {
       showError('Failed to add field: ' + (err || 'Unknown error'))
     }
   }
 
-  const handleDeleteField = async (fieldKey) => {
-    if (!window.confirm(`Delete lab result field "${fieldKey}"?`)) return
+  const handleDeleteField = async (settingsKey, fields, fieldKey) => {
+    if (!window.confirm(`Delete field "${fieldKey}"?`)) return
     try {
       const cfg = fields[fieldKey]
       const updated = { ...fields }
 
-      // If deleting a parent, unset parent on all children
       if (cfg.children) {
         cfg.children.forEach(ck => {
           if (updated[ck]) updated[ck] = { ...updated[ck], parent: null }
         })
       }
 
-      // If deleting a child, remove from parent's children array
       if (cfg.parent && updated[cfg.parent]?.children) {
         updated[cfg.parent] = {
           ...updated[cfg.parent],
@@ -133,9 +233,9 @@ function LabResultsSettingsTab() {
 
       delete updated[fieldKey]
       await dispatch(updateSettings({
-        data: { labResults: { fields: updated } },
+        data: { [settingsKey]: { fields: updated } },
         user,
-        replace: ['labResults.fields'],
+        replace: [`${settingsKey}.fields`],
       })).unwrap()
     } catch (err) {
       showError('Failed to delete field: ' + (err || 'Unknown error'))
@@ -146,20 +246,68 @@ function LabResultsSettingsTab() {
     return <LoadingSpinner text="Loading settings..." />
   }
 
-  return (
-    <Row className="g-3">
-      {/* Global display setting */}
+  const renderPdfRow = (type, label, pdf) => (
+    <Row className="align-items-end mb-3">
+      <Col xs={12}>
+        <h6 className="text-theme mb-2">{label}</h6>
+      </Col>
+      <Col xs={6} md={3}>
+        <Form.Group>
+          <Form.Label style={{ fontSize: '0.8rem' }}>Page Format</Form.Label>
+          <Form.Select size="sm" value={pdf.format} onChange={(e) => handlePdfChange(type, 'format', e.target.value)}>
+            <option value="a4">A4</option>
+            <option value="a5">A5</option>
+            <option value="letter">Letter</option>
+            <option value="thermal80">Thermal 80mm</option>
+            <option value="thermal58">Thermal 58mm</option>
+            <option value="custom">Custom</option>
+          </Form.Select>
+        </Form.Group>
+      </Col>
+      <Col xs={3} md={2}>
+        <Form.Group>
+          <Form.Label style={{ fontSize: '0.8rem' }}>Width (mm)</Form.Label>
+          <Form.Control size="sm" type="number" value={pdf.width} onChange={(e) => handlePdfChange(type, 'width', e.target.value)} disabled={pdf.format !== 'custom'} />
+        </Form.Group>
+      </Col>
+      <Col xs={3} md={2}>
+        <Form.Group>
+          <Form.Label style={{ fontSize: '0.8rem' }}>Height (mm)</Form.Label>
+          <Form.Control size="sm" type="number" value={pdf.height} onChange={(e) => handlePdfChange(type, 'height', e.target.value)} disabled={pdf.format !== 'custom'} />
+        </Form.Group>
+      </Col>
+      <Col xs={6} md={2}>
+        <Form.Group>
+          <Form.Label style={{ fontSize: '0.8rem' }}>Orientation</Form.Label>
+          <Form.Select size="sm" value={pdf.orientation} onChange={(e) => handlePdfChange(type, 'orientation', e.target.value)}>
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </Form.Select>
+        </Form.Group>
+      </Col>
+      <Col xs={6} md={3}>
+        <div style={{ fontSize: '0.8rem', color: '#64748b', paddingBottom: '0.4rem' }}>
+          <strong>Current:</strong> {pdf.width} x {pdf.height} mm ({pdf.orientation})
+        </div>
+      </Col>
+    </Row>
+  )
+
+  // Reusable fields table
+  const renderFieldsTable = (settingsKey, title, icon, fields, sortedFields, parentOptions, showEmpty, newKey, newLabel, newParent, setNewKey, setNewLabel, setNewParent) => (
+    <>
+      {/* Display setting */}
       <Col xs={12}>
         <Card className="shadow-sm">
           <Card.Header className="card-header-theme">
-            <h5 className="mb-0 fs-responsive-md">Display Settings</h5>
+            <h5 className="mb-0 fs-responsive-md">{icon} {title}</h5>
           </Card.Header>
           <Card.Body>
             <Form.Group>
               <Form.Label className="fw-semibold" style={{ fontSize: '0.9rem' }}>Default empty field behaviour</Form.Label>
               <Form.Select
                 value={showEmpty}
-                onChange={(e) => handleShowEmptyToggle(e.target.value)}
+                onChange={(e) => handleShowEmptyToggle(settingsKey, e.target.value)}
                 style={{ maxWidth: '350px' }}
               >
                 <option value="hide">Hide empty fields</option>
@@ -178,7 +326,7 @@ function LabResultsSettingsTab() {
       <Col xs={12}>
         <Card className="shadow-sm">
           <Card.Header className="card-header-theme d-flex justify-content-between align-items-center">
-            <h5 className="mb-0 fs-responsive-md">Lab Result Fields</h5>
+            <h5 className="mb-0 fs-responsive-md">{title} Fields</h5>
             <Badge bg="info">{sortedFields.length} fields</Badge>
           </Card.Header>
           <Card.Body className="p-0">
@@ -196,24 +344,30 @@ function LabResultsSettingsTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedFields.map(([key, cfg]) => (
-                    <tr key={key} style={{ opacity: cfg.visible === false ? 0.5 : 1 }}>
+                  {sortedFields.map(([key, cfg]) => {
+                    const rulesId = `${settingsKey}.${key}`
+                    const isExpanded = expandedRules[rulesId]
+                    const fieldRules = cfg.rules || []
+                    const nr = newRule[rulesId] || {}
+                    return (
+                    <React.Fragment key={key}>
+                    <tr style={{ opacity: cfg.visible === false ? 0.5 : 1 }}>
                       <td data-label="Key">
                         <strong className="text-theme">{key}</strong>
                         {cfg.children && (
-                          <div>
-                            <Badge bg="light" text="dark" style={{ fontSize: '0.65rem' }}>
-                              parent
-                            </Badge>
-                          </div>
+                          <div><Badge bg="light" text="dark" style={{ fontSize: '0.65rem' }}>parent</Badge></div>
                         )}
                         {cfg.parent && (
-                          <div>
-                            <Badge bg="secondary" style={{ fontSize: '0.65rem' }}>
-                              child of {cfg.parent}
-                            </Badge>
-                          </div>
+                          <div><Badge bg="secondary" style={{ fontSize: '0.65rem' }}>child of {cfg.parent}</Badge></div>
                         )}
+                        <div
+                          className="d-flex align-items-center gap-1 mt-1"
+                          style={{ cursor: 'pointer', fontSize: '0.7rem', color: 'var(--theme-primary, #0891B2)' }}
+                          onClick={() => toggleRules(settingsKey, key)}
+                        >
+                          {isExpanded ? <FaChevronDown style={{ fontSize: '0.55rem' }} /> : <FaChevronRight style={{ fontSize: '0.55rem' }} />}
+                          <span>Rules ({fieldRules.length})</span>
+                        </div>
                       </td>
                       <td data-label="Label">
                         <Form.Control
@@ -222,7 +376,7 @@ function LabResultsSettingsTab() {
                           defaultValue={cfg.label || key}
                           onBlur={(e) => {
                             const val = e.target.value.trim()
-                            if (val && val !== (cfg.label || key)) handleLabelChange(key, val)
+                            if (val && val !== (cfg.label || key)) handleLabelChange(settingsKey, key, val)
                           }}
                         />
                       </td>
@@ -231,7 +385,7 @@ function LabResultsSettingsTab() {
                           size="sm"
                           type="number"
                           defaultValue={cfg.order || 0}
-                          onBlur={(e) => handleOrderChange(key, e.target.value)}
+                          onBlur={(e) => handleOrderChange(settingsKey, key, e.target.value)}
                           style={{ maxWidth: '70px', margin: '0 auto' }}
                         />
                       </td>
@@ -239,7 +393,7 @@ function LabResultsSettingsTab() {
                         <Form.Select
                           size="sm"
                           value={cfg.parent || ''}
-                          onChange={(e) => handleParentChange(key, e.target.value)}
+                          onChange={(e) => handleParentChange(settingsKey, fields, key, e.target.value)}
                           disabled={!!cfg.children}
                         >
                           <option value="">— None —</option>
@@ -255,7 +409,7 @@ function LabResultsSettingsTab() {
                         <Form.Select
                           size="sm"
                           value={cfg.display || 'default'}
-                          onChange={(e) => handleUpdate({ labResults: { fields: { [key]: { display: e.target.value } } } })}
+                          onChange={(e) => handleDisplayChange(settingsKey, key, e.target.value)}
                         >
                           <option value="default">Default</option>
                           <option value="always">Always (N/A)</option>
@@ -266,7 +420,7 @@ function LabResultsSettingsTab() {
                         <Form.Check
                           type="switch"
                           checked={cfg.visible !== false}
-                          onChange={(e) => handleToggleVisible(key, e.target.checked)}
+                          onChange={(e) => handleToggleVisible(settingsKey, key, e.target.checked)}
                           className="d-inline-block"
                         />
                       </td>
@@ -274,42 +428,176 @@ function LabResultsSettingsTab() {
                         <Button
                           size="sm"
                           variant="outline-danger"
-                          onClick={() => handleDeleteField(key)}
+                          onClick={() => handleDeleteField(settingsKey, fields, key)}
                           title="Delete field"
                         >
                           <FaTrash />
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    {/* Rules row */}
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: 0, background: '#f8fafc', borderTop: 'none' }}>
+                          <div style={{ padding: '8px 12px' }}>
+                            {fieldRules.length > 0 && (
+                              <table style={{ width: '100%', fontSize: '0.78rem', marginBottom: '6px' }}>
+                                <thead>
+                                  <tr style={{ color: '#888' }}>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Operator</th>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Value</th>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Label</th>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Style</th>
+                                    <th style={{ padding: '2px 4px', width: '60px' }}></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {fieldRules.map((rule, i) => {
+                                    const isEditing = editingRule?.id === rulesId && editingRule?.index === i
+                                    const er = isEditing ? editingRule : null
+                                    return isEditing ? (
+                                      <tr key={i} style={{ background: '#eef6ff' }}>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Form.Select size="sm" style={{ fontSize: '0.72rem', width: '80px' }}
+                                            value={er.operator} onChange={(e) => setEditingRule({ ...er, operator: e.target.value })}>
+                                            {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                          </Form.Select>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          {er.operator === 'between' ? (
+                                            <span className="d-flex align-items-center gap-1">
+                                              <Form.Control size="sm" type="number" style={{ width: '60px', fontSize: '0.72rem' }}
+                                                value={er.min ?? ''} onChange={(e) => setEditingRule({ ...er, min: e.target.value })} />
+                                              <span style={{ fontSize: '0.72rem' }}>–</span>
+                                              <Form.Control size="sm" type="number" style={{ width: '60px', fontSize: '0.72rem' }}
+                                                value={er.max ?? ''} onChange={(e) => setEditingRule({ ...er, max: e.target.value })} />
+                                            </span>
+                                          ) : (
+                                            <Form.Control size="sm" type="number" style={{ width: '70px', fontSize: '0.72rem' }}
+                                              value={er.value ?? ''} onChange={(e) => setEditingRule({ ...er, value: e.target.value })} />
+                                          )}
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Form.Control size="sm" type="text" style={{ width: '80px', fontSize: '0.72rem' }}
+                                            value={er.label || ''} onChange={(e) => setEditingRule({ ...er, label: e.target.value })} />
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Form.Select size="sm" style={{ width: '100px', fontSize: '0.72rem' }}
+                                            value={er.display || ''} onChange={(e) => setEditingRule({ ...er, display: e.target.value })}>
+                                            {DISPLAY_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                                          </Form.Select>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <span className="d-flex gap-1">
+                                            <button className="btn btn-link p-0 text-success" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => handleEditRule(settingsKey, key, fieldRules, i)}
+                                              disabled={!isRuleValid(er)}>
+                                              <FaSave />
+                                            </button>
+                                            <button className="btn btn-link p-0 text-secondary" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => setEditingRule(null)}>
+                                              <FaTimes />
+                                            </button>
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ) : (
+                                      <tr key={i}>
+                                        <td style={{ padding: '2px 4px' }}>{rule.operator}</td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          {rule.operator === 'between' ? `${rule.min} – ${rule.max}` : rule.value}
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <span style={{
+                                            fontWeight: rule.display?.includes('B') ? 700 : 400,
+                                            fontStyle: rule.display?.includes('I') ? 'italic' : 'normal',
+                                            textDecoration: rule.display?.includes('U') ? 'underline' : 'none',
+                                          }}>
+                                            {rule.label}
+                                          </span>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Badge bg="light" text="dark" style={{ fontSize: '0.7rem' }}>
+                                            {DISPLAY_OPTIONS.find(d => d.value === rule.display)?.label || rule.display}
+                                          </Badge>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <span className="d-flex gap-1">
+                                            <button className="btn btn-link p-0 text-primary" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => setEditingRule({
+                                                id: rulesId, index: i,
+                                                operator: rule.operator, label: rule.label, display: rule.display,
+                                                value: rule.value, min: rule.min, max: rule.max,
+                                              })}>
+                                              <FaEdit />
+                                            </button>
+                                            <button className="btn btn-link p-0 text-danger" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => handleDeleteRule(settingsKey, key, fieldRules, i)}>
+                                              <FaTrash />
+                                            </button>
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
+                            {/* Add new rule form */}
+                            <div className="d-flex align-items-end gap-1 flex-wrap">
+                              <Form.Select
+                                size="sm"
+                                style={{ width: '90px', fontSize: '0.75rem' }}
+                                value={nr.operator || ''}
+                                onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, operator: e.target.value } }))}
+                              >
+                                <option value="">Op</option>
+                                {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              </Form.Select>
+                              {nr.operator === 'between' ? (
+                                <>
+                                  <Form.Control size="sm" type="number" placeholder="Min" style={{ width: '70px', fontSize: '0.75rem' }}
+                                    value={nr.min ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, min: e.target.value } }))} />
+                                  <span style={{ fontSize: '0.75rem', color: '#888' }}>–</span>
+                                  <Form.Control size="sm" type="number" placeholder="Max" style={{ width: '70px', fontSize: '0.75rem' }}
+                                    value={nr.max ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, max: e.target.value } }))} />
+                                </>
+                              ) : (
+                                <Form.Control size="sm" type="number" placeholder="Value" style={{ width: '80px', fontSize: '0.75rem' }}
+                                  value={nr.value ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, value: e.target.value } }))} />
+                              )}
+                              <Form.Control size="sm" type="text" placeholder="Label (HIGH)" style={{ width: '100px', fontSize: '0.75rem' }}
+                                value={nr.label || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, label: e.target.value } }))} />
+                              <Form.Select size="sm" style={{ width: '110px', fontSize: '0.75rem' }}
+                                value={nr.display || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, display: e.target.value } }))}>
+                                <option value="">Style</option>
+                                {DISPLAY_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                              </Form.Select>
+                              <Button size="sm" className="btn-theme-add" style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                                onClick={() => handleAddRule(settingsKey, key, fieldRules)}
+                                disabled={!isRuleValid(nr)}>
+                                <FaPlus />
+                              </Button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                    )
+                  })}
 
                   {/* Add new field row */}
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     <td data-label="Key">
-                      <Form.Control
-                        size="sm"
-                        type="text"
-                        placeholder="key"
-                        value={newFieldKey}
-                        onChange={(e) => setNewFieldKey(e.target.value)}
-                      />
+                      <Form.Control size="sm" type="text" placeholder="key" value={newKey} onChange={(e) => setNewKey(e.target.value)} />
                     </td>
                     <td data-label="Label">
-                      <Form.Control
-                        size="sm"
-                        type="text"
-                        placeholder="Display Label"
-                        value={newFieldLabel}
-                        onChange={(e) => setNewFieldLabel(e.target.value)}
-                      />
+                      <Form.Control size="sm" type="text" placeholder="Display Label" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
                     </td>
                     <td />
                     <td data-label="Group Under">
-                      <Form.Select
-                        size="sm"
-                        value={newFieldParent}
-                        onChange={(e) => setNewFieldParent(e.target.value)}
-                      >
+                      <Form.Select size="sm" value={newParent} onChange={(e) => setNewParent(e.target.value)}>
                         <option value="">— None —</option>
                         {parentOptions.map(([k, c]) => (
                           <option key={k} value={k}>{c.label || k}</option>
@@ -322,8 +610,8 @@ function LabResultsSettingsTab() {
                       <Button
                         size="sm"
                         className="btn-theme-add"
-                        onClick={handleAddField}
-                        disabled={!newFieldKey.trim() || !newFieldLabel.trim()}
+                        onClick={() => handleAddField(settingsKey, fields, sortedFields, newKey, newLabel, newParent, () => { setNewKey(''); setNewLabel(''); setNewParent('') })}
+                        disabled={!newKey.trim() || !newLabel.trim()}
                         title="Add field"
                       >
                         <FaPlus />
@@ -336,8 +624,42 @@ function LabResultsSettingsTab() {
           </Card.Body>
         </Card>
       </Col>
+    </>
+  )
+
+  return (
+    <Row className="g-3">
+      {/* PDF Settings */}
+      <Col xs={12}>
+        <Card className="shadow-sm">
+          <Card.Header className="card-header-theme">
+            <h5 className="mb-0 fs-responsive-md"><FaFilePdf className="me-2" />PDF Settings</h5>
+          </Card.Header>
+          <Card.Body>
+            {renderPdfRow('invoice', 'Invoice', invoicePdf)}
+            <hr />
+            {renderPdfRow('prescription', 'Prescription', prescriptionPdf)}
+          </Card.Body>
+        </Card>
+      </Col>
+
+      {/* General Tests */}
+      {renderFieldsTable(
+        'generalTests', 'General Tests', <FaStethoscope className="me-2" />,
+        genFields, sortedGenFields, genParentOptions, genShowEmpty,
+        newGenFieldKey, newGenFieldLabel, newGenFieldParent,
+        setNewGenFieldKey, setNewGenFieldLabel, setNewGenFieldParent
+      )}
+
+      {/* Lab Results */}
+      {renderFieldsTable(
+        'labResults', 'Lab Results', <FaVial className="me-2" />,
+        labFields, sortedLabFields, labParentOptions, labShowEmpty,
+        newLabFieldKey, newLabFieldLabel, newLabFieldParent,
+        setNewLabFieldKey, setNewLabFieldLabel, setNewLabFieldParent
+      )}
     </Row>
   )
 }
 
-export default LabResultsSettingsTab
+export default CheckupSettingsTab

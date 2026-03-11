@@ -109,6 +109,54 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Notify release in Firestore
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PROJECT_ID="ah-wellness-hub"
+
+          # Get access token from service account using Node.js crypto (no deps needed)
+          ACCESS_TOKEN=$(node -e "
+            const crypto = require('crypto');
+            const sa = JSON.parse(process.env.SA_KEY);
+            const now = Math.floor(Date.now() / 1000);
+            const header = Buffer.from(JSON.stringify({alg:'RS256',typ:'JWT'})).toString('base64url');
+            const payload = Buffer.from(JSON.stringify({
+              iss: sa.client_email,
+              scope: 'https://www.googleapis.com/auth/datastore',
+              aud: 'https://oauth2.googleapis.com/token',
+              iat: now,
+              exp: now + 3600
+            })).toString('base64url');
+            const sig = crypto.sign('RSA-SHA256', Buffer.from(header+'.'+payload), sa.private_key).toString('base64url');
+            const jwt = header+'.'+payload+'.'+sig;
+            fetch('https://oauth2.googleapis.com/token', {
+              method:'POST',
+              headers:{'Content-Type':'application/x-www-form-urlencoded'},
+              body:'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='+jwt
+            }).then(r=>r.json()).then(d=>console.log(d.access_token));
+          ")
+
+          # Write notification to Firestore via REST API
+          curl -sf -X POST \
+            "https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/notifications" \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"fields\": {
+                \"type\": {\"stringValue\": \"system_release\"},
+                \"recipientId\": {\"stringValue\": \"all\"},
+                \"title\": {\"stringValue\": \"New Release Available\"},
+                \"message\": {\"stringValue\": \"Version ${VERSION} has been published. Please refresh your browser to get the latest updates.\"},
+                \"read\": {\"booleanValue\": false},
+                \"readBy\": {\"arrayValue\": {\"values\": []}},
+                \"createdAt\": {\"timestampValue\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"},
+                \"metadata\": {\"mapValue\": {\"fields\": {\"version\": {\"stringValue\": \"${VERSION}\"}}}}
+              }
+            }"
+          echo "Release notification created for ${VERSION}"
+        env:
+          SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AH_WELLNESS_HUB }}
+
       - name: Create deployment summary
         run: |
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY

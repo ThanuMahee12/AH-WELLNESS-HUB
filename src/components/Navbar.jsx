@@ -1,20 +1,52 @@
-import { Container, Navbar as BSNavbar, Button, Badge } from 'react-bootstrap'
+import { useState, useEffect, useRef } from 'react'
+import { Container, Navbar as BSNavbar, Badge } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { FaUser, FaSignOutAlt, FaSignInAlt } from 'react-icons/fa'
+import { FaUser, FaSignOutAlt, FaTachometerAlt, FaBell, FaChevronDown } from 'react-icons/fa'
 import { logoutUser } from '../store/authSlice'
+import { subscribeToNotifications } from '../services/notificationService'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
-import NotificationBell from './NotificationBell'
 import '../styles/navbar.css'
 
 function Navbar() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useSelector(state => state.auth)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    if (!user?.uid) return
+    const unsubscribe = subscribeToNotifications(user.uid, (notifications) => {
+      setUnreadCount(notifications.filter(n => !n.read).length)
+    })
+    return () => unsubscribe()
+  }, [user?.uid])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleLogout = () => {
+    setDropdownOpen(false)
     dispatch(logoutUser())
     navigate('/login')
+  }
+
+  const handleUserClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    setDropdownOpen(prev => !prev)
   }
 
   return (
@@ -30,41 +62,107 @@ function Navbar() {
           <span className="brand-text ms-2">AH-WH</span>
         </BSNavbar.Brand>
 
-        {isAuthenticated ? (
-          <div className="d-flex align-items-center ms-auto gap-2">
-            <div
-              className="user-info d-flex align-items-center"
-              onClick={() => navigate('/dashboard')}
-              style={{ cursor: 'pointer' }}
+        <div className="d-flex align-items-center ms-auto gap-2">
+          {/* Notification bell */}
+          {isAuthenticated && (
+            <button
+              className="btn btn-link text-decoration-none position-relative text-theme touch-target d-flex align-items-center justify-content-center"
+              onClick={() => navigate('/notifications')}
+              title="Notifications"
+              style={{ padding: 'clamp(4px, 1vw, 8px)' }}
             >
-              <FaUser className="me-1 me-md-2 fs-responsive-base" />
-              <span className="user-name d-none d-sm-inline fs-responsive-base">{user?.username}</span>
-              {user?.role === 'admin' && (
-                <Badge bg="warning" text="dark" className="ms-1 ms-md-2 fs-responsive-sm">Admin</Badge>
+              <FaBell style={{ fontSize: 'clamp(14px, 3vw, 18px)' }} />
+              {unreadCount > 0 && (
+                <Badge
+                  pill
+                  bg="danger"
+                  className="position-absolute"
+                  style={{
+                    top: '2px',
+                    right: '0px',
+                    fontSize: 'clamp(0.5rem, 1.5vw, 0.6rem)',
+                    padding: '1px 4px',
+                    minWidth: '14px',
+                    lineHeight: '1.2',
+                  }}
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
               )}
-            </div>
-            <NotificationBell />
-            <Button
-              variant="outline-light"
-              size="sm"
-              onClick={handleLogout}
-              className="logout-btn d-flex align-items-center touch-target fs-responsive-sm"
+            </button>
+          )}
+
+          {/* User dropdown */}
+          <div className="position-relative" ref={dropdownRef}>
+            <button
+              className="btn btn-link text-decoration-none d-flex align-items-center gap-1 text-white touch-target"
+              onClick={handleUserClick}
+              style={{ padding: 'clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 10px)' }}
             >
-              <FaSignOutAlt className="me-0 me-md-1 fs-responsive-base" />
-              <span className="d-none d-sm-inline">Logout</span>
-            </Button>
+              <FaUser style={{ fontSize: 'clamp(13px, 2.5vw, 16px)' }} />
+              {isAuthenticated ? (
+                <FaChevronDown style={{
+                  fontSize: '0.55rem',
+                  transition: 'transform 0.2s',
+                  transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0)',
+                }} />
+              ) : (
+                <span className="d-none d-sm-inline fs-responsive-sm">Login</span>
+              )}
+            </button>
+
+            {isAuthenticated && dropdownOpen && (
+              <div
+                className="shadow"
+                style={{
+                  position: 'fixed',
+                  right: '8px',
+                  top: '56px',
+                  background: '#fff',
+                  borderRadius: '8px',
+                  minWidth: '180px',
+                  zIndex: 9999,
+                  overflow: 'hidden',
+                  border: '1px solid #eee',
+                }}
+              >
+                {/* User info */}
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#333' }}>{user?.username}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#999' }}>{user?.email}</div>
+                </div>
+
+                {/* Menu items */}
+                <button
+                  className="btn btn-link text-decoration-none d-flex align-items-center gap-2 w-100 text-start navbar-dropdown-item"
+                  onClick={() => { setDropdownOpen(false); navigate('/dashboard') }}
+                >
+                  <FaTachometerAlt style={{ fontSize: '0.8rem', color: 'var(--theme-primary, #0891B2)' }} />
+                  <span>Dashboard</span>
+                </button>
+                <button
+                  className="btn btn-link text-decoration-none d-flex align-items-center gap-2 w-100 text-start navbar-dropdown-item"
+                  onClick={() => { setDropdownOpen(false); navigate('/notifications') }}
+                >
+                  <FaBell style={{ fontSize: '0.8rem', color: 'var(--theme-primary, #0891B2)' }} />
+                  <span>Notifications</span>
+                  {unreadCount > 0 && (
+                    <Badge pill bg="danger" style={{ fontSize: '0.6rem', marginLeft: 'auto' }}>{unreadCount}</Badge>
+                  )}
+                </button>
+                <div style={{ borderTop: '1px solid #f0f0f0' }}>
+                  <button
+                    className="btn btn-link text-decoration-none d-flex align-items-center gap-2 w-100 text-start navbar-dropdown-item text-danger"
+                    onClick={handleLogout}
+                  >
+                    <FaSignOutAlt style={{ fontSize: '0.8rem' }} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
-          <Button
-            variant="outline-light"
-            size="sm"
-            onClick={() => navigate('/login')}
-            className="logout-btn d-flex align-items-center ms-auto touch-target fs-responsive-sm"
-          >
-            <FaSignInAlt className="me-0 me-md-1 fs-responsive-base" />
-            <span className="d-none d-sm-inline">Login</span>
-          </Button>
-        )}
+        </div>
       </Container>
     </BSNavbar>
   )

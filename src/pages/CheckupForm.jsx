@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card, Button, Form, Badge } from 'react-bootstrap'
-import { FaClipboardCheck, FaSave, FaTrash, FaPlus } from 'react-icons/fa'
-import { Breadcrumb } from '../components/ui'
+import { FaClipboardCheck, FaSave, FaTrash, FaPlus, FaTimes, FaStickyNote, FaPrescriptionBottleAlt, FaVial, FaFileInvoice, FaStethoscope } from 'react-icons/fa'
+import { Breadcrumb, RichTextEditor } from '../components/ui'
 import Select from 'react-select'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
+import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
 import { useNotification } from '../context'
 import { usePermission } from '../components/auth/PermissionGate'
 import { useSettings } from '../hooks'
@@ -19,11 +20,14 @@ function CheckupForm() {
   const dispatch = useDispatch()
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
-  const { isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
+  const { isFieldVisible, isFieldRequired, getFieldLabel, getLabResultFields, getGeneralTestFields } = useSettings()
+  const labResultFields = getLabResultFields()
+  const generalTestFields = getGeneralTestFields()
 
   const checkups = useSelector(selectAllCheckups)
   const patients = useSelector(selectAllPatients)
   const tests = useSelector(selectAllTests)
+  const medicines = useSelector(selectAllMedicines)
   const { loading: checkupsLoading } = useSelector(state => state.checkups)
   const { loading: patientsLoading } = useSelector(state => state.patients)
   const { loading: testsLoading } = useSelector(state => state.tests)
@@ -49,12 +53,23 @@ function CheckupForm() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Additional fields (edit mode only)
+  const [editedNotes, setEditedNotes] = useState('')
+  const [editedCommonNotes, setEditedCommonNotes] = useState('')
+  const [editedTestNotes, setEditedTestNotes] = useState({})
+  const [prescriptionMedicines, setPrescriptionMedicines] = useState([])
+  const [prescriptionNotes, setPrescriptionNotes] = useState('')
+  const [editedGeneralTests, setEditedGeneralTests] = useState({})
+  const [editedLabResults, setEditedLabResults] = useState({})
+  const [selectedTestForNote, setSelectedTestForNote] = useState(null)
+
   // Fetch data if store is empty
   useEffect(() => {
     if (checkups.length === 0) dispatch(fetchCheckups())
     if (patients.length === 0) dispatch(fetchPatients())
     if (tests.length === 0) dispatch(fetchTests())
-  }, [dispatch, checkups.length, patients.length, tests.length])
+    if (!isNew) dispatch(fetchMedicines())
+  }, [dispatch, checkups.length, patients.length, tests.length, isNew])
 
   // Load checkup data into form when editing
   useEffect(() => {
@@ -65,6 +80,18 @@ function CheckupForm() {
         weight: checkup.weight || '',
         height: checkup.height || ''
       })
+      // Load additional fields
+      setEditedNotes(checkup.notes || '')
+      setEditedCommonNotes(checkup.commonNotes || '')
+      setPrescriptionMedicines(checkup.prescriptionMedicines || [])
+      setPrescriptionNotes(checkup.prescriptionNotes || '')
+      setEditedGeneralTests(checkup.generalTests || {})
+      setEditedLabResults(checkup.labResults || {})
+      const testNotesMap = {}
+      ;(checkup.tests || []).forEach(testItem => {
+        testNotesMap[testItem.testId] = testItem.notes || ''
+      })
+      setEditedTestNotes(testNotesMap)
     }
   }, [checkup?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -120,9 +147,26 @@ function CheckupForm() {
 
     setIsSubmitting(true)
 
+    // Build tests array with notes for edit mode
+    const testsWithNotes = formData.tests.map(testItem => ({
+      ...testItem,
+      notes: editedTestNotes[testItem.testId] || ''
+    }))
+
     const checkupData = {
       ...formData,
+      tests: testsWithNotes,
       total: calculateTotal()
+    }
+
+    // Add extra fields for edit mode
+    if (!isNew) {
+      checkupData.notes = editedNotes
+      checkupData.commonNotes = editedCommonNotes
+      checkupData.prescriptionMedicines = prescriptionMedicines
+      checkupData.prescriptionNotes = prescriptionNotes
+      checkupData.generalTests = editedGeneralTests
+      checkupData.labResults = editedLabResults
     }
 
     try {
@@ -164,6 +208,22 @@ function CheckupForm() {
     } catch (err) {
       showError(err.message || 'Delete failed')
     }
+  }
+
+  // Medicine helpers
+  const handleAddMedicine = () => {
+    setPrescriptionMedicines([...prescriptionMedicines, { medicineId: '', quantity: '', instructions: '' }])
+  }
+  const handleRemoveMedicine = (index) => {
+    setPrescriptionMedicines(prescriptionMedicines.filter((_, i) => i !== index))
+  }
+  const handleMedicineChange = (index, field, value) => {
+    const updated = [...prescriptionMedicines]
+    updated[index] = { ...updated[index], [field]: value }
+    setPrescriptionMedicines(updated)
+  }
+  const handleTestNoteChange = (testId, value) => {
+    setEditedTestNotes(prev => ({ ...prev, [testId]: value }))
   }
 
   // Loading state
@@ -511,11 +571,327 @@ function CheckupForm() {
                   </Col>
                 </Row>
 
-                <div className="info-box mt-3">
-                  <p style={{ fontSize: '0.9rem', color: '#0369a1', marginBottom: 0 }}>
-                    <strong>Note:</strong> You can add detailed notes and prescriptions after creating the checkup by clicking on "View Details" and using the Notes & Prescription tabs.
-                  </p>
-                </div>
+                {/* === Additional fields (edit mode only) === */}
+                {!isNew && checkup && (
+                  <>
+                    {/* Notes Section */}
+                    <h6 className="section-heading mt-4">
+                      <FaStickyNote className="me-2" />
+                      Notes
+                    </h6>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label>Invoice Notes <small className="text-muted">(printed on invoice)</small></Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        value={editedNotes}
+                        onChange={(e) => setEditedNotes(e.target.value)}
+                        placeholder="Add general notes for the invoice..."
+                        style={{ fontSize: '0.9rem' }}
+                      />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label>Common Notes <small className="text-muted">(internal)</small></Form.Label>
+                      <RichTextEditor
+                        label=""
+                        value={editedCommonNotes}
+                        onChange={(value) => setEditedCommonNotes(value)}
+                        placeholder="Add common notes for this checkup..."
+                        height="150px"
+                      />
+                    </Form.Group>
+
+                    {/* Test-Specific Notes */}
+                    <div className="mb-3">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <Form.Label className="mb-0">Test Notes <small className="text-muted">(per-test internal notes)</small></Form.Label>
+                        <Button
+                          size="sm"
+                          className="btn-theme-success"
+                          onClick={() => {
+                            const el = document.getElementById('form-test-notes-dropdown')
+                            if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus() }
+                          }}
+                        >
+                          <FaPlus className="me-1" /> Add
+                        </Button>
+                      </div>
+
+                      <div className="mb-3 p-3" style={{ background: '#f8fafc', borderRadius: '6px' }}>
+                        <Select
+                          id="form-test-notes-dropdown"
+                          value={selectedTestForNote}
+                          options={formData.tests
+                            .filter(ti => !editedTestNotes[ti.testId])
+                            .map(ti => {
+                              const t = tests.find(x => x.id === ti.testId)
+                              return t ? { value: ti.testId, label: `${t.code} - ${t.name}` } : null
+                            }).filter(Boolean)}
+                          onChange={(option) => {
+                            setSelectedTestForNote(option)
+                            if (option) setTimeout(() => document.getElementById('form-new-test-note')?.focus(), 100)
+                          }}
+                          placeholder="Select a test to add notes..."
+                          isClearable
+                          styles={{ control: (b) => ({ ...b, fontSize: '0.9rem' }), menu: (b) => ({ ...b, fontSize: '0.9rem' }) }}
+                        />
+                        {selectedTestForNote && (
+                          <div className="mt-2">
+                            <Form.Control
+                              id="form-new-test-note"
+                              as="textarea"
+                              rows={2}
+                              placeholder={`Notes for ${selectedTestForNote.label}...`}
+                              style={{ fontSize: '0.9rem' }}
+                              onKeyDown={(e) => {
+                                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                                  const v = e.target.value.trim()
+                                  if (v) { handleTestNoteChange(selectedTestForNote.value, v); setSelectedTestForNote(null) }
+                                }
+                              }}
+                            />
+                            <div className="d-flex gap-2 mt-1">
+                              <Button size="sm" className="btn-theme-success" onClick={() => {
+                                const v = document.getElementById('form-new-test-note')?.value.trim()
+                                if (v) { handleTestNoteChange(selectedTestForNote.value, v); setSelectedTestForNote(null) }
+                              }}><FaPlus className="me-1" /> Add</Button>
+                              <Button size="sm" variant="secondary" onClick={() => setSelectedTestForNote(null)}>
+                                <FaTimes className="me-1" /> Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {formData.tests
+                        .filter(ti => editedTestNotes[ti.testId])
+                        .map(ti => {
+                          const t = tests.find(x => x.id === ti.testId)
+                          return t ? (
+                            <div key={ti.testId} className="mb-2 p-2" style={{ border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                              <div className="d-flex justify-content-between align-items-center mb-1">
+                                <span><strong className="text-theme">{t.code}</strong> - {t.name}</span>
+                                <Button size="sm" variant="outline-danger" onClick={() => handleTestNoteChange(ti.testId, '')}><FaTrash /></Button>
+                              </div>
+                              <Form.Control
+                                as="textarea"
+                                rows={2}
+                                value={editedTestNotes[ti.testId] || ''}
+                                onChange={(e) => handleTestNoteChange(ti.testId, e.target.value)}
+                                style={{ fontSize: '0.9rem' }}
+                              />
+                            </div>
+                          ) : null
+                        })}
+                    </div>
+
+                    {/* Prescription Section */}
+                    <h6 className="section-heading mt-4">
+                      <FaPrescriptionBottleAlt className="me-2" />
+                      Prescription
+                      <Badge bg="secondary" className="ms-2" style={{ fontSize: '0.7rem' }}>{prescriptionMedicines.length}</Badge>
+                    </h6>
+
+                    <div className="d-flex justify-content-end mb-2">
+                      <Button size="sm" onClick={handleAddMedicine} className="btn-theme-success">
+                        <FaPlus className="me-1" /> Add Medicine
+                      </Button>
+                    </div>
+
+                    {prescriptionMedicines.map((med, index) => {
+                      const selectedMed = medicines.find(m => m.id === med.medicineId)
+                      return (
+                        <Card key={index} className="mb-2" style={{ border: '1px solid #cbd5e1' }}>
+                          <Card.Body className="p-2 p-md-3">
+                            <Row>
+                              <Col md={5}>
+                                <Form.Group className="mb-2">
+                                  <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Medicine</Form.Label>
+                                  <Select
+                                    value={selectedMed ? {
+                                      value: selectedMed.id,
+                                      label: `${selectedMed.name} - ${Array.isArray(selectedMed.dosage) ? selectedMed.dosage.join(', ') : selectedMed.dosage} - ${selectedMed.brand}`
+                                    } : null}
+                                    onChange={(opt) => handleMedicineChange(index, 'medicineId', opt.value)}
+                                    options={medicines.map(m => ({
+                                      value: m.id,
+                                      label: `${m.name} - ${Array.isArray(m.dosage) ? m.dosage.join(', ') : m.dosage} - ${m.brand}`
+                                    }))}
+                                    placeholder="Select medicine..."
+                                    styles={{ control: (b) => ({ ...b, fontSize: '0.9rem' }), menu: (b) => ({ ...b, fontSize: '0.9rem' }) }}
+                                  />
+                                </Form.Group>
+                              </Col>
+                              <Col xs={6} md={2}>
+                                <Form.Group className="mb-2">
+                                  <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Quantity</Form.Label>
+                                  <Form.Control size="sm" type="text" value={med.quantity} onChange={(e) => handleMedicineChange(index, 'quantity', e.target.value)} placeholder="e.g., 10" />
+                                </Form.Group>
+                              </Col>
+                              <Col xs={6} md={4}>
+                                <Form.Group className="mb-2">
+                                  <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Instructions</Form.Label>
+                                  <Form.Control size="sm" type="text" value={med.instructions} onChange={(e) => handleMedicineChange(index, 'instructions', e.target.value)} placeholder="e.g., After meals" />
+                                </Form.Group>
+                              </Col>
+                              <Col md={1} className="d-flex align-items-end">
+                                <Button size="sm" variant="danger" onClick={() => handleRemoveMedicine(index)} className="mb-2"><FaTrash /></Button>
+                              </Col>
+                            </Row>
+                          </Card.Body>
+                        </Card>
+                      )
+                    })}
+
+                    <Form.Group className="mb-3 mt-2">
+                      <Form.Label>Prescription Notes / Instructions</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        value={prescriptionNotes}
+                        onChange={(e) => setPrescriptionNotes(e.target.value)}
+                        placeholder="Additional instructions for the prescription..."
+                        style={{ fontSize: '0.9rem' }}
+                      />
+                    </Form.Group>
+
+                    {/* General Tests Section */}
+                    {generalTestFields.length > 0 && (
+                      <>
+                        <h6 className="section-heading mt-4">
+                          <FaStethoscope className="me-2" />
+                          General Tests
+                        </h6>
+
+                        <Row>
+                          {generalTestFields.map(({ key, label, children }) => {
+                            if (children) {
+                              return (
+                                <Col xs={12} key={key} className="mb-3">
+                                  <Form.Group>
+                                    <Form.Label className="fw-semibold mb-1">{label}</Form.Label>
+                                    <Form.Control
+                                      size="sm"
+                                      type="text"
+                                      value={editedGeneralTests[key] || ''}
+                                      onChange={(e) => setEditedGeneralTests(prev => ({ ...prev, [key]: e.target.value }))}
+                                      placeholder={`Enter ${label}...`}
+                                    />
+                                  </Form.Group>
+                                  <div className="ps-3 mt-2">
+                                    <Row>
+                                      {children.map(({ key: ck, label: cl }) => (
+                                        <Col xs={6} md={4} lg={3} key={ck} className="mb-2">
+                                          <Form.Group>
+                                            <Form.Label style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.15rem' }}>{cl}</Form.Label>
+                                            <Form.Control
+                                              size="sm"
+                                              type="text"
+                                              value={editedGeneralTests[ck] || ''}
+                                              onChange={(e) => setEditedGeneralTests(prev => ({ ...prev, [ck]: e.target.value }))}
+                                              placeholder={cl}
+                                            />
+                                          </Form.Group>
+                                        </Col>
+                                      ))}
+                                    </Row>
+                                  </div>
+                                </Col>
+                              )
+                            }
+                            return (
+                              <Col xs={6} md={4} lg={3} key={key} className="mb-3">
+                                <Form.Group>
+                                  <Form.Label className="fw-semibold mb-1" style={{ fontSize: '0.9rem' }}>{label}</Form.Label>
+                                  <Form.Control
+                                    size="sm"
+                                    type="text"
+                                    value={editedGeneralTests[key] || ''}
+                                    onChange={(e) => setEditedGeneralTests(prev => ({ ...prev, [key]: e.target.value }))}
+                                    placeholder={`Enter ${label}...`}
+                                  />
+                                </Form.Group>
+                              </Col>
+                            )
+                          })}
+                        </Row>
+                      </>
+                    )}
+
+                    {/* Lab Results Section */}
+                    {labResultFields.length > 0 && (
+                      <>
+                        <h6 className="section-heading mt-4">
+                          <FaVial className="me-2" />
+                          Lab Results
+                        </h6>
+
+                        <Row>
+                          {labResultFields.map(({ key, label, children }) => {
+                            if (children) {
+                              return (
+                                <Col xs={12} key={key} className="mb-3">
+                                  <Form.Group>
+                                    <Form.Label className="fw-semibold mb-1">{label}</Form.Label>
+                                    <Form.Control
+                                      size="sm"
+                                      type="text"
+                                      value={editedLabResults[key] || ''}
+                                      onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
+                                      placeholder={`Enter ${label}...`}
+                                    />
+                                  </Form.Group>
+                                  <div className="ps-3 mt-2">
+                                    <Row>
+                                      {children.map(({ key: ck, label: cl }) => (
+                                        <Col xs={6} md={4} lg={3} key={ck} className="mb-2">
+                                          <Form.Group>
+                                            <Form.Label style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.15rem' }}>{cl}</Form.Label>
+                                            <Form.Control
+                                              size="sm"
+                                              type="text"
+                                              value={editedLabResults[ck] || ''}
+                                              onChange={(e) => setEditedLabResults(prev => ({ ...prev, [ck]: e.target.value }))}
+                                              placeholder={cl}
+                                            />
+                                          </Form.Group>
+                                        </Col>
+                                      ))}
+                                    </Row>
+                                  </div>
+                                </Col>
+                              )
+                            }
+                            return (
+                              <Col xs={6} md={4} lg={3} key={key} className="mb-3">
+                                <Form.Group>
+                                  <Form.Label className="fw-semibold mb-1" style={{ fontSize: '0.9rem' }}>{label}</Form.Label>
+                                  <Form.Control
+                                    size="sm"
+                                    type="text"
+                                    value={editedLabResults[key] || ''}
+                                    onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
+                                    placeholder={`Enter ${label}...`}
+                                  />
+                                </Form.Group>
+                              </Col>
+                            )
+                          })}
+                        </Row>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {isNew && (
+                  <div className="info-box mt-3">
+                    <p style={{ fontSize: '0.9rem', color: '#0369a1', marginBottom: 0 }}>
+                      <strong>Note:</strong> You can add notes, prescriptions, and lab results after creating the checkup by editing it.
+                    </p>
+                  </div>
+                )}
               </Card.Body>
 
               <Card.Footer className="entity-form-footer justify-content-end">
@@ -529,6 +905,16 @@ function CheckupForm() {
                     >
                       <FaTrash className="me-1" />
                       Delete
+                    </Button>
+                  )}
+                  {!isNew && (
+                    <Button
+                      variant="outline-info"
+                      onClick={() => navigate(`/checkups/${id}/details`)}
+                      className="entity-form-btn"
+                    >
+                      <FaFileInvoice className="me-1" />
+                      Invoice / Prescription
                     </Button>
                   )}
                   <Button
