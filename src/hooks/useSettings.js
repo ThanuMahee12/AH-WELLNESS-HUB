@@ -214,10 +214,11 @@ export function useSettings() {
         label: cfg.label || key,
         order: cfg.order || 0,
         display: cfg.display || 'default',
+        rules: cfg.rules || null,
         children: cfg.children
           ? cfg.children
               .filter(ck => fields[ck] && fields[ck].visible !== false)
-              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default' }))
+              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default', rules: fields[ck]?.rules || null }))
           : null,
       }))
   }, [settings])
@@ -234,10 +235,11 @@ export function useSettings() {
         label: cfg.label || key,
         order: cfg.order || 0,
         display: cfg.display || 'default',
+        rules: cfg.rules || null,
         children: cfg.children
           ? cfg.children
               .filter(ck => fields[ck] && fields[ck].visible !== false)
-              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default' }))
+              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default', rules: fields[ck]?.rules || null }))
           : null,
       }))
   }, [settings])

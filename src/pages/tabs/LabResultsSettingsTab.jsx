@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Row, Col, Card, Table, Form, Button, Badge } from 'react-bootstrap'
-import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial } from 'react-icons/fa'
+import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
@@ -20,6 +20,85 @@ function CheckupSettingsTab() {
   const [newGenFieldKey, setNewGenFieldKey] = useState('')
   const [newGenFieldLabel, setNewGenFieldLabel] = useState('')
   const [newGenFieldParent, setNewGenFieldParent] = useState('')
+
+  // Rules expand state
+  const [expandedRules, setExpandedRules] = useState({})
+  const [newRule, setNewRule] = useState({})
+  const [editingRule, setEditingRule] = useState(null) // { id, index, ...ruleData }
+
+  const toggleRules = (settingsKey, fieldKey) => {
+    const id = `${settingsKey}.${fieldKey}`
+    setExpandedRules(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const buildRule = (r) => {
+    const rule = { operator: r.operator, label: r.label.trim(), display: r.display }
+    if (r.operator === 'between') {
+      rule.min = parseFloat(r.min)
+      rule.max = parseFloat(r.max)
+    } else {
+      rule.value = parseFloat(r.value)
+    }
+    return rule
+  }
+
+  const isRuleValid = (r) => {
+    if (!r || !r.operator || !r.label?.trim() || !r.display) return false
+    if (r.operator === 'between') return r.min !== '' && r.min !== undefined && r.max !== '' && r.max !== undefined && !isNaN(r.min) && !isNaN(r.max)
+    return r.value !== '' && r.value !== undefined && !isNaN(r.value)
+  }
+
+  const saveRules = async (settingsKey, fieldKey, updatedRules) => {
+    try {
+      await dispatch(updateSettings({
+        data: { [settingsKey]: { fields: { [fieldKey]: { rules: updatedRules } } } },
+        user,
+      })).unwrap()
+    } catch (err) {
+      showError('Failed to save rules: ' + (err || 'Unknown error'))
+    }
+  }
+
+  const handleAddRule = (settingsKey, fieldKey, rules) => {
+    const r = newRule[`${settingsKey}.${fieldKey}`] || {}
+    if (!isRuleValid(r)) return
+    const updated = [...(rules || []), buildRule(r)]
+    saveRules(settingsKey, fieldKey, updated)
+    setNewRule(prev => ({ ...prev, [`${settingsKey}.${fieldKey}`]: {} }))
+  }
+
+  const handleEditRule = (settingsKey, fieldKey, rules, index) => {
+    const r = editingRule
+    if (!r || !isRuleValid(r)) return
+    const updated = rules.map((rule, i) => i === index ? buildRule(r) : rule)
+    saveRules(settingsKey, fieldKey, updated)
+    setEditingRule(null)
+  }
+
+  const handleDeleteRule = (settingsKey, fieldKey, rules, index) => {
+    const updated = rules.filter((_, i) => i !== index)
+    saveRules(settingsKey, fieldKey, updated)
+    if (editingRule?.index === index) setEditingRule(null)
+  }
+
+  const DISPLAY_OPTIONS = [
+    { value: '*', label: '*' },
+    { value: 'B', label: 'B' },
+    { value: 'I', label: 'I' },
+    { value: 'U', label: 'U' },
+    { value: 'IB', label: 'IB' },
+    { value: 'UB', label: 'UB' },
+    { value: 'IU', label: 'IU' },
+  ]
+
+  const OPERATORS = [
+    { value: '>', label: '>' },
+    { value: '<', label: '<' },
+    { value: '>=', label: '>=' },
+    { value: '<=', label: '<=' },
+    { value: '==', label: '==' },
+    { value: 'between', label: 'Between' },
+  ]
 
   // PDF settings
   const invoicePdf = settings?.checkupPdf?.invoice || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
@@ -265,8 +344,14 @@ function CheckupSettingsTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedFields.map(([key, cfg]) => (
-                    <tr key={key} style={{ opacity: cfg.visible === false ? 0.5 : 1 }}>
+                  {sortedFields.map(([key, cfg]) => {
+                    const rulesId = `${settingsKey}.${key}`
+                    const isExpanded = expandedRules[rulesId]
+                    const fieldRules = cfg.rules || []
+                    const nr = newRule[rulesId] || {}
+                    return (
+                    <React.Fragment key={key}>
+                    <tr style={{ opacity: cfg.visible === false ? 0.5 : 1 }}>
                       <td data-label="Key">
                         <strong className="text-theme">{key}</strong>
                         {cfg.children && (
@@ -275,6 +360,14 @@ function CheckupSettingsTab() {
                         {cfg.parent && (
                           <div><Badge bg="secondary" style={{ fontSize: '0.65rem' }}>child of {cfg.parent}</Badge></div>
                         )}
+                        <div
+                          className="d-flex align-items-center gap-1 mt-1"
+                          style={{ cursor: 'pointer', fontSize: '0.7rem', color: 'var(--theme-primary, #0891B2)' }}
+                          onClick={() => toggleRules(settingsKey, key)}
+                        >
+                          {isExpanded ? <FaChevronDown style={{ fontSize: '0.55rem' }} /> : <FaChevronRight style={{ fontSize: '0.55rem' }} />}
+                          <span>Rules ({fieldRules.length})</span>
+                        </div>
                       </td>
                       <td data-label="Label">
                         <Form.Control
@@ -342,7 +435,157 @@ function CheckupSettingsTab() {
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    {/* Rules row */}
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: 0, background: '#f8fafc', borderTop: 'none' }}>
+                          <div style={{ padding: '8px 12px' }}>
+                            {fieldRules.length > 0 && (
+                              <table style={{ width: '100%', fontSize: '0.78rem', marginBottom: '6px' }}>
+                                <thead>
+                                  <tr style={{ color: '#888' }}>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Operator</th>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Value</th>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Label</th>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Style</th>
+                                    <th style={{ padding: '2px 4px', width: '60px' }}></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {fieldRules.map((rule, i) => {
+                                    const isEditing = editingRule?.id === rulesId && editingRule?.index === i
+                                    const er = isEditing ? editingRule : null
+                                    return isEditing ? (
+                                      <tr key={i} style={{ background: '#eef6ff' }}>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Form.Select size="sm" style={{ fontSize: '0.72rem', width: '80px' }}
+                                            value={er.operator} onChange={(e) => setEditingRule({ ...er, operator: e.target.value })}>
+                                            {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                          </Form.Select>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          {er.operator === 'between' ? (
+                                            <span className="d-flex align-items-center gap-1">
+                                              <Form.Control size="sm" type="number" style={{ width: '60px', fontSize: '0.72rem' }}
+                                                value={er.min ?? ''} onChange={(e) => setEditingRule({ ...er, min: e.target.value })} />
+                                              <span style={{ fontSize: '0.72rem' }}>–</span>
+                                              <Form.Control size="sm" type="number" style={{ width: '60px', fontSize: '0.72rem' }}
+                                                value={er.max ?? ''} onChange={(e) => setEditingRule({ ...er, max: e.target.value })} />
+                                            </span>
+                                          ) : (
+                                            <Form.Control size="sm" type="number" style={{ width: '70px', fontSize: '0.72rem' }}
+                                              value={er.value ?? ''} onChange={(e) => setEditingRule({ ...er, value: e.target.value })} />
+                                          )}
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Form.Control size="sm" type="text" style={{ width: '80px', fontSize: '0.72rem' }}
+                                            value={er.label || ''} onChange={(e) => setEditingRule({ ...er, label: e.target.value })} />
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Form.Select size="sm" style={{ width: '100px', fontSize: '0.72rem' }}
+                                            value={er.display || ''} onChange={(e) => setEditingRule({ ...er, display: e.target.value })}>
+                                            {DISPLAY_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                                          </Form.Select>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <span className="d-flex gap-1">
+                                            <button className="btn btn-link p-0 text-success" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => handleEditRule(settingsKey, key, fieldRules, i)}
+                                              disabled={!isRuleValid(er)}>
+                                              <FaSave />
+                                            </button>
+                                            <button className="btn btn-link p-0 text-secondary" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => setEditingRule(null)}>
+                                              <FaTimes />
+                                            </button>
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ) : (
+                                      <tr key={i}>
+                                        <td style={{ padding: '2px 4px' }}>{rule.operator}</td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          {rule.operator === 'between' ? `${rule.min} – ${rule.max}` : rule.value}
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <span style={{
+                                            fontWeight: rule.display?.includes('B') ? 700 : 400,
+                                            fontStyle: rule.display?.includes('I') ? 'italic' : 'normal',
+                                            textDecoration: rule.display?.includes('U') ? 'underline' : 'none',
+                                          }}>
+                                            {rule.label}
+                                          </span>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <Badge bg="light" text="dark" style={{ fontSize: '0.7rem' }}>
+                                            {DISPLAY_OPTIONS.find(d => d.value === rule.display)?.label || rule.display}
+                                          </Badge>
+                                        </td>
+                                        <td style={{ padding: '2px 4px' }}>
+                                          <span className="d-flex gap-1">
+                                            <button className="btn btn-link p-0 text-primary" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => setEditingRule({
+                                                id: rulesId, index: i,
+                                                operator: rule.operator, label: rule.label, display: rule.display,
+                                                value: rule.value, min: rule.min, max: rule.max,
+                                              })}>
+                                              <FaEdit />
+                                            </button>
+                                            <button className="btn btn-link p-0 text-danger" style={{ fontSize: '0.7rem' }}
+                                              onClick={() => handleDeleteRule(settingsKey, key, fieldRules, i)}>
+                                              <FaTrash />
+                                            </button>
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
+                            {/* Add new rule form */}
+                            <div className="d-flex align-items-end gap-1 flex-wrap">
+                              <Form.Select
+                                size="sm"
+                                style={{ width: '90px', fontSize: '0.75rem' }}
+                                value={nr.operator || ''}
+                                onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, operator: e.target.value } }))}
+                              >
+                                <option value="">Op</option>
+                                {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              </Form.Select>
+                              {nr.operator === 'between' ? (
+                                <>
+                                  <Form.Control size="sm" type="number" placeholder="Min" style={{ width: '70px', fontSize: '0.75rem' }}
+                                    value={nr.min ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, min: e.target.value } }))} />
+                                  <span style={{ fontSize: '0.75rem', color: '#888' }}>–</span>
+                                  <Form.Control size="sm" type="number" placeholder="Max" style={{ width: '70px', fontSize: '0.75rem' }}
+                                    value={nr.max ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, max: e.target.value } }))} />
+                                </>
+                              ) : (
+                                <Form.Control size="sm" type="number" placeholder="Value" style={{ width: '80px', fontSize: '0.75rem' }}
+                                  value={nr.value ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, value: e.target.value } }))} />
+                              )}
+                              <Form.Control size="sm" type="text" placeholder="Label (HIGH)" style={{ width: '100px', fontSize: '0.75rem' }}
+                                value={nr.label || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, label: e.target.value } }))} />
+                              <Form.Select size="sm" style={{ width: '110px', fontSize: '0.75rem' }}
+                                value={nr.display || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, display: e.target.value } }))}>
+                                <option value="">Style</option>
+                                {DISPLAY_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                              </Form.Select>
+                              <Button size="sm" className="btn-theme-add" style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                                onClick={() => handleAddRule(settingsKey, key, fieldRules)}
+                                disabled={!isRuleValid(nr)}>
+                                <FaPlus />
+                              </Button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                    )
+                  })}
 
                   {/* Add new field row */}
                   <tr style={{ backgroundColor: '#f8fafc' }}>

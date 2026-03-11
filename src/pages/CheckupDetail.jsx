@@ -14,6 +14,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import asiriLogo from '../assets/asiri-logo.png'
 import paidStampImg from '../assets/paid-stamp.png'
+import { evaluateRules, getDisplayStyle } from '../utils/evaluateRule'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -41,6 +42,14 @@ function CheckupDetail() {
   const generalTestFields = getGeneralTestFields()
   const labResultFields = getLabResultFields()
   const labResultsShowEmpty = settings?.labResults?.showEmpty || 'hide'
+
+  // Apply rules to a value and return { value, label, labelStyle }
+  const applyRules = (value, rules) => {
+    if (!value || !rules) return { value, label: null, labelStyle: {} }
+    const result = evaluateRules(value, rules)
+    if (!result) return { value, label: null, labelStyle: {} }
+    return { value, label: result.label, labelStyle: getDisplayStyle(result.display) }
+  }
 
   // PDF settings from Firestore
   const pdfSettings = settings?.checkupPdf?.invoice || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
@@ -343,6 +352,18 @@ function CheckupDetail() {
       prescriptionClone.style.fontSize = rxFontSize
       prescriptionClone.style.backgroundColor = '#ffffff'
       prescriptionClone.style.boxSizing = 'border-box'
+
+      // Force small font sizes on clone — inline clamp() resolves too large at 800px
+      prescriptionClone.querySelectorAll('.prescription-table, .prescription-table *').forEach(el => {
+        el.style.fontSize = '5pt'
+        el.style.padding = '1px 2px'
+      })
+      prescriptionClone.querySelectorAll('h6').forEach(el => { el.style.fontSize = '6pt'; el.style.marginBottom = '2px' })
+      prescriptionClone.querySelectorAll('.notes-text').forEach(el => { el.style.fontSize = '5pt' })
+      prescriptionClone.querySelectorAll('.template-patient, .template-patient span, .template-patient strong').forEach(el => { el.style.fontSize = '5.5pt' })
+      prescriptionClone.querySelectorAll('.lab-results-grid strong, .lab-results-grid span').forEach(el => { el.style.fontSize = '4.5pt' })
+      prescriptionClone.querySelectorAll('.lab-results-grid .lab-children-row span').forEach(el => { el.style.fontSize = '4pt' })
+
       rxWrapper.appendChild(prescriptionClone)
       document.body.appendChild(rxWrapper)
 
@@ -583,27 +604,27 @@ function CheckupDetail() {
 
         /* Header */
         .bill-content.printing .header-section img {
-          height: 28px !important;
+          height: 24px !important;
         }
         .bill-content.printing .template-logo-asiri {
-          height: 22px !important;
+          height: 18px !important;
         }
         .bill-content.printing .header-section h4 {
-          font-size: 8pt !important;
+          font-size: 7pt !important;
         }
         .bill-content.printing .header-section p,
         .bill-content.printing .header-section div {
-          font-size: 5.5pt !important;
+          font-size: 5pt !important;
         }
 
         /* Patient info */
         .bill-content.printing .template-patient {
-          font-size: 6.5pt !important;
+          font-size: 5.5pt !important;
         }
 
         /* Tables — compact rows, no borders */
         .bill-content.printing table {
-          font-size: 7pt !important;
+          font-size: 5.5pt !important;
           border: none !important;
         }
         .bill-content.printing th,
@@ -611,48 +632,58 @@ function CheckupDetail() {
           border: none !important;
         }
         .bill-content.printing th {
-          padding: 3px 4px !important;
+          padding: 2px 3px !important;
           vertical-align: middle !important;
         }
         .bill-content.printing td {
-          padding: 2px 4px !important;
+          padding: 1px 3px !important;
           vertical-align: middle !important;
         }
         .bill-content.printing .prescription-table {
-          font-size: 6.5pt !important;
+          font-size: 5pt !important;
         }
 
-        /* Prescription layout — stacked when printing for better readability */
+        /* Prescription headings */
+        .bill-content.printing h6 {
+          font-size: 6pt !important;
+          margin-bottom: 2px !important;
+        }
+        .bill-content.printing .prescription-left p,
+        .bill-content.printing .prescription-left span {
+          font-size: 5pt !important;
+        }
+
+        /* Prescription layout — keep 70/30 side-by-side for PDF */
         .bill-content.printing .prescription-body {
-          flex-direction: column !important;
+          flex-direction: row !important;
         }
         .bill-content.printing .prescription-left {
-          flex: 1 1 auto !important;
-          max-width: 100% !important;
+          flex: 0 0 68% !important;
+          max-width: 68% !important;
           overflow: visible !important;
         }
         .bill-content.printing .prescription-right {
-          flex: 1 1 auto !important;
-          max-width: 100% !important;
-          padding-left: 0 !important;
-          border-left: none !important;
-          border-top: 1px solid #e2e8f0 !important;
-          padding-top: 0.4rem !important;
+          flex: 0 0 32% !important;
+          max-width: 32% !important;
+          padding-left: 6px !important;
+          border-left: 1px solid #e2e8f0 !important;
+          border-top: none !important;
+          padding-top: 0 !important;
         }
 
-        /* Lab results grid — wider in full-width layout */
+        /* Lab results grid */
         .bill-content.printing .lab-results-grid {
-          grid-template-columns: 1fr 1fr 1fr !important;
-          gap: 1px 6px !important;
+          grid-template-columns: 1fr !important;
+          gap: 0px 3px !important;
         }
         .bill-content.printing .lab-results-grid strong {
-          font-size: 5.5pt !important;
+          font-size: 4.5pt !important;
         }
         .bill-content.printing .lab-results-grid span {
-          font-size: 5.5pt !important;
+          font-size: 4.5pt !important;
         }
         .bill-content.printing .lab-results-grid .lab-children-row span {
-          font-size: 5pt !important;
+          font-size: 4pt !important;
         }
 
         /* Footer */
@@ -1044,28 +1075,32 @@ function CheckupDetail() {
                                   const effective = fieldDisplay === 'default' ? genShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
                                   return effective === 'na' ? 'N/A' : ''
                                 }
-                                return generalTestFields.map(({ key, label, display, children }) => {
+                                return generalTestFields.map(({ key, label, display, rules, children }) => {
                                   const val = checkup.generalTests?.[key]
                                   const childrenHaveValues = children?.some(({ key: ck }) => checkup.generalTests?.[ck])
                                   const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
                                     children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.generalTests?.[ck]))
                                   if (!children && !shouldShow(display, val)) return null
                                   if (children && !parentShouldShow) return null
+                                  const ruleResult = applyRules(val, rules)
 
                                   return children ? (
                                     <div key={key} style={{ gridColumn: '1 / -1' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                         <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                         <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                        {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
                                       </div>
                                       <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
-                                        {children.map(({ key: ck, label: cl, display: cd }) => {
+                                        {children.map(({ key: ck, label: cl, display: cd, rules: cr }) => {
                                           const cv = checkup.generalTests?.[ck]
                                           if (!shouldShow(cd, cv)) return null
+                                          const childRule = applyRules(cv, cr)
                                           return (
                                             <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
                                               <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
                                               <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
+                                              {childRule.label && <span style={{ fontSize: 'clamp(0.45rem, 1vw, 0.55rem)', marginLeft: '2px', ...childRule.labelStyle }}>{childRule.label}</span>}
                                             </div>
                                           )
                                         })}
@@ -1075,6 +1110,7 @@ function CheckupDetail() {
                                     <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                       <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                       <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                      {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
                                     </div>
                                   )
                                 })
@@ -1101,28 +1137,32 @@ function CheckupDetail() {
                               return effective === 'na' ? 'N/A' : ''
                             }
 
-                            return labResultFields.map(({ key, label, display, children }) => {
+                            return labResultFields.map(({ key, label, display, rules, children }) => {
                               const val = checkup.labResults?.[key]
                               const childrenHaveValues = children?.some(({ key: ck }) => checkup.labResults?.[ck])
                               const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
                                 children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.labResults?.[ck]))
                               if (!children && !shouldShow(display, val)) return null
                               if (children && !parentShouldShow) return null
+                              const ruleResult = applyRules(val, rules)
 
                               return children ? (
                                 <div key={key} style={{ gridColumn: '1 / -1' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                     <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                     <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                    {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
                                   </div>
                                   <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
-                                    {children.map(({ key: ck, label: cl, display: cd }) => {
+                                    {children.map(({ key: ck, label: cl, display: cd, rules: cr }) => {
                                       const cv = checkup.labResults?.[ck]
                                       if (!shouldShow(cd, cv)) return null
+                                      const childRule = applyRules(cv, cr)
                                       return (
                                         <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
                                           <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
                                           <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
+                                          {childRule.label && <span style={{ fontSize: 'clamp(0.45rem, 1vw, 0.55rem)', marginLeft: '2px', ...childRule.labelStyle }}>{childRule.label}</span>}
                                         </div>
                                       )
                                     })}
@@ -1132,6 +1172,7 @@ function CheckupDetail() {
                                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                   <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                   <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
+                                  {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
                                 </div>
                               )
                             })

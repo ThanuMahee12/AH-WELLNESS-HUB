@@ -7,6 +7,7 @@
   left: 0;
   right: 0;
   z-index: 1030;
+  overflow: visible;
 }
 
 .brand-icon {
@@ -45,4 +46,19 @@
   color: #fff !important;
   border-color: rgba(255, 255, 255, 0.6) !important;
   transform: translateY(-1px);
+}
+
+/* User dropdown items */
+.navbar-dropdown-item {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  color: #444;
+  transition: background 0.15s;
+  border: none;
+  border-radius: 0;
+}
+
+.navbar-dropdown-item:hover {
+  background: #f5f7fa;
+  color: #333;
 }

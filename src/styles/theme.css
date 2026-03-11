@@ -288,8 +288,8 @@
   visibility: visible !important;
   opacity: 1 !important;
   flex-wrap: wrap;
-  background-color: var(--theme-bg-light-cyan) !important;
-  padding: 0.5rem 1rem !important;
+  background-color: transparent !important;
+  padding: 0.5rem 0 !important;
   margin-bottom: 1rem !important;
   font-size: 0.875rem;
   border-radius: 6px;
@@ -327,9 +327,9 @@
     display: flex !important;
     visibility: visible !important;
     font-size: 0.75rem;
-    padding: 0.4rem 0.75rem !important;
+    padding: 0.4rem 0 !important;
     margin-bottom: 0.75rem !important;
-    border: 1px solid var(--theme-border-cyan);
+    border: none;
   }
 
   .breadcrumb-theme .breadcrumb-item + .breadcrumb-item {
