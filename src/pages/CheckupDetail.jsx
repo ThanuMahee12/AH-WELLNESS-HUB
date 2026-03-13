@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Tabs, Tab } from 'react-bootstrap'
-import { FaFilePdf, FaPrint, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaPrescriptionBottleAlt } from 'react-icons/fa'
+import { FaFilePdf, FaPrint, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaPrescriptionBottleAlt, FaArrowLeft } from 'react-icons/fa'
 import { Breadcrumb } from '../components/ui'
 import { selectAllCheckups, fetchCheckups } from '../store/checkupsSlice'
 import { selectAllPatients, fetchPatients } from '../store/patientsSlice'
@@ -501,10 +501,21 @@ function CheckupDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
-      <Breadcrumb
-        items={[{ label: 'Checkups', path: '/checkups' }]}
-        current={checkup?.billNo || 'Checkup Details'}
-      />
+      <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
+        <Breadcrumb
+          items={[{ label: 'Checkups', path: '/checkups' }]}
+          current={checkup?.billNo || 'Checkup Details'}
+        />
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          onClick={() => navigate(`/checkups/${id}`)}
+          className="no-print"
+        >
+          <FaArrowLeft className="me-1" />
+          Back to Edit
+        </Button>
+      </div>
 
       {/* Patient Details */}
       <Card className="shadow-sm mb-3">
