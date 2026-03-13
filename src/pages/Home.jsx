@@ -3,11 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Container, Row, Col, Button } from 'react-bootstrap'
 import { motion } from 'framer-motion'
-import { FaVial, FaFileInvoiceDollar, FaLaptopMedical, FaFlask } from 'react-icons/fa'
+import {
+  FaVial, FaFileInvoiceDollar, FaLaptopMedical, FaFlask,
+  FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe, FaFacebook,
+  FaInstagram, FaWhatsapp, FaClock, FaInfoCircle, FaTwitter,
+  FaLinkedin, FaYoutube, FaTiktok, FaViber,
+} from 'react-icons/fa'
 import { useSettings } from '../hooks/useSettings'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 
 const BLOG_ICONS = [FaVial, FaFileInvoiceDollar, FaLaptopMedical, FaFlask]
+
+const CONTACT_ICON_MAP = {
+  FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe, FaFacebook,
+  FaInstagram, FaWhatsapp, FaClock, FaInfoCircle, FaTwitter,
+  FaLinkedin, FaYoutube, FaTiktok, FaViber,
+}
+
+/** Extract src URL from a full <iframe> tag, or return as-is if already a URL */
+const toMapEmbedUrl = (input) => {
+  if (!input) return ''
+  const srcMatch = input.match(/src=["']([^"']+)["']/)
+  if (srcMatch) return srcMatch[1]
+  return input.trim()
+}
 
 /** Convert Google Drive share URLs to direct image URLs */
 const toDirectImageUrl = (url) => {
@@ -35,6 +54,16 @@ function Home() {
   const ctaText = content.ctaText || 'Get Started'
   const ctaAuthText = content.ctaAuthText || 'Go to Dashboard'
   const blogs = (content.blogs || []).filter(b => b.visible !== false)
+  const aboutTitle = content.aboutTitle || 'About Us'
+  const aboutDescription = content.aboutDescription || ''
+  const aboutImageUrl = content.aboutImageUrl || ''
+  const aboutVisible = content.aboutVisible !== false
+  const contactTitle = content.contactTitle || 'Contact Us'
+  const contactFields = (content.contactFields || []).filter(f => f.visible !== false)
+  const contactDetails = contactFields.filter(f => f.type !== 'social')
+  const contactSocials = contactFields.filter(f => f.type === 'social')
+  const contactMapEmbedUrl = content.contactMapEmbedUrl || ''
+  const contactVisible = content.contactVisible !== false
   const [heroImgLoaded, setHeroImgLoaded] = useState(false)
 
   const containerVariants = {
@@ -189,6 +218,145 @@ function Home() {
                   </Col>
                 )
               })}
+            </Row>
+          </Container>
+        </section>
+      )}
+
+      {/* About Us Section */}
+      {aboutVisible && (
+        <section className="home-about">
+          <Container className="px-3 px-md-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="home-section-heading">{aboutTitle}</h2>
+            </motion.div>
+            <Row className="align-items-center g-4">
+              {aboutImageUrl && (
+                <Col xs={12} md={5}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -40 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <img
+                      src={toDirectImageUrl(aboutImageUrl)}
+                      alt="About Us"
+                      className="home-about-img"
+                    />
+                  </motion.div>
+                </Col>
+              )}
+              <Col xs={12} md={aboutImageUrl ? 7 : 12}>
+                <motion.div
+                  initial={{ opacity: 0, x: 40 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.15 }}
+                >
+                  <p className="home-about-text">{aboutDescription}</p>
+                </motion.div>
+              </Col>
+            </Row>
+          </Container>
+        </section>
+      )}
+
+      {/* Contact Section */}
+      {contactVisible && (contactFields.length > 0 || contactMapEmbedUrl) && (
+        <section className="home-contact">
+          <Container className="px-3 px-md-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="home-section-heading">{contactTitle}</h2>
+            </motion.div>
+            <Row className="g-4 align-items-stretch">
+              {/* Left — Contact Details + Social Icons */}
+              {contactFields.length > 0 && (
+                <Col xs={12} md={contactMapEmbedUrl ? 5 : 12}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -40 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="home-contact-left"
+                  >
+                    {/* Detail rows */}
+                    {contactDetails.length > 0 && (
+                      <div className="home-contact-details">
+                        {contactDetails.map((field, idx) => {
+                          const Icon = CONTACT_ICON_MAP[field.icon] || FaInfoCircle
+                          return (
+                            <div key={idx} className="home-contact-row">
+                              <Icon className="home-contact-row-icon" />
+                              <div className="home-contact-row-text">
+                                <span className="home-contact-row-label">{field.label}</span>
+                                {field.value && (
+                                  field.url ? (
+                                    <a href={field.url} target="_blank" rel="noopener noreferrer" className="home-contact-val-link">{field.value}</a>
+                                  ) : (
+                                    <span className="home-contact-val">{field.value}</span>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {/* Social media icons */}
+                    {contactSocials.length > 0 && (
+                      <div className="home-contact-socials">
+                        {contactSocials.map((field, idx) => {
+                          const Icon = CONTACT_ICON_MAP[field.icon] || FaGlobe
+                          return (
+                            <a
+                              key={idx}
+                              href={field.url || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="home-contact-social-link"
+                              title={field.label}
+                            >
+                              <Icon />
+                            </a>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </motion.div>
+                </Col>
+              )}
+              {/* Right — Google Map */}
+              {contactMapEmbedUrl && (
+                <Col xs={12} md={contactFields.length > 0 ? 7 : 12}>
+                  <motion.div
+                    initial={{ opacity: 0, x: 40 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.15 }}
+                    className="home-contact-map-wrap"
+                  >
+                    <iframe
+                      src={toMapEmbedUrl(contactMapEmbedUrl)}
+                      title="Location Map"
+                      className="home-contact-map"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </motion.div>
+                </Col>
+              )}
             </Row>
           </Container>
         </section>
