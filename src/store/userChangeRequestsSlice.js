@@ -17,10 +17,15 @@ export const fetchUserChangeRequests = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const querySnapshot = await getDocs(collection(db, 'userChangeRequests'))
-      const requests = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
+      const requests = querySnapshot.docs.map(doc => {
+        const data = doc.data()
+        // Convert Firestore Timestamps to ISO strings for Redux serialization
+        const serialized = { id: doc.id }
+        for (const [key, value] of Object.entries(data)) {
+          serialized[key] = value?.toDate ? value.toDate().toISOString() : value
+        }
+        return serialized
+      })
       return requests
     } catch (error) {
       return rejectWithValue(error.message)
