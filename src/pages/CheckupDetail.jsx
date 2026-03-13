@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Tabs, Tab } from 'react-bootstrap'
-import { FaFilePdf, FaPrint, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaPrescriptionBottleAlt } from 'react-icons/fa'
+import { FaFilePdf, FaPrint, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaPrescriptionBottleAlt, FaArrowLeft } from 'react-icons/fa'
 import { Breadcrumb } from '../components/ui'
 import { selectAllCheckups, fetchCheckups } from '../store/checkupsSlice'
 import { selectAllPatients, fetchPatients } from '../store/patientsSlice'
@@ -202,19 +202,50 @@ function CheckupDetail() {
       const clonePadding = '3% 10%'
       const cloneFontSize = pageWidthMm < 100 ? '0.65rem' : pageWidthMm <= 160 ? '0.75rem' : '0.85rem'
 
-      // Clone the bill content — use a wrapper div to avoid the body:has(.printing) display:none rule
+      // Clone the bill content inside an iframe to avoid body:has(.printing) hiding UI
       const wrapper = document.createElement('div')
-      wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;'
+      wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;pointer-events:none;'
       const billClone = element.cloneNode(true)
-      billClone.classList.add('printing')
-      billClone.style.width = pageWidthMm + 'mm'
-      billClone.style.height = pdfSettings.height + 'mm'
-      billClone.style.padding = clonePadding
-      billClone.style.fontSize = cloneFontSize
+      billClone.classList.add('pdf-clone')
+      const pageHeightPx = Math.round(pdfSettings.height * 96 / 25.4)
+      billClone.style.width = pageWidthPx + 'px'
+      billClone.style.minHeight = pageHeightPx + 'px'
+      billClone.style.padding = pageWidthMm < 100 ? '12px 16px' : '16px 32px'
+      billClone.style.fontSize = pageWidthMm < 100 ? '10px' : pageWidthMm <= 160 ? '12px' : '14px'
       billClone.style.backgroundColor = '#ffffff'
       billClone.style.boxSizing = 'border-box'
+      billClone.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      billClone.style.lineHeight = '1.4'
+      billClone.style.color = '#333'
       wrapper.appendChild(billClone)
       document.body.appendChild(wrapper)
+
+      // Normalize clamp() values to fixed sizes for clean PDF rendering
+      const baseFontPx = pageWidthMm < 100 ? 10 : pageWidthMm <= 160 ? 12 : 14
+      const pdfStyles = document.createElement('style')
+      pdfStyles.textContent = `
+        .bill-content.pdf-clone .template-wrapper { min-height: 100% !important; height: 100% !important; }
+        .bill-content.pdf-clone .template-logo-main { height: ${Math.round(baseFontPx * 3.5)}px !important; }
+        .bill-content.pdf-clone .template-logo-asiri { height: ${Math.round(baseFontPx * 2)}px !important; }
+        .bill-content.pdf-clone .template-title { font-size: ${Math.round(baseFontPx * 1.3)}px !important; margin-bottom: 2px !important; }
+        .bill-content.pdf-clone .header-section { padding-bottom: 6px !important; margin-bottom: 8px !important; }
+        .bill-content.pdf-clone .header-section p { font-size: ${Math.round(baseFontPx * 0.85)}px !important; margin-bottom: 2px !important; }
+        .bill-content.pdf-clone .header-section div { font-size: ${Math.round(baseFontPx * 0.8)}px !important; }
+        .bill-content.pdf-clone .template-patient { font-size: ${Math.round(baseFontPx * 0.9)}px !important; margin-bottom: 6px !important; }
+        .bill-content.pdf-clone .template-patient .patient-row { gap: 4px ${Math.round(baseFontPx * 1.2)}px !important; }
+        .bill-content.pdf-clone h6 { font-size: ${Math.round(baseFontPx * 1.1)}px !important; margin-bottom: 4px !important; }
+        .bill-content.pdf-clone table { font-size: ${baseFontPx}px !important; }
+        .bill-content.pdf-clone th { padding: 4px 6px !important; font-size: ${baseFontPx}px !important; }
+        .bill-content.pdf-clone td { padding: 3px 6px !important; font-size: ${baseFontPx}px !important; }
+        .bill-content.pdf-clone .notes-text { font-size: ${Math.round(baseFontPx * 0.9)}px !important; }
+        .bill-content.pdf-clone .paid-stamp img { height: ${Math.round(baseFontPx * 6)}px !important; }
+        .bill-content.pdf-clone .footer-section { font-size: ${Math.round(baseFontPx * 0.75)}px !important; }
+        .bill-content.pdf-clone .footer-section p { font-size: ${Math.round(baseFontPx * 0.75)}px !important; }
+        .bill-content.pdf-clone .footer-contacts svg { font-size: ${Math.round(baseFontPx * 0.7)}px !important; }
+        .bill-content.pdf-clone .footer-thankyou p { font-size: ${Math.round(baseFontPx * 0.7)}px !important; }
+        .bill-content.pdf-clone .footer-asiri-logo { height: ${Math.round(baseFontPx * 1.2)}px !important; }
+      `
+      wrapper.appendChild(pdfStyles)
 
       // Wait for images to load
       const images = billClone.getElementsByTagName('img')
@@ -288,7 +319,8 @@ function CheckupDetail() {
 
       // Add image to PDF
       pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
-      pdf.save(`Bill_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
+      const nowTs = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
+      pdf.save(`Bill_${checkup.billNo || checkup.id}_${nowTs}.pdf`)
 
       // Log PDF generation activity
       if (user) {
@@ -338,33 +370,79 @@ function CheckupDetail() {
       // Convert selected page width mm → pixels (96 DPI)
       const rxPageWidthMm = prescriptionPdfSettings.width
       const rxPageWidthPx = Math.round(rxPageWidthMm * 96 / 25.4)
-      const rxPadding = '3% 10%'
-      const rxFontSize = rxPageWidthMm < 100 ? '0.65rem' : rxPageWidthMm <= 160 ? '0.75rem' : '0.85rem'
 
-      // Use wrapper to avoid body:has(.printing) display:none rule on the clone
+      // Clone inside wrapper — use pdf-clone class to avoid body:has(.printing) hiding UI
       const rxWrapper = document.createElement('div')
-      rxWrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;'
+      rxWrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;overflow:visible;pointer-events:none;'
       const prescriptionClone = element.cloneNode(true)
-      prescriptionClone.classList.add('printing')
-      prescriptionClone.style.width = rxPageWidthMm + 'mm'
-      prescriptionClone.style.height = prescriptionPdfSettings.height + 'mm'
-      prescriptionClone.style.padding = rxPadding
-      prescriptionClone.style.fontSize = rxFontSize
+      prescriptionClone.classList.add('pdf-clone')
+      const rxPageHeightPx = Math.round(prescriptionPdfSettings.height * 96 / 25.4)
+      prescriptionClone.style.width = rxPageWidthPx + 'px'
+      prescriptionClone.style.minHeight = rxPageHeightPx + 'px'
+      prescriptionClone.style.padding = rxPageWidthMm < 100 ? '12px 16px' : '16px 32px'
+      prescriptionClone.style.fontSize = rxPageWidthMm < 100 ? '10px' : rxPageWidthMm <= 160 ? '12px' : '14px'
       prescriptionClone.style.backgroundColor = '#ffffff'
       prescriptionClone.style.boxSizing = 'border-box'
+      prescriptionClone.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      prescriptionClone.style.lineHeight = '1.4'
+      prescriptionClone.style.color = '#333'
 
-      // Force small font sizes on clone — inline clamp() resolves too large at 800px
-      prescriptionClone.querySelectorAll('.prescription-table, .prescription-table *').forEach(el => {
-        el.style.fontSize = '5pt'
-        el.style.padding = '1px 2px'
-      })
-      prescriptionClone.querySelectorAll('h6').forEach(el => { el.style.fontSize = '6pt'; el.style.marginBottom = '2px' })
-      prescriptionClone.querySelectorAll('.notes-text').forEach(el => { el.style.fontSize = '5pt' })
-      prescriptionClone.querySelectorAll('.template-patient, .template-patient span, .template-patient strong').forEach(el => { el.style.fontSize = '5.5pt' })
-      prescriptionClone.querySelectorAll('.lab-results-grid strong, .lab-results-grid span').forEach(el => { el.style.fontSize = '4.5pt' })
-      prescriptionClone.querySelectorAll('.lab-results-grid .lab-children-row span').forEach(el => { el.style.fontSize = '4pt' })
+      // Normalize clamp() values to fixed sizes for clean PDF rendering
+      const rxBaseFontPx = rxPageWidthMm < 100 ? 10 : rxPageWidthMm <= 160 ? 12 : 14
+      const rxPdfStyles = document.createElement('style')
+      rxPdfStyles.textContent = `
+        .bill-content.pdf-clone .template-wrapper { min-height: 100% !important; height: 100% !important; }
+        .bill-content.pdf-clone .template-logo-main { height: ${Math.round(rxBaseFontPx * 3.5)}px !important; }
+        .bill-content.pdf-clone .template-logo-asiri { height: ${Math.round(rxBaseFontPx * 2)}px !important; }
+        .bill-content.pdf-clone .template-title { font-size: ${Math.round(rxBaseFontPx * 1.3)}px !important; margin-bottom: 2px !important; }
+        .bill-content.pdf-clone .header-section { padding-bottom: 6px !important; margin-bottom: 8px !important; }
+        .bill-content.pdf-clone .header-section p { font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; margin-bottom: 2px !important; }
+        .bill-content.pdf-clone .header-section div { font-size: ${Math.round(rxBaseFontPx * 0.8)}px !important; }
+        .bill-content.pdf-clone .template-patient { font-size: ${Math.round(rxBaseFontPx * 0.9)}px !important; margin-bottom: 6px !important; }
+        .bill-content.pdf-clone .template-patient .patient-row { gap: 4px ${Math.round(rxBaseFontPx * 1.2)}px !important; }
+        .bill-content.pdf-clone h6 { font-size: ${Math.round(rxBaseFontPx * 1.1)}px !important; margin-bottom: 4px !important; }
 
+        /* Prescription 80/20 layout */
+        .bill-content.pdf-clone .prescription-body { display: flex !important; flex-direction: row !important; gap: 0px !important; }
+        .bill-content.pdf-clone .prescription-left { flex: 1 1 auto !important; max-width: 80% !important; overflow: hidden !important; padding-right: 8px !important; }
+        .bill-content.pdf-clone .prescription-right { flex: 0 0 20% !important; max-width: 20% !important; padding-left: 8px !important; border-left: 1px solid #e2e8f0 !important; }
+
+        /* Prescription table — smaller font, all columns visible */
+        .bill-content.pdf-clone .prescription-table { font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; width: 100% !important; table-layout: fixed !important; }
+        .bill-content.pdf-clone .prescription-table * { font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; }
+        .bill-content.pdf-clone .prescription-table th { padding: 3px 4px !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
+        .bill-content.pdf-clone .prescription-table td { padding: 2px 4px !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
+        .bill-content.pdf-clone .prescription-table th:first-child { width: 35% !important; }
+        .bill-content.pdf-clone .prescription-table th:nth-child(2) { width: 18% !important; }
+        .bill-content.pdf-clone .prescription-table th:nth-child(3) { width: 18% !important; }
+        .bill-content.pdf-clone .prescription-table th:nth-child(4) { width: 29% !important; }
+        .bill-content.pdf-clone table { font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; }
+        .bill-content.pdf-clone th { padding: 3px 4px !important; font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; }
+        .bill-content.pdf-clone td { padding: 2px 4px !important; font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; }
+
+        /* Lab results — single column list, no grid */
+        .bill-content.pdf-clone .lab-results-grid { display: flex !important; flex-direction: column !important; gap: 1px !important; }
+        .bill-content.pdf-clone .lab-results-grid strong { font-size: ${Math.round(rxBaseFontPx * 0.7)}px !important; white-space: nowrap !important; }
+        .bill-content.pdf-clone .lab-results-grid span { font-size: ${Math.round(rxBaseFontPx * 0.7)}px !important; }
+        .bill-content.pdf-clone .lab-results-grid > div { min-height: auto !important; }
+        .bill-content.pdf-clone .lab-results-grid .lab-children-row { flex-direction: column !important; gap: 0px !important; padding-left: 4px !important; margin-top: 0px !important; }
+        .bill-content.pdf-clone .lab-results-grid .lab-children-row span { font-size: ${Math.round(rxBaseFontPx * 0.6)}px !important; }
+        .bill-content.pdf-clone .prescription-right strong[style*="color"] { font-size: ${Math.round(rxBaseFontPx * 0.8)}px !important; }
+
+        .bill-content.pdf-clone .notes-text { font-size: ${Math.round(rxBaseFontPx * 0.9)}px !important; }
+        .bill-content.pdf-clone .date-signature-row { padding-top: 8px !important; }
+        .bill-content.pdf-clone .sig-line { width: 100px !important; }
+        .bill-content.pdf-clone .date-signature-row p { font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; }
+
+        /* Footer */
+        .bill-content.pdf-clone .footer-section { font-size: ${Math.round(rxBaseFontPx * 0.75)}px !important; }
+        .bill-content.pdf-clone .footer-section p { font-size: ${Math.round(rxBaseFontPx * 0.75)}px !important; }
+        .bill-content.pdf-clone .footer-contacts svg { font-size: ${Math.round(rxBaseFontPx * 0.7)}px !important; }
+        .bill-content.pdf-clone .footer-thankyou p { font-size: ${Math.round(rxBaseFontPx * 0.7)}px !important; }
+        .bill-content.pdf-clone .footer-asiri-logo { height: ${Math.round(rxBaseFontPx * 1.2)}px !important; }
+      `
       rxWrapper.appendChild(prescriptionClone)
+      rxWrapper.appendChild(rxPdfStyles)
       document.body.appendChild(rxWrapper)
 
       // Wait for images to load
@@ -434,7 +512,8 @@ function CheckupDetail() {
       const marginX = (pdfWidth - imgScaledWidth) / 2
 
       pdf.addImage(imgData, 'PNG', marginX, marginTop, imgScaledWidth, imgScaledHeight)
-      pdf.save(`Prescription_${checkup.id}_${patient?.name.replace(/\s+/g, '_')}.pdf`)
+      const rxNowTs = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
+      pdf.save(`Prescription_${checkup.billNo || checkup.id}_${rxNowTs}.pdf`)
 
       // Log PDF generation activity
       if (user) {
@@ -501,10 +580,21 @@ function CheckupDetail() {
 
   return (
     <Container fluid className="p-3 p-md-4">
-      <Breadcrumb
-        items={[{ label: 'Checkups', path: '/checkups' }]}
-        current={checkup?.billNo || 'Checkup Details'}
-      />
+      <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
+        <Breadcrumb
+          items={[{ label: 'Checkups', path: '/checkups' }]}
+          current={checkup?.billNo || 'Checkup Details'}
+        />
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          onClick={() => navigate(`/checkups/${id}`)}
+          className="no-print"
+        >
+          <FaArrowLeft className="me-1" />
+          Back to Edit
+        </Button>
+      </div>
 
       {/* Patient Details */}
       <Card className="shadow-sm mb-3">

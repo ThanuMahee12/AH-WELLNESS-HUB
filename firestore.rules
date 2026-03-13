@@ -133,12 +133,14 @@ service cloud.firestore {
     // Notifications Collection
     // ============================================
     match /notifications/{notificationId} {
-      // Users can read their own notifications
-      allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      // Users can read their own notifications OR system-wide notifications (recipientId == 'all')
+      allow read: if isAuthenticated()
+        && (resource.data.recipientId == request.auth.uid || resource.data.recipientId == 'all');
       // Authenticated users can create notifications
       allow create: if isAuthenticated();
-      // Users can update (mark as read) their own notifications
-      allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      // Users can update (mark as read) their own OR system notifications
+      allow update: if isAuthenticated()
+        && (resource.data.recipientId == request.auth.uid || resource.data.recipientId == 'all');
       // No delete - notifications are archived, not deleted
       allow delete: if isSuperAdmin();
     }

@@ -308,10 +308,22 @@ function CheckupForm() {
 
       <Row className="mb-4">
         <Col>
-          <h2 className="fs-responsive-lg">
-            <FaClipboardCheck className="me-2 text-theme" />
-            {isNew ? 'New Checkup / Bill' : 'Edit Checkup'}
-          </h2>
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h2 className="fs-responsive-lg mb-0">
+              <FaClipboardCheck className="me-2 text-theme" />
+              {isNew ? 'New Checkup / Bill' : 'Edit Checkup'}
+            </h2>
+            {!isNew && (
+              <Button
+                variant="outline-info"
+                size="sm"
+                onClick={() => navigate(`/checkups/${id}/details`)}
+              >
+                <FaFileInvoice className="me-1" />
+                Invoice / Prescription
+              </Button>
+            )}
+          </div>
         </Col>
       </Row>
 
@@ -905,16 +917,6 @@ function CheckupForm() {
                     >
                       <FaTrash className="me-1" />
                       Delete
-                    </Button>
-                  )}
-                  {!isNew && (
-                    <Button
-                      variant="outline-info"
-                      onClick={() => navigate(`/checkups/${id}/details`)}
-                      className="entity-form-btn"
-                    >
-                      <FaFileInvoice className="me-1" />
-                      Invoice / Prescription
                     </Button>
                   )}
                   <Button

@@ -412,7 +412,7 @@ function UserActivityTab() {
             <Card.Body>
               <div style={{ height: '400px' }}>
                 {Object.keys(scatterData).length > 0 && stats?.userStats?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
@@ -497,7 +497,7 @@ function UserActivityTab() {
             <Card.Body>
               <div style={{ height: '400px' }}>
                 {lineChartData.length > 0 && stats?.userStats?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <LineChart data={lineChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
