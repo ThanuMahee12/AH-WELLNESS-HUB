@@ -227,7 +227,7 @@ export const DEFAULT_SETTINGS = {
     },
   },
   checkupPdf: {
-    invoice: { format: 'a5', width: 148, height: 210, orientation: 'portrait' },
+    invoice: { format: 'custom', width: 80, height: 200, orientation: 'portrait' },
     prescription: { format: 'a5', width: 148, height: 210, orientation: 'portrait' },
   },
   generalTests: {
