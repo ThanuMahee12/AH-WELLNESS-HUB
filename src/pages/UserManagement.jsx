@@ -58,7 +58,7 @@ function UserManagement() {
               </span>
             }
           >
-            <UserActivityTab />
+            {activeTab === 'activity' && <UserActivityTab />}
           </Tab>
         )}
 
