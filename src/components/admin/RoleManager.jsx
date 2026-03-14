@@ -5,6 +5,7 @@ import { db } from '../../config/firebase'
 import { ROLES } from '../../constants/roles'
 import { useSelector } from 'react-redux'
 import { usePermission } from '../auth/PermissionGate'
+import { useNotification } from '../../context'
 
 /**
  * Role Manager Component
@@ -13,6 +14,7 @@ import { usePermission } from '../auth/PermissionGate'
 const RoleManager = ({ userId, currentRole, username, onRoleChanged }) => {
   const { userRole } = usePermission()
   const currentUser = useSelector((state) => state.auth.user)
+  const { confirm } = useNotification()
   const [selectedRole, setSelectedRole] = useState(currentRole)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
@@ -37,7 +39,7 @@ const RoleManager = ({ userId, currentRole, username, onRoleChanged }) => {
 
     // Confirm if downgrading from SuperAdmin
     if (currentRole === ROLES.SUPERADMIN && selectedRole !== ROLES.SUPERADMIN) {
-      if (!window.confirm(`⚠️ Warning: You are about to remove SuperAdmin privileges from ${username}. This cannot be undone easily. Continue?`)) {
+      if (!(await confirm(`Warning: You are about to remove SuperAdmin privileges from ${username}. This cannot be undone easily. Continue?`, { title: 'Remove SuperAdmin', variant: 'danger', confirmText: 'Continue' }))) {
         return
       }
     }

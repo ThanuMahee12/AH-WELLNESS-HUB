@@ -18,7 +18,7 @@ function CheckupForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { success, error: showError } = useNotification()
+  const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
   const { settings, isFieldVisible, isFieldRequired, getFieldLabel, getLabResultFields, getGeneralTestFields } = useSettings()
   const labResultFields = getLabResultFields()
@@ -217,7 +217,7 @@ function CheckupForm() {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this checkup?')) return
+    if (!(await confirm('Are you sure you want to delete this checkup?'))) return
     try {
       const result = await dispatch(deleteCheckup(id))
       if (result.type.includes('rejected')) {

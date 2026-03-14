@@ -11,7 +11,7 @@ function CheckupSettingsTab() {
   const dispatch = useDispatch()
   const { settings, loading } = useSettings()
   const { user } = useSelector(state => state.auth)
-  const { error: showError } = useNotification()
+  const { error: showError, confirm } = useNotification()
 
   // New field state for both sections
   const [newLabFieldKey, setNewLabFieldKey] = useState('')
@@ -32,7 +32,7 @@ function CheckupSettingsTab() {
   }
 
   const buildRule = (r) => {
-    const rule = { operator: r.operator, label: r.label.trim(), display: r.display }
+    const rule = { operator: r.operator, label: r.label.trim(), notation: (r.notation || '{label}').trim() }
     if (r.operator === 'between') {
       rule.min = parseFloat(r.min)
       rule.max = parseFloat(r.max)
@@ -43,7 +43,7 @@ function CheckupSettingsTab() {
   }
 
   const isRuleValid = (r) => {
-    if (!r || !r.operator || !r.label?.trim() || !r.display) return false
+    if (!r || !r.operator || !r.label?.trim()) return false
     if (r.operator === 'between') return r.min !== '' && r.min !== undefined && r.max !== '' && r.max !== undefined && !isNaN(r.min) && !isNaN(r.max)
     return r.value !== '' && r.value !== undefined && !isNaN(r.value)
   }
@@ -294,7 +294,7 @@ function CheckupSettingsTab() {
   }
 
   const handleDeleteField = async (settingsKey, fields, fieldKey) => {
-    if (!window.confirm(`Delete field "${fieldKey}"?`)) return
+    if (!(await confirm(`Delete field "${fieldKey}"?`))) return
     try {
       const cfg = fields[fieldKey]
       const updated = { ...fields }
@@ -387,7 +387,7 @@ function CheckupSettingsTab() {
             <h5 className="mb-0 fs-responsive-md">{icon} {title}</h5>
           </Card.Header>
           <Card.Body>
-            <Form.Group>
+            <Form.Group className="mb-3">
               <Form.Label className="fw-semibold" style={{ fontSize: '0.9rem' }}>Default empty field behaviour</Form.Label>
               <Form.Select
                 value={showEmpty}
@@ -400,6 +400,25 @@ function CheckupSettingsTab() {
               </Form.Select>
               <Form.Text className="text-muted">
                 Each field can override this with its own Display setting below.
+              </Form.Text>
+            </Form.Group>
+            <Form.Group>
+              <Form.Label className="fw-semibold" style={{ fontSize: '0.9rem' }}>Default Notation Template</Form.Label>
+              <Form.Control
+                type="text"
+                defaultValue={settings?.[settingsKey]?.defaultNotation || '{value}({label})'}
+                placeholder="{value}({label})"
+                onBlur={(e) => {
+                  const val = e.target.value.trim()
+                  if (val !== (settings?.[settingsKey]?.defaultNotation || '{value}({label})')) {
+                    handleUpdate({ [settingsKey]: { defaultNotation: val } })
+                  }
+                }}
+                style={{ maxWidth: '350px', fontSize: '0.9rem' }}
+              />
+              <Form.Text className="text-muted">
+                Template for displaying values with rule labels. Keywords: <code>{'{value}'}</code> = result, <code>{'{label}'}</code> = rule label (e.g. HIGH/LOW), <code>{'{style}'}</code> = apply rule style (B/I/U).
+                Example: <code>{'{value}'} ({'{label}'})</code> → <em>140 (HIGH)</em>
               </Form.Text>
             </Form.Group>
           </Card.Body>
@@ -418,11 +437,11 @@ function CheckupSettingsTab() {
               <Table hover className="mb-0 table-mobile-responsive align-middle">
                 <thead className="bg-theme-slate">
                   <tr>
-                    <th style={{ width: '10%' }}>Key</th>
-                    <th style={{ width: '16%' }}>Label</th>
+                    <th style={{ width: '14%' }}>Key</th>
+                    <th style={{ width: '18%' }}>Label</th>
                     <th style={{ width: '8%', textAlign: 'center' }}>Order</th>
-                    <th style={{ width: '15%' }}>Group Under</th>
-                    <th style={{ width: '15%' }}>Display</th>
+                    <th style={{ width: '16%' }}>Group Under</th>
+                    <th style={{ width: '16%' }}>Display</th>
                     <th style={{ width: '8%', textAlign: 'center' }}>Visible</th>
                     <th style={{ width: '6%', textAlign: 'center' }}>Delete</th>
                   </tr>
@@ -524,6 +543,10 @@ function CheckupSettingsTab() {
                       <tr>
                         <td colSpan={7} style={{ padding: 0, background: '#f8fafc', borderTop: 'none' }}>
                           <div style={{ padding: '8px 12px' }}>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '6px', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px' }}>
+                              <strong>Notation keywords:</strong> <code>{'{value}'}</code> = result value, <code>{'{label}'}</code> = rule label (e.g. HIGH/LOW).
+                              Default: <code>{'{label}'}</code>. Example: <code>{'{value}'} ({'{label}'})</code> → <em>140 (HIGH)</em>
+                            </div>
                             {fieldRules.length > 0 && (
                               <table style={{ width: '100%', fontSize: '0.78rem', marginBottom: '6px' }}>
                                 <thead>
@@ -531,7 +554,7 @@ function CheckupSettingsTab() {
                                     <th style={{ padding: '2px 4px', fontWeight: 500 }}>Operator</th>
                                     <th style={{ padding: '2px 4px', fontWeight: 500 }}>Value</th>
                                     <th style={{ padding: '2px 4px', fontWeight: 500 }}>Label</th>
-                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Style</th>
+                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Notation</th>
                                     <th style={{ padding: '2px 4px', width: '60px' }}></th>
                                   </tr>
                                 </thead>
@@ -566,10 +589,9 @@ function CheckupSettingsTab() {
                                             value={er.label || ''} onChange={(e) => setEditingRule({ ...er, label: e.target.value })} />
                                         </td>
                                         <td style={{ padding: '2px 4px' }}>
-                                          <Form.Select size="sm" style={{ width: '100px', fontSize: '0.72rem' }}
-                                            value={er.display || ''} onChange={(e) => setEditingRule({ ...er, display: e.target.value })}>
-                                            {DISPLAY_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                                          </Form.Select>
+                                          <Form.Control size="sm" type="text" style={{ width: '120px', fontSize: '0.72rem' }}
+                                            value={er.notation ?? '{label}'} onChange={(e) => setEditingRule({ ...er, notation: e.target.value })}
+                                            placeholder="{label}" />
                                         </td>
                                         <td style={{ padding: '2px 4px' }}>
                                           <span className="d-flex gap-1">
@@ -592,25 +614,19 @@ function CheckupSettingsTab() {
                                           {rule.operator === 'between' ? `${rule.min} – ${rule.max}` : rule.value}
                                         </td>
                                         <td style={{ padding: '2px 4px' }}>
-                                          <span style={{
-                                            fontWeight: rule.display?.includes('B') ? 700 : 400,
-                                            fontStyle: rule.display?.includes('I') ? 'italic' : 'normal',
-                                            textDecoration: rule.display?.includes('U') ? 'underline' : 'none',
-                                          }}>
-                                            {rule.label}
-                                          </span>
+                                          {rule.label}
                                         </td>
                                         <td style={{ padding: '2px 4px' }}>
-                                          <Badge bg="light" text="dark" style={{ fontSize: '0.7rem' }}>
-                                            {DISPLAY_OPTIONS.find(d => d.value === rule.display)?.label || rule.display}
-                                          </Badge>
+                                          <code style={{ fontSize: '0.68rem', background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px' }}>
+                                            {rule.notation || rule.display || '{label}'}
+                                          </code>
                                         </td>
                                         <td style={{ padding: '2px 4px' }}>
                                           <span className="d-flex gap-1">
                                             <button className="btn btn-link p-0 text-primary" style={{ fontSize: '0.7rem' }}
                                               onClick={() => setEditingRule({
                                                 id: rulesId, index: i,
-                                                operator: rule.operator, label: rule.label, display: rule.display,
+                                                operator: rule.operator, label: rule.label, notation: rule.notation || rule.display || '{label}',
                                                 value: rule.value, min: rule.min, max: rule.max,
                                               })}>
                                               <FaEdit />
@@ -652,11 +668,8 @@ function CheckupSettingsTab() {
                               )}
                               <Form.Control size="sm" type="text" placeholder="Label (HIGH)" style={{ width: '100px', fontSize: '0.75rem' }}
                                 value={nr.label || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, label: e.target.value } }))} />
-                              <Form.Select size="sm" style={{ width: '110px', fontSize: '0.75rem' }}
-                                value={nr.display || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, display: e.target.value } }))}>
-                                <option value="">Style</option>
-                                {DISPLAY_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                              </Form.Select>
+                              <Form.Control size="sm" type="text" placeholder="{label}" style={{ width: '120px', fontSize: '0.75rem' }}
+                                value={nr.notation || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, notation: e.target.value } }))} />
                               <Button size="sm" className="btn-theme-add" style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                                 onClick={() => handleAddRule(settingsKey, key, fieldRules)}
                                 disabled={!isRuleValid(nr)}>
@@ -887,10 +900,9 @@ function CheckupSettingsTab() {
                 <Button
                   size="sm"
                   variant="outline-danger"
-                  onClick={() => {
-                    if (window.confirm('Remove saved signature?')) {
-                      handleUpdate({ checkupPdf: { eSign: '' } })
-                    }
+                  onClick={async () => {
+                    const ok = await confirm('Remove saved signature?', { title: 'Remove Signature', variant: 'warning' })
+                    if (ok) handleUpdate({ checkupPdf: { eSign: '' } })
                   }}
                 >
                   <FaTrash className="me-1" /> Remove

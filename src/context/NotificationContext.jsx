@@ -1,57 +1,78 @@
-import React, { createContext, useState, useCallback, useContext } from 'react';
-import { Toast, ToastContainer } from 'react-bootstrap';
+import React, { createContext, useState, useCallback, useContext, useRef } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Modal, Button } from 'react-bootstrap';
 
 const NotificationContext = createContext();
 
 /**
  * Notification Provider Component
- * Provides toast notifications throughout the app
+ * Provides react-toastify notifications and confirmation dialogs throughout the app
  */
 export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState([]);
+  const [confirmState, setConfirmState] = useState(null);
+  const confirmResolveRef = useRef(null);
 
-  const removeNotification = useCallback((id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const success = useCallback((message, duration = 3000) => {
+    toast.success(message, { autoClose: duration });
+  }, []);
+
+  const error = useCallback((message, duration = 4000) => {
+    toast.error(message, { autoClose: duration });
+  }, []);
+
+  const warning = useCallback((message, duration = 3500) => {
+    toast.warn(message, { autoClose: duration });
+  }, []);
+
+  const info = useCallback((message, duration = 3000) => {
+    toast.info(message, { autoClose: duration });
   }, []);
 
   const notify = useCallback((message, type = 'success', duration = 3000) => {
-    const id = Date.now() + Math.random();
-    const notification = {
-      id,
-      message,
-      type,
-      duration,
-    };
-
-    setNotifications((prev) => [...prev, notification]);
-
-    // Auto-remove after duration
-    if (duration > 0) {
-      setTimeout(() => {
-        removeNotification(id);
-      }, duration);
+    switch (type) {
+      case 'success': success(message, duration); break;
+      case 'danger':  error(message, duration); break;
+      case 'warning': warning(message, duration); break;
+      case 'info':    info(message, duration); break;
+      default:        toast(message, { autoClose: duration }); break;
     }
-  }, [removeNotification]);
+  }, [success, error, warning, info]);
 
-  const success = useCallback(
-    (message, duration) => notify(message, 'success', duration),
-    [notify]
-  );
+  /**
+   * Show a confirmation dialog and return a Promise<boolean>.
+   * @param {string} message - The confirmation message
+   * @param {object} [options] - Optional config
+   * @param {string} [options.title] - Modal title (default: 'Confirm')
+   * @param {string} [options.confirmText] - Confirm button text (default: 'Yes')
+   * @param {string} [options.cancelText] - Cancel button text (default: 'Cancel')
+   * @param {string} [options.variant] - Confirm button variant (default: 'danger')
+   * @returns {Promise<boolean>}
+   */
+  const confirm = useCallback((message, options = {}) => {
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve;
+      setConfirmState({
+        message,
+        title: options.title || 'Confirm',
+        confirmText: options.confirmText || 'Yes',
+        cancelText: options.cancelText || 'Cancel',
+        variant: options.variant || 'danger',
+      });
+    });
+  }, []);
 
-  const error = useCallback(
-    (message, duration) => notify(message, 'danger', duration),
-    [notify]
-  );
+  const handleConfirm = useCallback(() => {
+    confirmResolveRef.current?.(true);
+    confirmResolveRef.current = null;
+    setConfirmState(null);
+  }, []);
 
-  const warning = useCallback(
-    (message, duration) => notify(message, 'warning', duration),
-    [notify]
-  );
-
-  const info = useCallback(
-    (message, duration) => notify(message, 'info', duration),
-    [notify]
-  );
+  const handleCancel = useCallback(() => {
+    confirmResolveRef.current?.(false);
+    confirmResolveRef.current = null;
+    setConfirmState(null);
+  }, []);
 
   const value = {
     notify,
@@ -59,44 +80,41 @@ export const NotificationProvider = ({ children }) => {
     error,
     warning,
     info,
-    removeNotification,
+    confirm,
   };
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
 
-      {/* Toast Container */}
       <ToastContainer
-        position="top-end"
-        className="p-3"
-        style={{ zIndex: 9999 }}
-      >
-        {notifications.map((notification) => (
-          <Toast
-            key={notification.id}
-            onClose={() => removeNotification(notification.id)}
-            show={true}
-            delay={notification.duration}
-            autohide={notification.duration > 0}
-            bg={notification.type}
-          >
-            <Toast.Header>
-              <strong className="me-auto">
-                {notification.type === 'success' && '✓ Success'}
-                {notification.type === 'danger' && '✗ Error'}
-                {notification.type === 'warning' && '⚠ Warning'}
-                {notification.type === 'info' && 'ℹ Info'}
-              </strong>
-            </Toast.Header>
-            <Toast.Body
-              className={notification.type === 'danger' || notification.type === 'dark' ? 'text-white' : ''}
-            >
-              {notification.message}
-            </Toast.Body>
-          </Toast>
-        ))}
-      </ToastContainer>
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+
+      {/* Confirmation Modal */}
+      <Modal show={!!confirmState} onHide={handleCancel} centered size="sm" style={{ zIndex: 10000 }}>
+        <Modal.Header closeButton>
+          <Modal.Title style={{ fontSize: '1rem' }}>{confirmState?.title}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ fontSize: '0.9rem' }}>{confirmState?.message}</Modal.Body>
+        <Modal.Footer className="py-2">
+          <Button size="sm" variant="secondary" onClick={handleCancel}>
+            {confirmState?.cancelText}
+          </Button>
+          <Button size="sm" variant={confirmState?.variant} onClick={handleConfirm}>
+            {confirmState?.confirmText}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </NotificationContext.Provider>
   );
 };

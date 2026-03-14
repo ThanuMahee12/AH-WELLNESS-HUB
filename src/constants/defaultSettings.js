@@ -22,6 +22,7 @@ import {
   FaHospital,
   FaClipboardList,
   FaBriefcaseMedical,
+  FaBug,
 } from 'react-icons/fa'
 
 // Map icon name strings → React Icon components (for DB-driven sidebar)
@@ -46,6 +47,7 @@ export const ICON_MAP = {
   FaHospital,
   FaClipboardList,
   FaBriefcaseMedical,
+  FaBug,
 }
 
 // Options for the icon dropdown in PagesSettingsTab
@@ -210,7 +212,12 @@ export const DEFAULT_SETTINGS = {
         pages:  { label: 'Page Access',          roles: ['superadmin'] },
         public: { label: 'Public Page Control',  roles: ['superadmin', 'maintainer', 'editor'] },
         checkup: { label: 'Checkup', roles: ['superadmin'] },
+        feedback: { label: 'Feedback', roles: ['superadmin', 'maintainer', 'editor'] },
       },
+    },
+    maintenance: {
+      label: 'Maintenance', icon: 'FaBug', path: '/maintenance', order: 8,
+      roles: ['superadmin'],
     },
   },
   permissions: {

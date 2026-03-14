@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux'
-import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert, Pagination } from 'react-bootstrap'
-import { FaHistory, FaCalendarAlt } from 'react-icons/fa'
+import { useSelector, useDispatch } from 'react-redux'
+import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert, Pagination, Form } from 'react-bootstrap'
+import { FaHistory, FaCalendarAlt, FaFilter } from 'react-icons/fa'
 import {
   LineChart,
   Line,
@@ -16,12 +16,16 @@ import {
   ZAxis
 } from 'recharts'
 import { getActivityStats, getUserActivities } from '../../services/activityService'
+import { selectAllUsers, fetchUsers } from '../../store/usersSlice'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 function UserActivityTab() {
+  const dispatch = useDispatch()
   const { user: currentUser } = useSelector(state => state.auth)
+  const users = useSelector(selectAllUsers)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('all') // Default: All history
+  const [selectedUserId, setSelectedUserId] = useState('') // '' = all users
   const [stats, setStats] = useState(null)
   const [allActivities, setAllActivities] = useState([])
   const [recentActivities, setRecentActivities] = useState([])
@@ -30,93 +34,53 @@ function UserActivityTab() {
   const activitiesPerPage = 20
 
   const isSuperAdmin = currentUser?.role === 'superadmin'
-  const isMaintainer = currentUser?.role === 'maintainer'
-  const isEditorOrUser = currentUser?.role === 'editor' || currentUser?.role === 'user'
-
-  // Check if user has permission to view activity logs
-  const hasPermission = isSuperAdmin || isMaintainer || isEditorOrUser
 
   useEffect(() => {
-    if (hasPermission) {
-      loadActivityData()
+    if (isSuperAdmin && users.length === 0) {
+      dispatch(fetchUsers())
     }
-  }, [timeRange, currentPage, hasPermission])
+  }, [dispatch, isSuperAdmin, users.length])
 
-  // Reset to page 1 when time range changes
+  useEffect(() => {
+    loadActivityData()
+  }, [timeRange, currentPage, selectedUserId])
+
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [timeRange])
-
-  // Filter activities based on role
-  const filterActivitiesByRole = (activities) => {
-    if (isSuperAdmin) {
-      // SuperAdmin can see all activities
-      return activities
-    } else if (isMaintainer) {
-      // Maintainer can see their own activities + editor and user activities
-      // Cannot see other maintainers or superadmin activities
-      return activities.filter(activity =>
-        activity.userId === currentUser.uid ||
-        (activity.userRole !== 'maintainer' && activity.userRole !== 'superadmin')
-      )
-    } else if (isEditorOrUser) {
-      // Editors and Users can only see their own activities
-      return activities.filter(activity => activity.userId === currentUser.uid)
-    }
-    return []
-  }
-
-  // Filter stats based on role
-  const filterStatsByRole = (statsData) => {
-    if (!statsData) return null
-
-    if (isSuperAdmin) {
-      return statsData
-    } else if (isMaintainer) {
-      // Filter out maintainers and superadmins from user stats
-      const filteredUserStats = statsData.userStats?.filter(user =>
-        user.userId === currentUser.uid ||
-        (user.userRole !== 'maintainer' && user.userRole !== 'superadmin')
-      ) || []
-
-      return {
-        ...statsData,
-        userStats: filteredUserStats
-      }
-    } else if (isEditorOrUser) {
-      // Only show their own stats
-      const ownStats = statsData.userStats?.filter(user => user.userId === currentUser.uid) || []
-
-      return {
-        ...statsData,
-        userStats: ownStats
-      }
-    }
-    return statsData
-  }
+  }, [timeRange, selectedUserId])
 
   const loadActivityData = async () => {
     setLoading(true)
     try {
-      // Get stats
-      const statsResult = await getActivityStats(timeRange)
-      if (statsResult.success) {
-        const filteredStats = filterStatsByRole(statsResult.data)
-        setStats(filteredStats)
+      // Determine userId filter
+      let filterUserId = null
+      if (!isSuperAdmin) {
+        filterUserId = currentUser.uid
+      } else if (selectedUserId) {
+        filterUserId = selectedUserId
       }
 
-      // Get all activities for charts and pagination
-      const activitiesResult = await getUserActivities({ days: timeRange })
-      if (activitiesResult.success) {
-        // Filter activities based on role
-        const filteredActivities = filterActivitiesByRole(activitiesResult.data)
-        setAllActivities(filteredActivities)
-        setTotalActivities(filteredActivities.length)
+      const filters = { days: timeRange }
+      if (filterUserId) filters.userId = filterUserId
 
-        // Calculate pagination for activity logs table
+      // Get stats
+      const statsResult = await getActivityStats(timeRange, filterUserId)
+      if (statsResult.success) {
+        setStats(statsResult.data)
+      }
+
+      // Get activities
+      const activitiesResult = await getUserActivities(filters)
+      if (activitiesResult.success) {
+        const activities = activitiesResult.data
+        setAllActivities(activities)
+        setTotalActivities(activities.length)
+
+        // Calculate pagination
         const startIndex = (currentPage - 1) * activitiesPerPage
         const endIndex = startIndex + activitiesPerPage
-        setRecentActivities(filteredActivities.slice(startIndex, endIndex))
+        setRecentActivities(activities.slice(startIndex, endIndex))
       }
     } catch (error) {
       console.error('Error loading activity data:', error)
@@ -307,13 +271,6 @@ function UserActivityTab() {
     })
   }
 
-  if (!hasPermission) {
-    return (
-      <Alert variant="warning">
-        You don't have permission to view user activity.
-      </Alert>
-    )
-  }
 
   if (loading) {
     return <LoadingSpinner text="Loading activity data..." />
@@ -321,46 +278,70 @@ function UserActivityTab() {
 
   return (
     <>
-      {/* Time Range Filter */}
+      {/* Filters */}
       <Row className="mb-4">
         <Col>
           <Card className="shadow-sm">
             <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <FaCalendarAlt className="me-2 text-theme" />
-                  <strong>Time Range:</strong>
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div className="d-flex align-items-center gap-3 flex-wrap">
+                  <div>
+                    <FaCalendarAlt className="me-2 text-theme" />
+                    <strong>Time Range:</strong>
+                  </div>
+                  <ButtonGroup size="sm">
+                    <Button
+                      variant={timeRange === 'all' ? 'primary' : 'outline-primary'}
+                      onClick={() => setTimeRange('all')}
+                      style={timeRange === 'all' ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={timeRange === 7 ? 'primary' : 'outline-primary'}
+                      onClick={() => setTimeRange(7)}
+                      style={timeRange === 7 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                    >
+                      7 Days
+                    </Button>
+                    <Button
+                      variant={timeRange === 30 ? 'primary' : 'outline-primary'}
+                      onClick={() => setTimeRange(30)}
+                      style={timeRange === 30 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                    >
+                      30 Days
+                    </Button>
+                    <Button
+                      variant={timeRange === 90 ? 'primary' : 'outline-primary'}
+                      onClick={() => setTimeRange(90)}
+                      style={timeRange === 90 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
+                    >
+                      90 Days
+                    </Button>
+                  </ButtonGroup>
                 </div>
-                <ButtonGroup>
-                  <Button
-                    variant={timeRange === 'all' ? 'primary' : 'outline-primary'}
-                    onClick={() => setTimeRange('all')}
-                    style={timeRange === 'all' ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                  >
-                    All History
-                  </Button>
-                  <Button
-                    variant={timeRange === 7 ? 'primary' : 'outline-primary'}
-                    onClick={() => setTimeRange(7)}
-                    style={timeRange === 7 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                  >
-                    Past 7 Days
-                  </Button>
-                  <Button
-                    variant={timeRange === 30 ? 'primary' : 'outline-primary'}
-                    onClick={() => setTimeRange(30)}
-                    style={timeRange === 30 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                  >
-                    Past 30 Days
-                  </Button>
-                  <Button
-                    variant={timeRange === 90 ? 'primary' : 'outline-primary'}
-                    onClick={() => setTimeRange(90)}
-                    style={timeRange === 90 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                  >
-                    Past 90 Days
-                  </Button>
-                </ButtonGroup>
+                {isSuperAdmin && (
+                  <div className="d-flex align-items-center gap-2">
+                    <FaFilter className="text-theme" />
+                    <Form.Select
+                      size="sm"
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      style={{ width: 'auto', minWidth: '180px' }}
+                    >
+                      <option value="">All Users</option>
+                      {users
+                        .slice()
+                        .sort((a, b) => (a.username || '').localeCompare(b.username || ''))
+                        .map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.username || u.email} ({u.role})
+                          </option>
+                        ))
+                      }
+                    </Form.Select>
+                  </div>
+                )}
               </div>
             </Card.Body>
           </Card>
@@ -549,8 +530,8 @@ function UserActivityTab() {
               <Table responsive hover>
                 <thead>
                   <tr>
-                    <th>User</th>
-                    <th>Role</th>
+                    {isSuperAdmin && <th>User</th>}
+                    {isSuperAdmin && <th>Role</th>}
                     <th>Total Activities</th>
                     <th>Most Common Action</th>
                   </tr>
@@ -562,12 +543,12 @@ function UserActivityTab() {
 
                     return (
                       <tr key={userStat.userId}>
-                        <td><strong>{userStat.username}</strong></td>
-                        <td>
+                        {isSuperAdmin && <td><strong>{userStat.username}</strong></td>}
+                        {isSuperAdmin && <td>
                           <Badge className="badge-theme-light">
                             {userStat.userRole}
                           </Badge>
-                        </td>
+                        </td>}
                         <td>{userStat.totalActivities}</td>
                         <td>
                           {mostCommon ? (
@@ -609,9 +590,11 @@ function UserActivityTab() {
                           <td style={{ width: '140px', padding: '6px 10px' }} className="text-muted">
                             {formatTimestamp(activity.timestamp)}
                           </td>
-                          <td style={{ width: '100px', padding: '6px 10px' }}>
-                            <strong>{activity.username}</strong>
-                          </td>
+                          {isSuperAdmin && (
+                            <td style={{ width: '100px', padding: '6px 10px' }}>
+                              <strong>{activity.username}</strong>
+                            </td>
+                          )}
                           <td style={{ padding: '6px 10px' }}>
                             {activity.description}
                           </td>

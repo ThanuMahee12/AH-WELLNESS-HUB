@@ -10,11 +10,12 @@ import { selectAllTests, fetchTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
 import { useSettings } from '../hooks/useSettings'
+import { useNotification } from '../context'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import asiriLogo from '../assets/asiri-logo.png'
 import paidStampImg from '../assets/paid-stamp.png'
-import { evaluateRules, getDisplayStyle } from '../utils/evaluateRule'
+import { evaluateRules, getDisplayStyle, renderNotation, hasStyleKeyword } from '../utils/evaluateRule'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -24,6 +25,7 @@ function CheckupDetail() {
   const dispatch = useDispatch()
   const billRef = useRef()
   const prescriptionRef = useRef()
+  const { error: showError } = useNotification()
 
   const checkups = useSelector(selectAllCheckups)
   const patients = useSelector(selectAllPatients)
@@ -43,12 +45,28 @@ function CheckupDetail() {
   const labResultFields = getLabResultFields()
   const labResultsShowEmpty = settings?.labResults?.showEmpty || 'hide'
 
-  // Apply rules to a value and return { value, label, labelStyle }
-  const applyRules = (value, rules) => {
-    if (!value || !rules) return { value, label: null, labelStyle: {} }
+  // Apply rules to a value and return { text, labelStyle }
+  // fieldNotation: field-level notation template (e.g. '{value}({label})')
+  // Rule notation overrides field notation for the label portion
+  const applyRules = (value, rules, fieldNotation) => {
+    if (!value) return { text: null, labelStyle: {} }
+    if (!rules) {
+      // No rules — use field notation to render value if provided
+      if (fieldNotation && fieldNotation !== '{value}({label})') {
+        const rendered = renderNotation(fieldNotation, value, '')
+        return { text: rendered, labelStyle: {}, replaceValue: true }
+      }
+      return { text: null, labelStyle: {} }
+    }
     const result = evaluateRules(value, rules)
-    if (!result) return { value, label: null, labelStyle: {} }
-    return { value, label: result.label, labelStyle: getDisplayStyle(result.display) }
+    if (!result) return { text: null, labelStyle: {} }
+    // Rule notation for the annotation (e.g. '{label}', '{value} ({label})')
+    const ruleNotation = result.notation || '{label}'
+    const notationText = renderNotation(ruleNotation, value, result.label)
+    // If field notation uses {style}, apply rule's display style to the whole output
+    const useStyle = hasStyleKeyword(fieldNotation) || hasStyleKeyword(ruleNotation)
+    const labelStyle = useStyle ? getDisplayStyle(result.display) : {}
+    return { text: notationText, labelStyle }
   }
 
   // PDF settings from Firestore
@@ -204,7 +222,7 @@ function CheckupDetail() {
 
   const handleGeneratePDF = async () => {
     if (!billRef.current) {
-      alert('Invoice content not found. Please refresh the page and try again.')
+      showError('Invoice content not found. Please refresh the page and try again.')
       return
     }
 
@@ -370,7 +388,7 @@ function CheckupDetail() {
 
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert(`Failed to generate PDF.\n\nError: ${error.message}\n\nPlease try:\n1. Refreshing the page\n2. Using the Print button instead\n3. Taking a screenshot of the invoice`)
+      showError(`Failed to generate invoice PDF: ${error.message}`)
     } finally {
       setIsGenerating(false)
     }
@@ -378,7 +396,7 @@ function CheckupDetail() {
 
   const handleGeneratePrescriptionPDF = async () => {
     if (!prescriptionRef.current) {
-      alert('Prescription content not found. Please refresh the page and try again.')
+      showError('Prescription content not found. Please refresh the page and try again.')
       return
     }
 
@@ -567,7 +585,7 @@ function CheckupDetail() {
 
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert(`Failed to generate PDF.\n\nError: ${error.message}\n\nPlease try:\n1. Refreshing the page\n2. Using the Print button instead\n3. Taking a screenshot of the prescription`)
+      showError(`Failed to generate prescription PDF: ${error.message}`)
     } finally {
       setIsGenerating(false)
     }
@@ -1193,32 +1211,32 @@ function CheckupDetail() {
                                   const effective = fieldDisplay === 'default' ? genShowEmpty : (fieldDisplay === 'always' ? 'na' : 'hide')
                                   return effective === 'na' ? 'N/A' : ''
                                 }
-                                return generalTestFields.map(({ key, label, display, rules, children }) => {
+                                return generalTestFields.map(({ key, label, display, notation, rules, children }) => {
                                   const val = checkup.generalTests?.[key]
                                   const childrenHaveValues = children?.some(({ key: ck }) => checkup.generalTests?.[ck])
                                   const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
                                     children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.generalTests?.[ck]))
                                   if (!children && !shouldShow(display, val)) return null
                                   if (children && !parentShouldShow) return null
-                                  const ruleResult = applyRules(val, rules)
+                                  const ruleResult = applyRules(val, rules, notation)
 
                                   return children ? (
                                     <div key={key} style={{ gridColumn: '1 / -1' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                         <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                         <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
-                                        {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
+                                        {ruleResult.text && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.text}</span>}
                                       </div>
                                       <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
-                                        {children.map(({ key: ck, label: cl, display: cd, rules: cr }) => {
+                                        {children.map(({ key: ck, label: cl, display: cd, notation: cn, rules: cr }) => {
                                           const cv = checkup.generalTests?.[ck]
                                           if (!shouldShow(cd, cv)) return null
-                                          const childRule = applyRules(cv, cr)
+                                          const childRule = applyRules(cv, cr, cn)
                                           return (
                                             <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
                                               <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
                                               <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
-                                              {childRule.label && <span style={{ fontSize: 'clamp(0.45rem, 1vw, 0.55rem)', marginLeft: '2px', ...childRule.labelStyle }}>{childRule.label}</span>}
+                                              {childRule.text && <span style={{ fontSize: 'clamp(0.45rem, 1vw, 0.55rem)', marginLeft: '2px', ...childRule.labelStyle }}>{childRule.text}</span>}
                                             </div>
                                           )
                                         })}
@@ -1228,7 +1246,7 @@ function CheckupDetail() {
                                     <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                       <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                       <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
-                                      {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
+                                      {ruleResult.text && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.text}</span>}
                                     </div>
                                   )
                                 })
@@ -1255,32 +1273,32 @@ function CheckupDetail() {
                               return effective === 'na' ? 'N/A' : ''
                             }
 
-                            return labResultFields.map(({ key, label, display, rules, children }) => {
+                            return labResultFields.map(({ key, label, display, notation, rules, children }) => {
                               const val = checkup.labResults?.[key]
                               const childrenHaveValues = children?.some(({ key: ck }) => checkup.labResults?.[ck])
                               const parentShouldShow = shouldShow(display, val) || childrenHaveValues ||
                                 children?.some(({ key: ck, display: cd }) => shouldShow(cd, checkup.labResults?.[ck]))
                               if (!children && !shouldShow(display, val)) return null
                               if (children && !parentShouldShow) return null
-                              const ruleResult = applyRules(val, rules)
+                              const ruleResult = applyRules(val, rules, notation)
 
                               return children ? (
                                 <div key={key} style={{ gridColumn: '1 / -1' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                     <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                     <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
-                                    {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
+                                    {ruleResult.text && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.text}</span>}
                                   </div>
                                   <div className="lab-children-row" style={{ display: 'flex', gap: '6px', paddingLeft: '0.5rem', marginTop: '1px' }}>
-                                    {children.map(({ key: ck, label: cl, display: cd, rules: cr }) => {
+                                    {children.map(({ key: ck, label: cl, display: cd, notation: cn, rules: cr }) => {
                                       const cv = checkup.labResults?.[ck]
                                       if (!shouldShow(cd, cv)) return null
-                                      const childRule = applyRules(cv, cr)
+                                      const childRule = applyRules(cv, cr, cn)
                                       return (
                                         <div key={ck} style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
                                           <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', color: '#64748b', whiteSpace: 'nowrap' }}>{cl}:</span>
                                           <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)' }}>{cv || emptyText(cd)}</span>
-                                          {childRule.label && <span style={{ fontSize: 'clamp(0.45rem, 1vw, 0.55rem)', marginLeft: '2px', ...childRule.labelStyle }}>{childRule.label}</span>}
+                                          {childRule.text && <span style={{ fontSize: 'clamp(0.45rem, 1vw, 0.55rem)', marginLeft: '2px', ...childRule.labelStyle }}>{childRule.text}</span>}
                                         </div>
                                       )
                                     })}
@@ -1290,7 +1308,7 @@ function CheckupDetail() {
                                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '2px', minHeight: '20px' }}>
                                   <strong style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', whiteSpace: 'nowrap' }}>{label}:</strong>
                                   <span style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)' }}>{val || emptyText(display)}</span>
-                                  {ruleResult.label && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.label}</span>}
+                                  {ruleResult.text && <span style={{ fontSize: 'clamp(0.5rem, 1.2vw, 0.6rem)', marginLeft: '2px', ...ruleResult.labelStyle }}>{ruleResult.text}</span>}
                                 </div>
                               )
                             })

@@ -59,7 +59,7 @@ function PatientDetail() {
   const tests = useSelector(selectAllTests)
   const { loading } = useSelector(state => state.patients)
   const user = useSelector(state => state.auth.user)
-  const { success, error: showError } = useNotification()
+  const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
   const { getEntityFields, getInitialFormData, isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
 
@@ -165,7 +165,7 @@ function PatientDetail() {
   }, [id, isNew, checkups])
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this patient?')) return
+    if (!(await confirm('Are you sure you want to delete this patient?'))) return
     try {
       const result = await dispatch(deletePatient(id))
       if (result.type.includes('rejected')) {

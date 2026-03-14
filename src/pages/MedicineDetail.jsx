@@ -119,7 +119,7 @@ function MedicineDetail() {
   const medicines = useSelector(selectAllMedicines)
   const { loading } = useSelector(state => state.medicines)
   const user = useSelector(state => state.auth.user)
-  const { success, error: showError } = useNotification()
+  const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
   const { isFieldVisible, isFieldRequired, getFieldLabel, getEntityFields, getInitialFormData } = useSettings()
 
@@ -228,7 +228,7 @@ function MedicineDetail() {
   }, [medicine?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this medicine?')) return
+    if (!(await confirm('Are you sure you want to delete this medicine?'))) return
     try {
       const result = await dispatch(deleteMedicine(id))
       if (result.type.includes('rejected')) {

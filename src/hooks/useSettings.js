@@ -206,6 +206,7 @@ export function useSettings() {
   const getGeneralTestFields = useCallback(() => {
     const fields = settings?.generalTests?.fields
     if (!fields) return []
+    const defaultNotation = settings?.generalTests?.defaultNotation || '{value}({label})'
     return Object.entries(fields)
       .filter(([, cfg]) => cfg.visible !== false && !cfg.parent)
       .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
@@ -214,11 +215,12 @@ export function useSettings() {
         label: cfg.label || key,
         order: cfg.order || 0,
         display: cfg.display || 'default',
+        notation: defaultNotation,
         rules: cfg.rules || null,
         children: cfg.children
           ? cfg.children
               .filter(ck => fields[ck] && fields[ck].visible !== false)
-              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default', rules: fields[ck]?.rules || null }))
+              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default', notation: defaultNotation, rules: fields[ck]?.rules || null }))
           : null,
       }))
   }, [settings])
@@ -227,6 +229,7 @@ export function useSettings() {
   const getLabResultFields = useCallback(() => {
     const fields = settings?.labResults?.fields
     if (!fields) return []
+    const defaultNotation = settings?.labResults?.defaultNotation || '{value}({label})'
     return Object.entries(fields)
       .filter(([, cfg]) => cfg.visible !== false && !cfg.parent)
       .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
@@ -235,11 +238,12 @@ export function useSettings() {
         label: cfg.label || key,
         order: cfg.order || 0,
         display: cfg.display || 'default',
+        notation: defaultNotation,
         rules: cfg.rules || null,
         children: cfg.children
           ? cfg.children
               .filter(ck => fields[ck] && fields[ck].visible !== false)
-              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default', rules: fields[ck]?.rules || null }))
+              .map(ck => ({ key: ck, label: fields[ck]?.label || ck, display: fields[ck]?.display || 'default', notation: defaultNotation, rules: fields[ck]?.rules || null }))
           : null,
       }))
   }, [settings])

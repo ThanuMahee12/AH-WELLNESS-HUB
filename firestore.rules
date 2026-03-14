@@ -115,10 +115,10 @@ service cloud.firestore {
     match /userActivities/{activityId} {
       // All authenticated users can create activity logs
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      // Only superadmin can read activities (for analytics dashboard)
-      allow read: if isSuperAdmin();
-      // No one can update or delete activities (immutable audit trail)
-      allow update, delete: if false;
+      // Only superadmin can read/delete activities
+      allow read, delete: if isSuperAdmin();
+      // No one can update activities (immutable audit trail)
+      allow update: if false;
     }
 
     // ============================================

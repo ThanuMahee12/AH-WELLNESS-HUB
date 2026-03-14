@@ -18,7 +18,7 @@ function TestDetail() {
   const tests = useSelector(selectAllTests)
   const { loading } = useSelector(state => state.tests)
   const user = useSelector(state => state.auth.user)
-  const { success, error: showError } = useNotification()
+  const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
   const { getEntityFields, getInitialFormData } = useSettings()
 
@@ -114,7 +114,7 @@ function TestDetail() {
   }, [test?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this test?')) return
+    if (!(await confirm('Are you sure you want to delete this test?'))) return
     try {
       const result = await dispatch(deleteTest({ id, testName: test?.name }))
       if (result.type.includes('rejected')) {
