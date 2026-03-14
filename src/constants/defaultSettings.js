@@ -155,7 +155,7 @@ export const DEFAULT_SETTINGS = {
     login: {
       label: 'Login', path: '/login', sidebar: false,
       showResetPassword: ['superadmin', 'maintainer', 'editor', 'user'],
-      showSignUp: ['superadmin', 'maintainer', 'editor', 'user'],
+      showSignUp: [],
     },
     home: {
       label: 'Home', icon: 'FaHome', path: '/', order: 0,
