@@ -36,14 +36,34 @@ jobs:
           CURRENT=$(node -p "require('./package.json').version")
           echo "Current version: v${CURRENT}"
 
-          # Bump patch version using npm (creates commit + tag)
-          NEW=$(npm version patch --no-git-tag-version)
+          # Determine bump type from commit messages since last tag
+          PREV_TAG=$(git tag --sort=-v:refname | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"%s" --no-merges)
+          else
+            COMMITS=$(git log --pretty=format:"%s" --no-merges)
+          fi
+
+          # Detect bump type:
+          #   BREAKING CHANGE or feat!: → major
+          #   feat: → minor
+          #   fix:, refactor:, chore:, etc. → patch
+          BUMP="patch"
+          if echo "$COMMITS" | grep -qiE "^feat!:|BREAKING CHANGE"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qiE "^feat(\(.+\))?:"; then
+            BUMP="minor"
+          fi
+
+          echo "Bump type: ${BUMP}"
+          NEW=$(npm version ${BUMP} --no-git-tag-version)
           echo "New version: ${NEW}"
           echo "version=${NEW}" >> $GITHUB_OUTPUT
+          echo "bump=${BUMP}" >> $GITHUB_OUTPUT
 
           # Commit the version bump
           git add package.json
-          git commit -m "chore: bump version to ${NEW}"
+          git commit -m "chore: bump version to ${NEW} [${BUMP}]"
           git tag "${NEW}"
 
       - name: Install dependencies
