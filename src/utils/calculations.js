@@ -22,6 +22,7 @@ export const calculateTestCommission = (price, percentage = 20) => {
  */
 export const calculateCheckupCommission = (checkup, testsData = []) => {
   if (!checkup?.tests || !Array.isArray(checkup.tests)) return 0;
+  if (checkup.ownTests === false) return 0;
 
   return checkup.tests.reduce((sum, testItem) => {
     const test = testsData.find(t => t.id === testItem.testId);

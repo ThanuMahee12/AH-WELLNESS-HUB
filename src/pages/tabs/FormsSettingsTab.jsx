@@ -8,7 +8,7 @@ import { ENTITY_LABELS, FIELD_TYPE_OPTIONS } from '../../constants/defaultSettin
 import { useNotification } from '../../context'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
-const FORM_ENTITIES = ['patients', 'tests', 'medicines', 'users']
+const FORM_ENTITIES = ['patients', 'tests', 'medicines', 'users', 'checkups']
 
 function FormsSettingsTab() {
   const dispatch = useDispatch()

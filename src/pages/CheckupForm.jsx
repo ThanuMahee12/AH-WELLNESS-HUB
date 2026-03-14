@@ -20,7 +20,7 @@ function CheckupForm() {
   const dispatch = useDispatch()
   const { success, error: showError } = useNotification()
   const { checkPermission } = usePermission()
-  const { isFieldVisible, isFieldRequired, getFieldLabel, getLabResultFields, getGeneralTestFields } = useSettings()
+  const { settings, isFieldVisible, isFieldRequired, getFieldLabel, getLabResultFields, getGeneralTestFields } = useSettings()
   const labResultFields = getLabResultFields()
   const generalTestFields = getGeneralTestFields()
 
@@ -39,6 +39,11 @@ function CheckupForm() {
   const [formData, setFormData] = useState({
     patientId: '',
     tests: [],
+    ownTests: true,
+    doctorFees: '',
+    paid: true,
+    validDays: '',
+    useESign: true,
     weight: '',
     height: ''
   })
@@ -63,6 +68,13 @@ function CheckupForm() {
   const [editedLabResults, setEditedLabResults] = useState({})
   const [selectedTestForNote, setSelectedTestForNote] = useState(null)
 
+  // Set default validDays from settings for new checkups
+  useEffect(() => {
+    if (isNew && settings?.checkupPdf?.defaultValidDays && !formData.validDays) {
+      setFormData(prev => ({ ...prev, validDays: settings.checkupPdf.defaultValidDays }))
+    }
+  }, [isNew, settings?.checkupPdf?.defaultValidDays]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fetch data if store is empty
   useEffect(() => {
     if (checkups.length === 0) dispatch(fetchCheckups())
@@ -77,6 +89,11 @@ function CheckupForm() {
       setFormData({
         patientId: checkup.patientId || '',
         tests: checkup.tests || [],
+        ownTests: checkup.ownTests !== false,
+        doctorFees: checkup.doctorFees || '',
+        paid: checkup.paid !== false,
+        validDays: checkup.validDays || '',
+        useESign: checkup.useESign !== false,
         weight: checkup.weight || '',
         height: checkup.height || ''
       })
@@ -126,11 +143,14 @@ function CheckupForm() {
   }
 
   const calculateTotal = useCallback(() => {
-    return formData.tests.reduce((sum, testItem) => {
+    const docFees = parseFloat(formData.doctorFees) || 0
+    if (!formData.ownTests) return docFees
+    const testsTotal = formData.tests.reduce((sum, testItem) => {
       const test = tests.find(t => t.id === testItem.testId)
       return sum + (test?.price || 0)
     }, 0)
-  }, [formData.tests, tests])
+    return testsTotal + docFees
+  }, [formData.tests, formData.ownTests, formData.doctorFees, tests])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -140,7 +160,7 @@ function CheckupForm() {
       return
     }
 
-    if (formData.tests.length === 0) {
+    if (isFieldRequired('checkups', 'tests', true) && formData.tests.length === 0) {
       showError('Please select at least one test')
       return
     }
@@ -496,12 +516,16 @@ function CheckupForm() {
                 )}
 
                 {/* Tests Selection Section */}
+                {isFieldVisible('checkups', 'tests') && (<>
                 <h6 className="section-heading mt-4">
-                  Tests
+                  {getFieldLabel('checkups', 'tests', 'Tests')}
                 </h6>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Select Tests *</Form.Label>
+                  <Form.Label>
+                    {getFieldLabel('checkups', 'tests', 'Select Tests')}
+                    {isFieldRequired('checkups', 'tests', true) && <span className="text-danger ms-1">*</span>}
+                  </Form.Label>
                   <Select
                     isMulti
                     options={tests.map(test => ({
@@ -545,78 +569,144 @@ function CheckupForm() {
                   />
                 </Form.Group>
 
+                {isFieldVisible('checkups', 'ownTests') && (
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="switch"
+                      id="ownTests"
+                      label={<span>{getFieldLabel('checkups', 'ownTests', 'Own Tests')} <small className="text-muted">(uncheck if patient took tests elsewhere — no charge / commission)</small></span>}
+                      checked={formData.ownTests}
+                      onChange={(e) => setFormData({ ...formData, ownTests: e.target.checked })}
+                    />
+                  </Form.Group>
+                )}
+
+                {isFieldVisible('checkups', 'doctorFees') && (
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      {getFieldLabel('checkups', 'doctorFees', 'Doctor Fees (Rs.)')}
+                      {isFieldRequired('checkups', 'doctorFees', false) && <span className="text-danger ms-1">*</span>}
+                    </Form.Label>
+                    <Form.Control
+                      type="number"
+                      step="0.01"
+                      value={formData.doctorFees}
+                      onChange={(e) => setFormData({ ...formData, doctorFees: e.target.value })}
+                      placeholder="Enter doctor fees"
+                      required={isFieldRequired('checkups', 'doctorFees', false)}
+                      style={{ maxWidth: '250px' }}
+                    />
+                  </Form.Group>
+                )}
+
+                {isFieldVisible('checkups', 'paid') && (
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="switch"
+                      id="paid"
+                      label={getFieldLabel('checkups', 'paid', 'Paid')}
+                      checked={formData.paid}
+                      onChange={(e) => setFormData({ ...formData, paid: e.target.checked })}
+                    />
+                  </Form.Group>
+                )}
+
                 <Form.Group className="mb-3">
                   <Form.Label>
-                    Total Amount: <Badge className="badge-theme-light fs-6">Rs. {calculateTotal().toFixed(2)}</Badge>
+                    Total Amount: <Badge className={formData.ownTests ? 'badge-theme-light fs-6' : 'bg-secondary fs-6'}>Rs. {calculateTotal().toFixed(2)}</Badge>
+                    {!formData.ownTests && <small className="text-muted ms-2">(outside tests — doctor fees only)</small>}
                   </Form.Label>
                 </Form.Group>
+                </>)}
 
                 {/* Weight/Height Section */}
-                <h6 className="section-heading mt-4">
-                  Measurements (Optional)
-                </h6>
+                {(isFieldVisible('checkups', 'weight') || isFieldVisible('checkups', 'height')) && (
+                  <>
+                    <h6 className="section-heading mt-4">
+                      Measurements (Optional)
+                    </h6>
 
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Weight (kg)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.1"
-                        value={formData.weight}
-                        onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                        placeholder="Enter weight in kg (optional)"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Height (cm)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.1"
-                        value={formData.height}
-                        onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                        placeholder="Enter height in cm (optional)"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
+                    <Row>
+                      {isFieldVisible('checkups', 'weight') && (
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>
+                              {getFieldLabel('checkups', 'weight', 'Weight (kg)')}
+                              {isFieldRequired('checkups', 'weight', false) && <span className="text-danger ms-1">*</span>}
+                            </Form.Label>
+                            <Form.Control
+                              type="number"
+                              step="0.1"
+                              value={formData.weight}
+                              onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                              placeholder="Enter weight in kg (optional)"
+                              required={isFieldRequired('checkups', 'weight', false)}
+                            />
+                          </Form.Group>
+                        </Col>
+                      )}
+                      {isFieldVisible('checkups', 'height') && (
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>
+                              {getFieldLabel('checkups', 'height', 'Height (cm)')}
+                              {isFieldRequired('checkups', 'height', false) && <span className="text-danger ms-1">*</span>}
+                            </Form.Label>
+                            <Form.Control
+                              type="number"
+                              step="0.1"
+                              value={formData.height}
+                              onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                              placeholder="Enter height in cm (optional)"
+                              required={isFieldRequired('checkups', 'height', false)}
+                            />
+                          </Form.Group>
+                        </Col>
+                      )}
+                    </Row>
+                  </>
+                )}
 
                 {/* === Additional fields (edit mode only) === */}
                 {!isNew && checkup && (
                   <>
                     {/* Notes Section */}
-                    <h6 className="section-heading mt-4">
-                      <FaStickyNote className="me-2" />
-                      Notes
-                    </h6>
+                    {(isFieldVisible('checkups', 'notes') || isFieldVisible('checkups', 'commonNotes')) && (
+                      <h6 className="section-heading mt-4">
+                        <FaStickyNote className="me-2" />
+                        Notes
+                      </h6>
+                    )}
 
-                    <Form.Group className="mb-3">
-                      <Form.Label>Invoice Notes <small className="text-muted">(printed on invoice)</small></Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={2}
-                        value={editedNotes}
-                        onChange={(e) => setEditedNotes(e.target.value)}
-                        placeholder="Add general notes for the invoice..."
-                        style={{ fontSize: '0.9rem' }}
-                      />
-                    </Form.Group>
+                    {isFieldVisible('checkups', 'notes') && (
+                      <Form.Group className="mb-3">
+                        <Form.Label>{getFieldLabel('checkups', 'notes', 'Invoice Notes')} <small className="text-muted">(printed on invoice)</small></Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={2}
+                          value={editedNotes}
+                          onChange={(e) => setEditedNotes(e.target.value)}
+                          placeholder="Add general notes for the invoice..."
+                          style={{ fontSize: '0.9rem' }}
+                        />
+                      </Form.Group>
+                    )}
 
-                    <Form.Group className="mb-3">
-                      <Form.Label>Common Notes <small className="text-muted">(internal)</small></Form.Label>
-                      <RichTextEditor
-                        label=""
-                        value={editedCommonNotes}
-                        onChange={(value) => setEditedCommonNotes(value)}
-                        placeholder="Add common notes for this checkup..."
-                        height="150px"
-                      />
-                    </Form.Group>
+                    {isFieldVisible('checkups', 'commonNotes') && (
+                      <Form.Group className="mb-3">
+                        <Form.Label>{getFieldLabel('checkups', 'commonNotes', 'Common Notes')} <small className="text-muted">(internal)</small></Form.Label>
+                        <RichTextEditor
+                          label=""
+                          value={editedCommonNotes}
+                          onChange={(value) => setEditedCommonNotes(value)}
+                          placeholder="Add common notes for this checkup..."
+                          height="150px"
+                        />
+                      </Form.Group>
+                    )}
 
                     {/* Test-Specific Notes */}
-                    <div className="mb-3">
+                    {isFieldVisible('checkups', 'testNotes') && <div className="mb-3">
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <Form.Label className="mb-0">Test Notes <small className="text-muted">(per-test internal notes)</small></Form.Label>
                         <Button
@@ -697,12 +787,13 @@ function CheckupForm() {
                             </div>
                           ) : null
                         })}
-                    </div>
+                    </div>}
 
                     {/* Prescription Section */}
+                    {isFieldVisible('checkups', 'prescription') && (<>
                     <h6 className="section-heading mt-4">
                       <FaPrescriptionBottleAlt className="me-2" />
-                      Prescription
+                      {getFieldLabel('checkups', 'prescription', 'Prescription')}
                       <Badge bg="secondary" className="ms-2" style={{ fontSize: '0.7rem' }}>{prescriptionMedicines.length}</Badge>
                     </h6>
 
@@ -757,20 +848,58 @@ function CheckupForm() {
                       )
                     })}
 
-                    <Form.Group className="mb-3 mt-2">
-                      <Form.Label>Prescription Notes / Instructions</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={2}
-                        value={prescriptionNotes}
-                        onChange={(e) => setPrescriptionNotes(e.target.value)}
-                        placeholder="Additional instructions for the prescription..."
-                        style={{ fontSize: '0.9rem' }}
-                      />
-                    </Form.Group>
+                    {isFieldVisible('checkups', 'prescriptionNotes') && (
+                      <Form.Group className="mb-3 mt-2">
+                        <Form.Label>{getFieldLabel('checkups', 'prescriptionNotes', 'Prescription Notes / Instructions')}</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={2}
+                          value={prescriptionNotes}
+                          onChange={(e) => setPrescriptionNotes(e.target.value)}
+                          placeholder="Additional instructions for the prescription..."
+                          style={{ fontSize: '0.9rem' }}
+                        />
+                      </Form.Group>
+                    )}
+                    </>)}
+
+                    {/* Valid Days & Use ESign */}
+                    {(isFieldVisible('checkups', 'validDays') || isFieldVisible('checkups', 'useESign')) && (
+                      <Row className="mt-3">
+                        {isFieldVisible('checkups', 'validDays') && (
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                {getFieldLabel('checkups', 'validDays', 'Prescription Valid Days')}
+                              </Form.Label>
+                              <Form.Control
+                                type="number"
+                                value={formData.validDays}
+                                onChange={(e) => setFormData({ ...formData, validDays: e.target.value })}
+                                placeholder="30"
+                                style={{ maxWidth: '150px' }}
+                              />
+                            </Form.Group>
+                          </Col>
+                        )}
+                        {isFieldVisible('checkups', 'useESign') && (
+                          <Col md={6}>
+                            <Form.Group className="mb-3 d-flex align-items-center" style={{ minHeight: '58px' }}>
+                              <Form.Check
+                                type="switch"
+                                id="useESign"
+                                label={getFieldLabel('checkups', 'useESign', 'Use E-Signature')}
+                                checked={formData.useESign}
+                                onChange={(e) => setFormData({ ...formData, useESign: e.target.checked })}
+                              />
+                            </Form.Group>
+                          </Col>
+                        )}
+                      </Row>
+                    )}
 
                     {/* General Tests Section */}
-                    {generalTestFields.length > 0 && (
+                    {isFieldVisible('checkups', 'generalTests') && generalTestFields.length > 0 && (
                       <>
                         <h6 className="section-heading mt-4">
                           <FaStethoscope className="me-2" />
@@ -833,7 +962,7 @@ function CheckupForm() {
                     )}
 
                     {/* Lab Results Section */}
-                    {labResultFields.length > 0 && (
+                    {isFieldVisible('checkups', 'labResults') && labResultFields.length > 0 && (
                       <>
                         <h6 className="section-heading mt-4">
                           <FaVial className="me-2" />

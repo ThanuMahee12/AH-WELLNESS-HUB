@@ -87,13 +87,13 @@ function CheckupDetail() {
   }, [checkup?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Single shared template — header (top) + body (middle, fills space) + footer (bottom)
-  const renderTemplate = (children) => (
+  const renderTemplate = (children, type = 'invoice') => (
     <div className="template-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Header */}
       <div className="mb-2 pb-1 header-section" style={{ borderBottom: '2px solid #0891B2', textAlign: 'center' }}>
         <img src={bloodLabLogo} alt="AWH Logo" className="template-logo-main" style={{ height: 'clamp(35px, 5vw, 50px)', objectFit: 'contain', marginBottom: '0.25rem' }} />
         <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: 'clamp(0.65rem, 2vw, 0.9rem)' }}>
-          AH WELLNESS HUB & ASIRI LABORATORIES
+          {type === 'prescription' ? 'AH WELLNESS HUB' : 'AH WELLNESS HUB & ASIRI LABORATORIES'}
         </h4>
         <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>Complete Health Care Solutions</p>
         <div style={{ fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)', color: '#64748b', marginBottom: '0.25rem' }}>
@@ -103,7 +103,9 @@ function CheckupDetail() {
           {' | '}
           <span>{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
-        <img src={asiriLogo} alt="ASIRI Logo" className="template-logo-asiri" style={{ height: 'clamp(20px, 3vw, 30px)', objectFit: 'contain', opacity: 0.8 }} />
+        {type !== 'prescription' && (
+          <img src={asiriLogo} alt="ASIRI Logo" className="template-logo-asiri" style={{ height: 'clamp(20px, 3vw, 30px)', objectFit: 'contain', opacity: 0.8 }} />
+        )}
       </div>
 
       {/* Patient Info */}
@@ -122,38 +124,57 @@ function CheckupDetail() {
       </div>
 
       {/* Contact Footer — always at bottom */}
-      <div className="mt-auto pt-1 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)' }}>
-        <div className="footer-contacts" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', borderTop: '1px solid #e2e8f0', paddingTop: '0.25rem' }}>
-          <div>
-            <p className="mb-0">
-              <FaPhone className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
-              <strong>Mobile:</strong> +94 72 338 8793
-            </p>
-            <p className="mb-0">
-              <FaEnvelope className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
-              <strong>Email:</strong> vijayjena@yahoo.com
-            </p>
+      {(() => {
+        const footer = settings?.checkupPdf?.footer || {}
+        const mobile = footer.mobile || { label: 'Mobile', value: '+94 72 338 8793', visible: true }
+        const email = footer.email || { label: 'Email', value: 'vijayjena@yahoo.com', visible: true }
+        const instagram = footer.instagram || { label: 'IG', value: 'wijayjena2', visible: true }
+        const facebook = footer.facebook || { label: 'FB', value: 'drwjanakan', visible: true }
+        const thankYouText = type === 'prescription'
+          ? (footer.thankYouPrescription || 'Thank you for choosing AH Wellness Hub')
+          : (footer.thankYouInvoice || 'Thank you for choosing AH Wellness Hub & Asiri Laboratories')
+        const FOOTER_ICONS = { mobile: FaPhone, email: FaEnvelope, instagram: FaInstagram, facebook: FaFacebook }
+        const leftItems = [mobile, email].filter(i => i.visible !== false)
+        const rightItems = [instagram, facebook].filter(i => i.visible !== false)
+        return (
+          <div className="mt-auto pt-1 footer-section" style={{ borderTop: '1px solid #e2e8f0', fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)' }}>
+            <div className="footer-contacts" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', borderTop: '1px solid #e2e8f0', paddingTop: '0.25rem' }}>
+              <div>
+                {leftItems.map((item, i) => {
+                  const Icon = i === 0 ? FaPhone : FaEnvelope
+                  return (
+                    <p key={i} className="mb-0">
+                      <Icon className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
+                      <strong>{item.label}:</strong> {item.value}
+                    </p>
+                  )
+                })}
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                {rightItems.map((item, i) => {
+                  const Icon = i === 0 ? FaInstagram : FaFacebook
+                  return (
+                    <p key={i} className="mb-0">
+                      <Icon className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
+                      <strong>{item.label}:</strong> {item.value}
+                    </p>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="text-center mt-1 pt-1 footer-thankyou" style={{ borderTop: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '0.15rem' }}>
+                <p style={{ fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)', color: '#94a3b8', marginBottom: 0 }}>
+                  {thankYouText}
+                </p>
+                {type !== 'prescription' && (
+                  <img src={asiriLogo} alt="Powered by ASIRI" className="footer-asiri-logo" style={{ height: 'clamp(10px, 2vw, 15px)', opacity: 0.7, objectFit: 'contain' }} title="Powered by ASIRI Laboratories" />
+                )}
+              </div>
+            </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p className="mb-0">
-              <FaInstagram className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
-              <strong>IG:</strong> wijayjena2
-            </p>
-            <p className="mb-0">
-              <FaFacebook className="me-1" style={{ color: '#0891B2', fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)' }} />
-              <strong>FB:</strong> drwjanakan
-            </p>
-          </div>
-        </div>
-        <div className="text-center mt-1 pt-1 footer-thankyou" style={{ borderTop: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '0.15rem' }}>
-            <p style={{ fontSize: 'clamp(0.4rem, 1.2vw, 0.55rem)', color: '#94a3b8', marginBottom: 0 }}>
-              Thank you for choosing AH Wellness Hub & Asiri Laboratories
-            </p>
-            <img src={asiriLogo} alt="Powered by ASIRI" className="footer-asiri-logo" style={{ height: 'clamp(10px, 2vw, 15px)', opacity: 0.7, objectFit: 'contain' }} title="Powered by ASIRI Laboratories" />
-          </div>
-        </div>
-      </div>
+        )
+      })()}
     </div>
   )
 
@@ -210,6 +231,8 @@ function CheckupDetail() {
       const pageHeightPx = Math.round(pdfSettings.height * 96 / 25.4)
       billClone.style.width = pageWidthPx + 'px'
       billClone.style.minHeight = pageHeightPx + 'px'
+      billClone.style.display = 'flex'
+      billClone.style.flexDirection = 'column'
       billClone.style.padding = pageWidthMm < 100 ? '12px 16px' : '16px 32px'
       billClone.style.fontSize = pageWidthMm < 100 ? '10px' : pageWidthMm <= 160 ? '12px' : '14px'
       billClone.style.backgroundColor = '#ffffff'
@@ -224,7 +247,7 @@ function CheckupDetail() {
       const baseFontPx = pageWidthMm < 100 ? 10 : pageWidthMm <= 160 ? 12 : 14
       const pdfStyles = document.createElement('style')
       pdfStyles.textContent = `
-        .bill-content.pdf-clone .template-wrapper { min-height: 100% !important; height: 100% !important; }
+        .bill-content.pdf-clone .template-wrapper { min-height: 100% !important; height: 100% !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
         .bill-content.pdf-clone .template-logo-main { height: ${Math.round(baseFontPx * 3.5)}px !important; }
         .bill-content.pdf-clone .template-logo-asiri { height: ${Math.round(baseFontPx * 2)}px !important; }
         .bill-content.pdf-clone .template-title { font-size: ${Math.round(baseFontPx * 1.3)}px !important; margin-bottom: 2px !important; }
@@ -379,6 +402,8 @@ function CheckupDetail() {
       const rxPageHeightPx = Math.round(prescriptionPdfSettings.height * 96 / 25.4)
       prescriptionClone.style.width = rxPageWidthPx + 'px'
       prescriptionClone.style.minHeight = rxPageHeightPx + 'px'
+      prescriptionClone.style.display = 'flex'
+      prescriptionClone.style.flexDirection = 'column'
       prescriptionClone.style.padding = rxPageWidthMm < 100 ? '12px 16px' : '16px 32px'
       prescriptionClone.style.fontSize = rxPageWidthMm < 100 ? '10px' : rxPageWidthMm <= 160 ? '12px' : '14px'
       prescriptionClone.style.backgroundColor = '#ffffff'
@@ -391,7 +416,7 @@ function CheckupDetail() {
       const rxBaseFontPx = rxPageWidthMm < 100 ? 10 : rxPageWidthMm <= 160 ? 12 : 14
       const rxPdfStyles = document.createElement('style')
       rxPdfStyles.textContent = `
-        .bill-content.pdf-clone .template-wrapper { min-height: 100% !important; height: 100% !important; }
+        .bill-content.pdf-clone .template-wrapper { min-height: 100% !important; height: 100% !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
         .bill-content.pdf-clone .template-logo-main { height: ${Math.round(rxBaseFontPx * 3.5)}px !important; }
         .bill-content.pdf-clone .template-logo-asiri { height: ${Math.round(rxBaseFontPx * 2)}px !important; }
         .bill-content.pdf-clone .template-title { font-size: ${Math.round(rxBaseFontPx * 1.3)}px !important; margin-bottom: 2px !important; }
@@ -433,6 +458,7 @@ function CheckupDetail() {
         .bill-content.pdf-clone .date-signature-row { padding-top: 8px !important; }
         .bill-content.pdf-clone .sig-line { width: 100px !important; }
         .bill-content.pdf-clone .date-signature-row p { font-size: ${Math.round(rxBaseFontPx * 0.85)}px !important; }
+        .bill-content.pdf-clone .esign-img { height: ${Math.round(rxBaseFontPx * 3.5)}px !important; }
 
         /* Footer */
         .bill-content.pdf-clone .footer-section { font-size: ${Math.round(rxBaseFontPx * 0.75)}px !important; }
@@ -1067,9 +1093,11 @@ function CheckupDetail() {
                   )}
 
                   {/* PAID Stamp */}
-                  <div className="text-center mb-1 paid-stamp" style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
-                    <img src={paidStampImg} alt="PAID" style={{ height: 'clamp(60px, 12vw, 100px)', opacity: 0.85 }} />
-                  </div>
+                  {checkup.paid !== false && (
+                    <div className="text-center mb-1 paid-stamp" style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
+                      <img src={paidStampImg} alt="PAID" style={{ height: 'clamp(60px, 12vw, 100px)', opacity: 0.85 }} />
+                    </div>
+                  )}
                 </>
               )}
             </Card.Body>
@@ -1268,21 +1296,38 @@ function CheckupDetail() {
                             })
                           })()}
                         </div>
+
+                        {/* Asiri Logo */}
+                        <div className="text-center mt-auto pt-2">
+                          <img src={asiriLogo} alt="ASIRI Laboratories" className="template-logo-asiri" style={{ height: 'clamp(18px, 3vw, 28px)', objectFit: 'contain', opacity: 0.8 }} />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Date / Signature lines */}
+                    {/* Date / Valid Days / Signature lines */}
                     <div className="date-signature-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', paddingTop: '1rem' }}>
                       <div>
+                        <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: '0.15rem', color: '#333' }}>{new Date().toLocaleDateString()}</p>
                         <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
                         <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Date</p>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
+                      {(checkup.validDays || settings?.checkupPdf?.defaultValidDays) && (
+                        <div style={{ textAlign: 'center' }}>
+                          <p style={{ fontSize: 'clamp(0.5rem, 1.3vw, 0.6rem)', color: '#dc2626', fontStyle: 'italic', marginBottom: 0 }}>
+                            This prescription is only valid for {checkup.validDays || settings?.checkupPdf?.defaultValidDays || 30} days
+                          </p>
+                        </div>
+                      )}
+                      <div style={{ textAlign: 'center' }}>
+                        {checkup.useESign !== false && settings?.checkupPdf?.eSign && (
+                          <img src={settings.checkupPdf.eSign} alt="Signature" className="esign-img" style={{ height: 'clamp(30px, 6vw, 50px)', objectFit: 'contain', marginBottom: '0.15rem', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
+                        )}
+                        <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem', marginLeft: 'auto', marginRight: 'auto' }} />
                         <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Signature</p>
                       </div>
                     </div>
-                  </>
+                  </>,
+                  'prescription'
                 )}
               </Card.Body>
             </Card>

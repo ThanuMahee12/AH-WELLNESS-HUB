@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Row, Col, Card, Table, Form, Button, Badge } from 'react-bootstrap'
-import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes } from 'react-icons/fa'
+import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes, FaAddressCard, FaSignature } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
@@ -103,6 +103,90 @@ function CheckupSettingsTab() {
   // PDF settings
   const invoicePdf = settings?.checkupPdf?.invoice || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
   const prescriptionPdf = settings?.checkupPdf?.prescription || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }
+  const footerSettings = settings?.checkupPdf?.footer || {}
+  const savedESign = settings?.checkupPdf?.eSign || ''
+  const sigCanvasRef = useRef(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [hasStrokes, setHasStrokes] = useState(false)
+
+  const getPos = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect()
+    const touch = e.touches?.[0]
+    const clientX = touch ? touch.clientX : e.clientX
+    const clientY = touch ? touch.clientY : e.clientY
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height),
+    }
+  }
+
+  const startDraw = useCallback((e) => {
+    const canvas = sigCanvasRef.current
+    if (!canvas) return
+    e.preventDefault()
+    const ctx = canvas.getContext('2d')
+    const pos = getPos(e, canvas)
+    ctx.beginPath()
+    ctx.moveTo(pos.x, pos.y)
+    setIsDrawing(true)
+  }, [])
+
+  const draw = useCallback((e) => {
+    if (!isDrawing) return
+    const canvas = sigCanvasRef.current
+    if (!canvas) return
+    e.preventDefault()
+    const ctx = canvas.getContext('2d')
+    const pos = getPos(e, canvas)
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = '#333'
+    ctx.lineTo(pos.x, pos.y)
+    ctx.stroke()
+    setHasStrokes(true)
+  }, [isDrawing])
+
+  const stopDraw = useCallback(() => setIsDrawing(false), [])
+
+  const clearCanvas = () => {
+    const canvas = sigCanvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    setHasStrokes(false)
+  }
+
+  const saveSignature = () => {
+    const canvas = sigCanvasRef.current
+    if (!canvas || !hasStrokes) return
+    // Trim transparent pixels
+    const ctx = canvas.getContext('2d')
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const { data, width, height } = imgData
+    let top = height, left = width, right = 0, bottom = 0
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (data[(y * width + x) * 4 + 3] > 0) {
+          if (y < top) top = y
+          if (y > bottom) bottom = y
+          if (x < left) left = x
+          if (x > right) right = x
+        }
+      }
+    }
+    const pad = 4
+    top = Math.max(0, top - pad)
+    left = Math.max(0, left - pad)
+    right = Math.min(width - 1, right + pad)
+    bottom = Math.min(height - 1, bottom + pad)
+    const trimmed = document.createElement('canvas')
+    trimmed.width = right - left + 1
+    trimmed.height = bottom - top + 1
+    trimmed.getContext('2d').putImageData(ctx.getImageData(left, top, trimmed.width, trimmed.height), 0, 0)
+    const dataUrl = trimmed.toDataURL('image/png')
+    handleUpdate({ checkupPdf: { eSign: dataUrl } })
+    clearCanvas()
+  }
 
   // Lab Results
   const labFields = settings?.labResults?.fields || {}
@@ -639,6 +723,180 @@ function CheckupSettingsTab() {
             {renderPdfRow('invoice', 'Invoice', invoicePdf)}
             <hr />
             {renderPdfRow('prescription', 'Prescription', prescriptionPdf)}
+            <hr />
+            <Row className="align-items-end">
+              <Col xs={6} md={3}>
+                <Form.Group>
+                  <Form.Label style={{ fontSize: '0.8rem' }} className="fw-semibold">Default Prescription Valid Days</Form.Label>
+                  <Form.Control
+                    size="sm"
+                    type="number"
+                    defaultValue={settings?.checkupPdf?.defaultValidDays || 30}
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value, 10)
+                      if (!isNaN(val) && val > 0 && val !== (settings?.checkupPdf?.defaultValidDays || 30)) {
+                        handleUpdate({ checkupPdf: { defaultValidDays: val } })
+                      }
+                    }}
+                  />
+                </Form.Group>
+              </Col>
+              <Col xs={6} md={9}>
+                <Form.Text className="text-muted">
+                  Default number of days a prescription is valid. Can be overridden per checkup.
+                </Form.Text>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+
+      {/* Footer Contact Details */}
+      <Col xs={12}>
+        <Card className="shadow-sm">
+          <Card.Header className="card-header-theme">
+            <h5 className="mb-0 fs-responsive-md"><FaAddressCard className="me-2" />PDF Footer Contact Details</h5>
+          </Card.Header>
+          <Card.Body>
+            <Row className="g-3">
+              {['mobile', 'email', 'instagram', 'facebook'].map((key) => {
+                const item = footerSettings[key] || {}
+                return (
+                  <Col xs={12} md={6} key={key}>
+                    <Card className="border" style={{ opacity: item.visible === false ? 0.5 : 1 }}>
+                      <Card.Body className="p-2">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong className="text-theme" style={{ fontSize: '0.85rem', textTransform: 'capitalize' }}>{key}</strong>
+                          <Form.Check
+                            type="switch"
+                            checked={item.visible !== false}
+                            onChange={(e) => handleUpdate({ checkupPdf: { footer: { [key]: { visible: e.target.checked } } } })}
+                            className="d-inline-block"
+                          />
+                        </div>
+                        <Row className="g-2">
+                          <Col xs={4}>
+                            <Form.Control
+                              size="sm"
+                              type="text"
+                              defaultValue={item.label || key}
+                              placeholder="Label"
+                              onBlur={(e) => {
+                                const val = e.target.value.trim()
+                                if (val && val !== (item.label || key)) handleUpdate({ checkupPdf: { footer: { [key]: { label: val } } } })
+                              }}
+                            />
+                          </Col>
+                          <Col xs={8}>
+                            <Form.Control
+                              size="sm"
+                              type="text"
+                              defaultValue={item.value || ''}
+                              placeholder="Value"
+                              onBlur={(e) => {
+                                const val = e.target.value.trim()
+                                if (val !== (item.value || '')) handleUpdate({ checkupPdf: { footer: { [key]: { value: val } } } })
+                              }}
+                            />
+                          </Col>
+                        </Row>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                )
+              })}
+              <Col xs={12}>
+                <Form.Group className="mb-2">
+                  <Form.Label style={{ fontSize: '0.85rem' }} className="fw-semibold">Invoice Thank You Text</Form.Label>
+                  <Form.Control
+                    size="sm"
+                    type="text"
+                    defaultValue={footerSettings.thankYouInvoice || ''}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim()
+                      if (val !== (footerSettings.thankYouInvoice || '')) handleUpdate({ checkupPdf: { footer: { thankYouInvoice: val } } })
+                    }}
+                  />
+                </Form.Group>
+                <Form.Group>
+                  <Form.Label style={{ fontSize: '0.85rem' }} className="fw-semibold">Prescription Thank You Text</Form.Label>
+                  <Form.Control
+                    size="sm"
+                    type="text"
+                    defaultValue={footerSettings.thankYouPrescription || ''}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim()
+                      if (val !== (footerSettings.thankYouPrescription || '')) handleUpdate({ checkupPdf: { footer: { thankYouPrescription: val } } })
+                    }}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+
+      {/* E-Signature */}
+      <Col xs={12}>
+        <Card className="shadow-sm">
+          <Card.Header className="card-header-theme">
+            <h5 className="mb-0 fs-responsive-md"><FaSignature className="me-2" />E-Signature</h5>
+          </Card.Header>
+          <Card.Body>
+            {savedESign && (
+              <div className="mb-3">
+                <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Current Signature</Form.Label>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', background: '#fff', textAlign: 'center' }}>
+                  <img src={savedESign} alt="Saved Signature" style={{ maxHeight: '80px', objectFit: 'contain' }} />
+                </div>
+              </div>
+            )}
+            <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>{savedESign ? 'Draw New Signature' : 'Draw Signature'}</Form.Label>
+            <div style={{ border: '2px dashed #cbd5e1', borderRadius: '6px', background: '#f8fafc', marginBottom: '0.75rem', touchAction: 'none' }}>
+              <canvas
+                ref={sigCanvasRef}
+                width={400}
+                height={150}
+                style={{ width: '100%', height: '150px', cursor: 'crosshair', display: 'block' }}
+                onMouseDown={startDraw}
+                onMouseMove={draw}
+                onMouseUp={stopDraw}
+                onMouseLeave={stopDraw}
+                onTouchStart={startDraw}
+                onTouchMove={draw}
+                onTouchEnd={stopDraw}
+              />
+            </div>
+            <div className="d-flex gap-2">
+              <Button
+                size="sm"
+                className="btn-theme"
+                onClick={saveSignature}
+                disabled={!hasStrokes}
+              >
+                <FaSave className="me-1" /> Save Signature
+              </Button>
+              <Button
+                size="sm"
+                variant="outline-secondary"
+                onClick={clearCanvas}
+              >
+                <FaTimes className="me-1" /> Clear
+              </Button>
+              {savedESign && (
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  onClick={() => {
+                    if (window.confirm('Remove saved signature?')) {
+                      handleUpdate({ checkupPdf: { eSign: '' } })
+                    }
+                  }}
+                >
+                  <FaTrash className="me-1" /> Remove
+                </Button>
+              )}
+            </div>
           </Card.Body>
         </Card>
       </Col>
