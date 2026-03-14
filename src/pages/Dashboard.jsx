@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Container, Row, Col, Card, ButtonGroup, Button } from 'react-bootstrap'
-import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaEye } from 'react-icons/fa'
+import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaEye, FaFileMedical, FaWallet } from 'react-icons/fa'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
@@ -61,6 +61,17 @@ function Dashboard() {
   const monthlyRevenue = useMemo(() => getMonthlyRevenueData(checkups, selectedYear), [checkups, selectedYear])
   const yearOptions = useMemo(() => getYearOptions(), [])
 
+  // Prescription count & income (commission + doctor fees)
+  const totalPrescriptions = useMemo(() =>
+    checkups.filter(c => c.prescriptionMedicines?.length > 0).length,
+    [checkups]
+  )
+  const totalDoctorFees = useMemo(() =>
+    checkups.reduce((sum, c) => sum + (parseFloat(c.doctorFees) || 0), 0),
+    [checkups]
+  )
+  const totalIncome = useMemo(() => totalCommission + totalDoctorFees, [totalCommission, totalDoctorFees])
+
   // Performance stats using utility functions
   const performanceCheckups = useMemo(
     () => filterCheckupsByPerformanceRange(checkups, performanceRange),
@@ -96,16 +107,16 @@ function Dashboard() {
   const StatCard = ({ icon, title, value, color, bgColor }) => {
     const IconComponent = icon;
     return (
-      <Card className="h-100 shadow-sm">
-        <Card.Body className="d-flex align-items-center">
-          <div className={`rounded-circle p-3 ${bgColor} me-3 flex-shrink-0`}>
-            <IconComponent className={`fs-2 ${color}`} />
-          </div>
-          <div className="flex-grow-1 overflow-hidden">
-            <h6 className="text-muted mb-1 text-nowrap text-truncate">{title}</h6>
-            <h3 className="mb-0 text-nowrap text-truncate fs-responsive-heading">
-              {value}
-            </h3>
+      <Card className="h-100 shadow-sm border-0">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex align-items-center justify-content-between">
+            <div>
+              <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{title}</small>
+              <strong style={{ fontSize: 'clamp(0.85rem, 2vw, 1.1rem)' }}>{value}</strong>
+            </div>
+            <div className={`rounded-circle ${bgColor} d-flex align-items-center justify-content-center`} style={{ width: 36, height: 36 }}>
+              <IconComponent className={color} size={16} />
+            </div>
           </div>
         </Card.Body>
       </Card>
@@ -168,6 +179,24 @@ function Dashboard() {
             value={`Rs. ${totalCommission.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             color="text-primary"
             bgColor="bg-primary bg-opacity-10"
+          />
+        </Col>
+        <Col xs={12} sm={6} lg={3}>
+          <StatCard
+            icon={FaFileMedical}
+            title="Total Prescriptions"
+            value={totalPrescriptions}
+            color="text-danger"
+            bgColor="bg-danger bg-opacity-10"
+          />
+        </Col>
+        <Col xs={12} sm={6} lg={3}>
+          <StatCard
+            icon={FaWallet}
+            title="Total Income"
+            value={`Rs. ${totalIncome.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            color="text-success"
+            bgColor="bg-success bg-opacity-10"
           />
         </Col>
       </Row>
