@@ -29,7 +29,7 @@ function UserDetail() {
   const users = useSelector(selectAllUsers)
   const { loading } = useSelector(state => state.users)
   const { user: currentUser } = useSelector(state => state.auth)
-  const { success, error: showError } = useNotification()
+  const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
   const { getEntityFields, getInitialFormData } = useSettings()
   const [resettingPassword, setResettingPassword] = useState(false)
@@ -104,7 +104,7 @@ function UserDetail() {
   }, [dispatch, users.length])
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return
+    if (!(await confirm('Are you sure you want to delete this user?'))) return
     try {
       const result = await dispatch(deleteUser(id))
       if (result.type.includes('rejected')) {
@@ -123,7 +123,7 @@ function UserDetail() {
       showError('User email not found')
       return
     }
-    if (!window.confirm(`Send password reset email to ${email}?`)) return
+    if (!(await confirm(`Send password reset email to ${email}?`, { title: 'Reset Password', variant: 'warning', confirmText: 'Send' }))) return
 
     setResettingPassword(true)
     try {
@@ -159,7 +159,7 @@ function UserDetail() {
 
   const handleToggleStatus = async () => {
     const action = user.disabled ? 'enable' : 'disable'
-    if (!window.confirm(`Are you sure you want to ${action} this user account?`)) return
+    if (!(await confirm(`Are you sure you want to ${action} this user account?`, { title: `${action.charAt(0).toUpperCase() + action.slice(1)} User`, variant: 'warning' }))) return
 
     setTogglingStatus(true)
     try {

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { useForm } from './useForm';
 import { useModal } from './useModal';
+import { useNotification } from '../context';
 
 /**
  * Comprehensive CRUD hook that combines modal, form, and async operations
@@ -31,6 +32,7 @@ export const useCRUD = ({
 }) => {
   const dispatch = useDispatch();
   const modal = useModal();
+  const { confirm } = useNotification();
   const [editingItem, setEditingItem] = useState(null);
   const [operationLoading, setOperationLoading] = useState(false);
 
@@ -121,7 +123,7 @@ export const useCRUD = ({
   // Delete with confirmation
   const handleDelete = useCallback(
     async (id, confirmMessage = 'Are you sure you want to delete this item?') => {
-      if (!window.confirm(confirmMessage)) {
+      if (!(await confirm(confirmMessage))) {
         return false;
       }
 

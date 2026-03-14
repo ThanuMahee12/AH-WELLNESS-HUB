@@ -22,6 +22,7 @@ import {
   FaHospital,
   FaClipboardList,
   FaBriefcaseMedical,
+  FaBug,
 } from 'react-icons/fa'
 
 // Map icon name strings → React Icon components (for DB-driven sidebar)
@@ -46,6 +47,7 @@ export const ICON_MAP = {
   FaHospital,
   FaClipboardList,
   FaBriefcaseMedical,
+  FaBug,
 }
 
 // Options for the icon dropdown in PagesSettingsTab
@@ -129,6 +131,25 @@ export const DEFAULT_SETTINGS = {
         role: { visible: true, required: true, label: 'Role', type: 'select', colSize: 6, placeholder: '' },
       },
     },
+    checkups: {
+      fields: {
+        tests: { visible: true, required: true, label: 'Tests', type: 'custom', colSize: 12, placeholder: 'Search tests by name or code...' },
+        ownTests: { visible: true, required: false, label: 'Own Tests', type: 'checkbox', colSize: 12, placeholder: '' },
+        doctorFees: { visible: true, required: false, label: 'Doctor Fees (Rs.)', type: 'number', colSize: 6, placeholder: 'Enter doctor fees' },
+        paid: { visible: true, required: false, label: 'Paid', type: 'checkbox', colSize: 12, placeholder: '' },
+        weight: { visible: true, required: false, label: 'Weight (kg)', type: 'number', colSize: 6, placeholder: 'Enter weight in kg (optional)' },
+        height: { visible: true, required: false, label: 'Height (cm)', type: 'number', colSize: 6, placeholder: 'Enter height in cm (optional)' },
+        notes: { visible: true, required: false, label: 'Invoice Notes', type: 'textarea', colSize: 12, placeholder: 'Add general notes for the invoice...' },
+        commonNotes: { visible: true, required: false, label: 'Common Notes', type: 'richtext', colSize: 12, placeholder: 'Add common notes for this checkup...' },
+        testNotes: { visible: true, required: false, label: 'Test Notes', type: 'custom', colSize: 12, placeholder: '' },
+        prescription: { visible: true, required: false, label: 'Prescription', type: 'custom', colSize: 12, placeholder: '' },
+        prescriptionNotes: { visible: true, required: false, label: 'Prescription Notes', type: 'textarea', colSize: 12, placeholder: 'Additional instructions for the prescription...' },
+        validDays: { visible: true, required: false, label: 'Prescription Valid Days', type: 'number', colSize: 6, placeholder: '30' },
+        useESign: { visible: true, required: false, label: 'Use E-Signature', type: 'checkbox', colSize: 6, placeholder: '' },
+        generalTests: { visible: true, required: false, label: 'General Tests', type: 'custom', colSize: 12, placeholder: '' },
+        labResults: { visible: true, required: false, label: 'Lab Results', type: 'custom', colSize: 12, placeholder: '' },
+      },
+    },
   },
   pages: {
     login: {
@@ -191,7 +212,12 @@ export const DEFAULT_SETTINGS = {
         pages:  { label: 'Page Access',          roles: ['superadmin'] },
         public: { label: 'Public Page Control',  roles: ['superadmin', 'maintainer', 'editor'] },
         checkup: { label: 'Checkup', roles: ['superadmin'] },
+        feedback: { label: 'Feedback', roles: ['superadmin', 'maintainer', 'editor'] },
       },
+    },
+    maintenance: {
+      label: 'Maintenance', icon: 'FaBug', path: '/maintenance', order: 8,
+      roles: ['superadmin'],
     },
   },
   permissions: {
@@ -229,6 +255,16 @@ export const DEFAULT_SETTINGS = {
   checkupPdf: {
     invoice: { format: 'custom', width: 80, height: 200, orientation: 'portrait' },
     prescription: { format: 'a5', width: 148, height: 210, orientation: 'portrait' },
+    footer: {
+      mobile: { label: 'Mobile', value: '+94 72 338 8793', visible: true },
+      email: { label: 'Email', value: 'vijayjena@yahoo.com', visible: true },
+      instagram: { label: 'IG', value: 'wijayjena2', visible: true },
+      facebook: { label: 'FB', value: 'drwjanakan', visible: true },
+      thankYouInvoice: 'Thank you for choosing AH Wellness Hub & Asiri Laboratories',
+      thankYouPrescription: 'Thank you for choosing AH Wellness Hub',
+    },
+    eSign: '',
+    defaultValidDays: 30,
   },
   generalTests: {
     showEmpty: 'hide',

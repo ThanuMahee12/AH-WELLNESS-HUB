@@ -9,7 +9,7 @@
  * @param {number} percentage - Commission percentage (default: 20)
  * @returns {number} Commission amount
  */
-export const calculateTestCommission = (price, percentage = 20) => {
+const calculateTestCommission = (price, percentage = 20) => {
   if (!price || price <= 0) return 0;
   return (price * (percentage || 20)) / 100;
 };
@@ -20,8 +20,9 @@ export const calculateTestCommission = (price, percentage = 20) => {
  * @param {Array} testsData - Array of all test definitions
  * @returns {number} Total commission for the checkup
  */
-export const calculateCheckupCommission = (checkup, testsData = []) => {
+const calculateCheckupCommission = (checkup, testsData = []) => {
   if (!checkup?.tests || !Array.isArray(checkup.tests)) return 0;
+  if (checkup.ownTests === false) return 0;
 
   return checkup.tests.reduce((sum, testItem) => {
     const test = testsData.find(t => t.id === testItem.testId);
@@ -322,8 +323,6 @@ export const getComparisonLabel = (range) => {
 };
 
 export default {
-  calculateTestCommission,
-  calculateCheckupCommission,
   calculateTotalRevenue,
   calculateTotalCommission,
   calculateAverageBill,

@@ -6,9 +6,11 @@ import { fetchSettings } from './store/settingsSlice'
 import { authService } from './services/authService'
 import { sessionTimeoutService } from './services/sessionTimeoutService'
 import { NotificationProvider, useNotification } from './context'
+import { logError } from './services/errorLogService'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import ProtectedRoute from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import LoadingSpinner from './components/common/LoadingSpinner'
 
 // Lazy load pages for better performance
@@ -31,6 +33,7 @@ const Settings = lazy(() => import('./pages/Settings'))
 const FieldSettingDetail = lazy(() => import('./pages/FieldSettingDetail'))
 const ColumnSettingDetail = lazy(() => import('./pages/ColumnSettingDetail'))
 const Notifications = lazy(() => import('./pages/Notifications'))
+const SystemMaintenance = lazy(() => import('./pages/SystemMaintenance'))
 
 // Create a wrapper component to access notification context
 function AppContent() {
@@ -59,6 +62,40 @@ function AppContent() {
     // Cleanup subscription on unmount
     return () => unsubscribe()
   }, [dispatch])
+
+  // Global error handlers — capture unhandled errors to RTDB
+  useEffect(() => {
+    const handleError = (event) => {
+      logError({
+        message: event.message || String(event.error),
+        stack: event.error?.stack || '',
+        source: 'window.onerror',
+        url: event.filename || window.location.href,
+        userId: user?.uid || '',
+        username: user?.username || user?.email || '',
+        userRole: user?.role || '',
+      })
+    }
+
+    const handleUnhandledRejection = (event) => {
+      const reason = event.reason
+      logError({
+        message: reason?.message || String(reason),
+        stack: reason?.stack || '',
+        source: 'unhandledrejection',
+        userId: user?.uid || '',
+        username: user?.username || user?.email || '',
+        userRole: user?.role || '',
+      })
+    }
+
+    window.addEventListener('error', handleError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    return () => {
+      window.removeEventListener('error', handleError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [user])
 
   // Handle session timeout
   useEffect(() => {
@@ -92,6 +129,7 @@ function AppContent() {
         <div
           className={`flex-grow-1 main-content${showSidebar ? '' : ' no-sidebar'}`}
         >
+          <ErrorBoundary user={user}>
           <Suspense fallback={<LoadingSpinner text="Loading page..." />}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -228,6 +266,14 @@ function AppContent() {
                 }
               />
               <Route
+                path="/maintenance"
+                element={
+                  <ProtectedRoute roles={['superadmin']}>
+                    <SystemMaintenance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/notifications"
                 element={
                   <ProtectedRoute>
@@ -245,6 +291,7 @@ function AppContent() {
               />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
     </div>
