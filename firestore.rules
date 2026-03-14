@@ -85,7 +85,7 @@ service cloud.firestore {
     match /checkups/{checkupId} {
       allow read: if isAuthenticated();
       allow create, update: if isEditorOrAbove();
-      allow delete: if isAdminOrAbove();
+      allow delete: if isMaintainerOrAbove();
     }
 
     // ============================================
