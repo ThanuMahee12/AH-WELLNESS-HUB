@@ -15,15 +15,19 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     const user = this.props.user || {}
-    logError({
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo?.componentStack || '',
-      source: 'ErrorBoundary',
-      userId: user.uid || '',
-      username: user.username || user.email || '',
-      userRole: user.role || '',
-    })
+    try {
+      logError({
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo?.componentStack || '',
+        source: 'ErrorBoundary',
+        userId: user.uid || '',
+        username: user.username || user.email || '',
+        userRole: user.role || '',
+      })
+    } catch (logErr) {
+      console.error('Failed to log error:', logErr)
+    }
   }
 
   handleReload = () => {

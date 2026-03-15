@@ -206,34 +206,37 @@ export const authService = {
   // Auth state observer
   onAuthStateChange: (callback) => {
     return onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid))
-        if (userDoc.exists()) {
-          const userData = userDoc.data()
+      try {
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid))
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
 
-          // Check if user account is disabled
-          if (userData.disabled) {
-            // User is disabled, sign them out automatically
+            // Check if user account is disabled
+            if (userData.disabled) {
+              await signOut(auth)
+              callback(null)
+              return
+            }
+
+            callback({
+              uid: user.uid,
+              email: user.email,
+              ...(userData || {})
+            })
+          } else if (_selfRegistering) {
+            // Self-registration in progress, Firestore profile not yet written — skip
+            return
+          } else {
+            // User profile doesn't exist in Firestore
             await signOut(auth)
             callback(null)
-            return
           }
-
-          callback({
-            uid: user.uid,
-            email: user.email,
-            ...userData
-          })
-        } else if (_selfRegistering) {
-          // Self-registration in progress, Firestore profile not yet written — skip
-          return
         } else {
-          // User profile doesn't exist in Firestore
-          // Sign them out automatically
-          await signOut(auth)
           callback(null)
         }
-      } else {
+      } catch (error) {
+        console.error('Auth state change error:', error)
         callback(null)
       }
     })

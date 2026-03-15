@@ -211,7 +211,6 @@ export const DEFAULT_SETTINGS = {
         pages:  { label: 'Page Control',          roles: ['superadmin'] },
         public: { label: 'Public Page',           roles: ['superadmin', 'maintainer', 'editor'] },
         checkup: { label: 'Checkup', roles: ['superadmin'] },
-        feedback: { label: 'Feedback', roles: ['superadmin', 'maintainer', 'editor'] },
       },
     },
     maintenance: {

@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { Card, Form, Row, Col, Button, Table, Modal } from 'react-bootstrap'
+import { Card, Form, Row, Col, Button, Badge, Modal } from 'react-bootstrap'
 import {
   FaPlus, FaTrash, FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe,
   FaFacebook, FaInstagram, FaWhatsapp, FaTwitter, FaLinkedin,
-  FaYoutube, FaTiktok, FaViber, FaClock, FaInfoCircle,
+  FaYoutube, FaTiktok, FaViber, FaClock, FaInfoCircle, FaPaperPlane,
+  FaChevronDown, FaChevronUp,
 } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
+import { submitFeedback, getUserFeedbacks } from '../../services/feedbackService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import FormField from '../../components/ui/FormField'
 
@@ -34,6 +36,13 @@ const toDirectImageUrl = (url) => {
   if (ucMatch) return `https://lh3.googleusercontent.com/d/${ucMatch[1]}`
   return url
 }
+
+const SaveBtn = ({ onClick, saving }) => (
+  <button type="button" onClick={onClick} disabled={saving}
+    style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: saving ? 0.5 : 1 }}>
+    {saving ? 'Saving...' : 'Save'}
+  </button>
+)
 
 const EMPTY_FEATURE = { title: '', description: '', imageUrl: '', visible: true }
 const EMPTY_CONTACT_FIELD = { type: 'detail', label: '', icon: 'FaPhone', value: '', url: '', visible: true }
@@ -86,7 +95,7 @@ function PublicPageTab() {
   const dispatch = useDispatch()
   const { settings, loading } = useSettings()
   const { user } = useSelector(state => state.auth)
-  const { error: showError } = useNotification()
+  const { success: showSuccess, error: showError } = useNotification()
 
   const homeContent = settings?.pages?.home?.content || {}
 
@@ -101,6 +110,15 @@ function PublicPageTab() {
   const [formData, setFormData] = useState({ ...EMPTY_FEATURE })
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
+  const [heroImgError, setHeroImgError] = useState(false)
+  const [aboutImgError, setAboutImgError] = useState(false)
+
+  // Feedback state
+  const [feedbackForm, setFeedbackForm] = useState({ title: '', category: 'general', message: '' })
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbacks, setFeedbacks] = useState([])
+  const [feedbacksLoading, setFeedbacksLoading] = useState(true)
+  const [feedbacksExpanded, setFeedbacksExpanded] = useState(false)
 
   useEffect(() => {
     setLocalContent({
@@ -127,6 +145,51 @@ function PublicPageTab() {
       homeContent.aboutTitle, homeContent.aboutDescription, homeContent.aboutImageUrl, homeContent.aboutVisible,
       homeContent.contactTitle, homeContent.contactFields, homeContent.contactMapEmbedUrl, homeContent.contactVisible])
 
+  // Reset image error state when URLs change
+  useEffect(() => { setHeroImgError(false) }, [localContent.heroImageUrl])
+  useEffect(() => { setAboutImgError(false) }, [localContent.aboutImageUrl])
+
+  // Load user feedbacks
+  useEffect(() => {
+    if (user?.uid) {
+      setFeedbacksLoading(true)
+      getUserFeedbacks(user.uid)
+        .then(result => { if (result.success) setFeedbacks(result.data) })
+        .catch(() => {})
+        .finally(() => setFeedbacksLoading(false))
+    }
+  }, [user?.uid])
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackForm.title.trim() || !feedbackForm.message.trim()) {
+      showError('Please fill in title and message')
+      return
+    }
+    setFeedbackSubmitting(true)
+    try {
+      const result = await submitFeedback({
+        title: feedbackForm.title.trim(),
+        message: feedbackForm.message.trim(),
+        category: feedbackForm.category,
+        userId: user.uid,
+        username: user.username || user.email,
+        userRole: user.role,
+      })
+      if (result.success) {
+        showSuccess('Feedback submitted successfully')
+        setFeedbackForm({ title: '', category: 'general', message: '' })
+        const refreshed = await getUserFeedbacks(user.uid)
+        if (refreshed.success) setFeedbacks(refreshed.data)
+      } else {
+        showError('Failed to submit feedback')
+      }
+    } catch {
+      showError('Failed to submit feedback')
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }
+
   const handleContentBlur = async (field) => {
     if (localContent[field] === (homeContent[field] || '')) return
     try {
@@ -151,13 +214,6 @@ function PublicPageTab() {
       setSaving(false)
     }
   }
-
-  const SaveBtn = ({ onClick }) => (
-    <button type="button" onClick={onClick} disabled={saving}
-      style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: saving ? 0.5 : 1 }}>
-      {saving ? 'Saving...' : 'Save'}
-    </button>
-  )
 
   const saveList = async (key, list) => {
     setSaving(true)
@@ -288,7 +344,7 @@ function PublicPageTab() {
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <small className="fw-bold text-muted">HERO SECTION</small>
-            <SaveBtn onClick={() => saveSection(['heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
           </div>
           <Row className="g-2">
             {/* Left: fields */}
@@ -357,12 +413,13 @@ function PublicPageTab() {
                 <div className="text-center">
                   <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Preview</Form.Label>
                   <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
-                    <img
-                      src={toDirectImageUrl(localContent.heroImageUrl)}
-                      alt="Hero preview"
-                      style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
-                      onError={(e) => { e.target.parentElement.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:0.72rem">Image failed to load.<br/>Check URL format.</div>' }}
-                    />
+                    {heroImgError ? (
+                      <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: '0.72rem' }}>Image failed to load.<br />Check URL format.</div>
+                    ) : (
+                      <img src={toDirectImageUrl(localContent.heroImageUrl)} alt="Hero preview"
+                        style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
+                        onError={() => setHeroImgError(true)} />
+                    )}
                   </div>
                 </div>
               </Col>
@@ -371,66 +428,55 @@ function PublicPageTab() {
         </Card.Body>
       </Card>
 
-      {/* Features Table */}
+      {/* Features Section */}
       <Card className="shadow-sm border-0 mb-3">
-        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
-          <small className="fw-bold text-muted">Features</small>
-          <Button
-            size="sm"
-            variant="light"
-            className="d-flex align-items-center gap-1"
-            onClick={() => openModal('feature')}
-          >
-            <FaPlus /> Add
-          </Button>
-        </Card.Header>
-        <Card.Body className="p-0">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <small className="fw-bold text-muted">FEATURES</small>
+            <button type="button" onClick={() => openModal('feature')} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+              <FaPlus size={8} className="me-1" />Add
+            </button>
+          </div>
           {features.length === 0 ? (
-            <p className="text-muted text-center py-4 mb-0">No features yet. Click &quot;Add&quot; to create one.</p>
+            <div className="text-center text-muted py-3" style={{ fontSize: '0.78rem' }}>No features yet. Click &quot;Add&quot; to create one.</div>
           ) : (
-            <div className="table-responsive">
-              <Table hover className="mb-0 align-middle">
-                <thead className="thead-theme">
-                  <tr>
-                    <th style={{ width: '50px' }}>#</th>
-                    <th>Title</th>
-                    <th className="d-none d-md-table-cell">Description</th>
-                    <th style={{ width: '80px' }} className="text-end"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {features.map((feature, idx) => (
-                    <tr key={idx}>
-                      <td className="text-muted">{idx + 1}</td>
-                      <td>
-                        <span
-                          className="clickable-link text-theme fw-semibold"
-                          onClick={() => openModal('feature', idx)}
-                        >
-                          {feature.title || '(Untitled)'}
-                        </span>
-                        <div className="d-md-none text-muted mt-1" style={{ fontSize: '0.8rem' }}>
-                          {feature.description?.substring(0, 60)}{feature.description?.length > 60 ? '...' : ''}
-                        </div>
-                      </td>
-                      <td className="d-none d-md-table-cell text-muted" style={{ fontSize: '0.9rem' }}>
-                        {feature.description?.substring(0, 80)}{feature.description?.length > 80 ? '...' : ''}
-                      </td>
-                      <td className="text-end">
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          className="touch-target"
-                          onClick={() => handleDelete('feature', idx)}
-                          title="Delete"
-                        >
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+            <div>
+              {/* Header */}
+              <div className="d-none d-md-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.58rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                <span style={{ width: 24 }}>#</span>
+                <span style={{ width: 28 }}>Vis</span>
+                <span style={{ flex: 1 }}>Title</span>
+                <span style={{ flex: 2 }}>Description</span>
+                <span style={{ width: 24 }}></span>
+              </div>
+              {features.map((feature, idx) => (
+                <div key={idx} className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.75rem' }}>
+                  {/* # */}
+                  <span style={{ width: 24, color: '#94a3b8', fontSize: '0.65rem' }}>{idx + 1}</span>
+                  {/* Visible */}
+                  <span style={{ width: 28 }}>
+                    <Form.Check type="checkbox" checked={feature.visible !== false}
+                      onChange={(e) => { const updated = features.map((f, i) => i === idx ? { ...f, visible: e.target.checked } : f); setFeatures(updated); saveList('blogs', updated) }} />
+                  </span>
+                  {/* Title */}
+                  <span style={{ flex: 1, cursor: 'pointer', color: '#0891B2', fontWeight: 600 }} onClick={() => openModal('feature', idx)}>
+                    {feature.title || '(Untitled)'}
+                    <div className="d-md-none text-muted fw-normal mt-1" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                      {feature.description?.substring(0, 60)}{feature.description?.length > 60 ? '...' : ''}
+                    </div>
+                  </span>
+                  {/* Description (desktop) */}
+                  <span className="d-none d-md-block text-muted" style={{ flex: 2, fontSize: '0.7rem' }}>
+                    {feature.description?.substring(0, 80)}{feature.description?.length > 80 ? '...' : ''}
+                  </span>
+                  {/* Delete */}
+                  <span style={{ width: 24 }}>
+                    <button type="button" onClick={() => handleDelete('feature', idx)} style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }} aria-label="Delete">
+                      <FaTrash size={9} />
+                    </button>
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </Card.Body>
@@ -446,7 +492,7 @@ function PublicPageTab() {
               checked={localContent.aboutVisible || false}
               onChange={(e) => { setLocalContent(p => ({ ...p, aboutVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { aboutVisible: e.target.checked } } } }, user })) }} />
             </div>
-            <SaveBtn onClick={() => saveSection(['aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
           </div>
           <Row className="g-2">
             <Col xs={12} md={localContent.aboutImageUrl ? 8 : 12}>
@@ -468,8 +514,12 @@ function PublicPageTab() {
                 <div className="text-center">
                   <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Preview</Form.Label>
                   <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
-                    <img src={toDirectImageUrl(localContent.aboutImageUrl)} alt="About preview" style={{ width: '100%', maxHeight: 180, objectFit: 'cover' }}
-                      onError={(e) => { e.target.parentElement.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:0.72rem">Image failed to load.</div>' }} />
+                    {aboutImgError ? (
+                      <div style={{ padding: 16, textAlign: 'center', color: '#94a3b8', fontSize: '0.72rem' }}>Image failed to load.</div>
+                    ) : (
+                      <img src={toDirectImageUrl(localContent.aboutImageUrl)} alt="About preview" style={{ width: '100%', maxHeight: 180, objectFit: 'cover' }}
+                        onError={() => setAboutImgError(true)} />
+                    )}
                   </div>
                 </div>
               </Col>
@@ -488,7 +538,7 @@ function PublicPageTab() {
                 checked={localContent.contactVisible || false}
                 onChange={(e) => { setLocalContent(p => ({ ...p, contactVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { contactVisible: e.target.checked } } } }, user })) }} />
             </div>
-            <SaveBtn onClick={() => saveSection(['contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
           </div>
           <Row className="g-2">
             <Col xs={12} md={localContent.contactMapEmbedUrl ? 6 : 12}>
@@ -531,7 +581,7 @@ function PublicPageTab() {
           <div className="d-flex justify-content-between align-items-center mb-2">
             <div className="d-flex align-items-center gap-2">
               <small className="fw-bold text-muted">CONTACT DETAILS</small>
-              <SaveBtn onClick={saveContactFields} />
+              <SaveBtn saving={saving} onClick={saveContactFields} />
             </div>
             <button type="button" onClick={addContactField} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
               <FaPlus size={8} className="me-1" />Add
@@ -556,7 +606,7 @@ function PublicPageTab() {
               {contactFields.map((field, idx) => {
                 const Icon = CONTACT_ICON_MAP[field.icon] || FaInfoCircle
                 return (
-                  <div key={idx} className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.75rem' }}>
+                  <div key={idx} className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.75rem', minWidth: 0 }}>
                     {/* Visible */}
                     <span style={{ width: 28 }}>
                       <Form.Check type="checkbox" checked={field.visible !== false}
@@ -603,6 +653,90 @@ function PublicPageTab() {
                   </div>
                 )
               })}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Feedback Section */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">FEEDBACK</small>
+              <Badge bg="secondary" style={{ fontSize: '0.55rem' }}>{feedbacks.length}</Badge>
+            </div>
+          </div>
+
+          {/* Submit form */}
+          <div className="p-2 rounded mb-2" style={{ backgroundColor: '#f8f9fa' }}>
+            <Row className="g-1">
+              <Col xs={12} md={6}>
+                <Form.Control size="sm" placeholder="Title *" value={feedbackForm.title}
+                  onChange={(e) => setFeedbackForm(p => ({ ...p, title: e.target.value }))}
+                  maxLength={100} style={{ fontSize: '0.75rem', height: 28 }} />
+              </Col>
+              <Col xs={12} md={3}>
+                <Form.Select size="sm" value={feedbackForm.category}
+                  onChange={(e) => setFeedbackForm(p => ({ ...p, category: e.target.value }))}
+                  style={{ fontSize: '0.72rem', height: 28 }}>
+                  <option value="general">General</option>
+                  <option value="bug">Bug Report</option>
+                  <option value="feature">Feature Request</option>
+                  <option value="improvement">Improvement</option>
+                  <option value="complaint">Complaint</option>
+                </Form.Select>
+              </Col>
+              <Col xs={12} md={3} className="d-flex align-items-center">
+                <button type="button" onClick={handleFeedbackSubmit}
+                  disabled={feedbackSubmitting || !feedbackForm.title.trim() || !feedbackForm.message.trim()}
+                  style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: (feedbackSubmitting || !feedbackForm.title.trim() || !feedbackForm.message.trim()) ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                  <FaPaperPlane size={8} className="me-1" />
+                  {feedbackSubmitting ? 'Sending...' : 'Submit'}
+                </button>
+              </Col>
+              <Col xs={12}>
+                <Form.Control size="sm" as="textarea" rows={2} placeholder="Describe your feedback... *"
+                  value={feedbackForm.message} onChange={(e) => setFeedbackForm(p => ({ ...p, message: e.target.value }))}
+                  maxLength={1000} style={{ fontSize: '0.75rem' }} />
+                <Form.Text style={{ fontSize: '0.55rem' }} className="text-muted">{feedbackForm.message.length}/1000</Form.Text>
+              </Col>
+            </Row>
+          </div>
+
+          {/* My feedbacks list */}
+          {feedbacksLoading ? (
+            <div className="text-center text-muted py-2" style={{ fontSize: '0.72rem' }}>Loading...</div>
+          ) : feedbacks.length > 0 && (
+            <div>
+              <div className="d-flex align-items-center gap-1 mb-1" style={{ cursor: 'pointer' }} onClick={() => setFeedbacksExpanded(p => !p)}>
+                <small className="text-muted" style={{ fontSize: '0.62rem' }}>MY FEEDBACKS</small>
+                {feedbacksExpanded ? <FaChevronUp size={8} className="text-muted" /> : <FaChevronDown size={8} className="text-muted" />}
+              </div>
+              {feedbacksExpanded && (
+                <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                  {feedbacks.map(fb => (
+                    <div key={fb.id} className="py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.72rem' }}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center gap-1">
+                          <strong>{fb.title}</strong>
+                          <Badge bg={{ bug: 'danger', feature: 'primary', improvement: 'info', complaint: 'warning', general: 'secondary' }[fb.category] || 'secondary'} style={{ fontSize: '0.55rem' }}>{fb.category}</Badge>
+                          <Badge bg={{ pending: 'warning', reviewed: 'info', resolved: 'success' }[fb.status] || 'secondary'} style={{ fontSize: '0.55rem' }}>{fb.status}</Badge>
+                        </div>
+                        <small className="text-muted" style={{ fontSize: '0.6rem' }}>
+                          {fb.timestamp ? new Date(fb.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                        </small>
+                      </div>
+                      <div className="text-muted" style={{ fontSize: '0.68rem', whiteSpace: 'pre-wrap' }}>{fb.message}</div>
+                      {fb.adminNote && (
+                        <div className="mt-1 p-1 rounded" style={{ backgroundColor: '#f0f9fa', fontSize: '0.65rem' }}>
+                          <strong style={{ color: '#0891B2' }}>Response:</strong> {fb.adminNote}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </Card.Body>

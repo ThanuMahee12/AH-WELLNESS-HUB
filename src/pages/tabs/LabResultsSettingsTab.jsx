@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { Row, Col, Card, Table, Form, Button, Badge } from 'react-bootstrap'
+import { Row, Col, Card, Form, Badge } from 'react-bootstrap'
 import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes, FaAddressCard, FaSignature } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
@@ -331,14 +331,14 @@ function CheckupSettingsTab() {
   }
 
   const renderPdfRow = (type, label, pdf) => (
-    <Row className="align-items-end mb-3">
+    <Row className="align-items-end mb-2 g-1">
       <Col xs={12}>
-        <h6 className="text-theme mb-2">{label}</h6>
+        <small className="fw-semibold text-theme" style={{ fontSize: '0.72rem' }}>{label}</small>
       </Col>
       <Col xs={6} md={3}>
         <Form.Group>
-          <Form.Label style={{ fontSize: '0.8rem' }}>Page Format</Form.Label>
-          <Form.Select size="sm" value={pdf.format} onChange={(e) => handlePdfChange(type, 'format', e.target.value)}>
+          <Form.Label style={{ fontSize: '0.68rem', color: '#64748b' }}>Page Format</Form.Label>
+          <Form.Select size="sm" value={pdf.format} onChange={(e) => handlePdfChange(type, 'format', e.target.value)} style={{ fontSize: '0.78rem' }}>
             <option value="a4">A4</option>
             <option value="a5">A5</option>
             <option value="letter">Letter</option>
@@ -350,28 +350,28 @@ function CheckupSettingsTab() {
       </Col>
       <Col xs={3} md={2}>
         <Form.Group>
-          <Form.Label style={{ fontSize: '0.8rem' }}>Width (mm)</Form.Label>
-          <Form.Control size="sm" type="number" value={pdf.width} onChange={(e) => handlePdfChange(type, 'width', e.target.value)} disabled={pdf.format !== 'custom'} />
+          <Form.Label style={{ fontSize: '0.68rem', color: '#64748b' }}>Width (mm)</Form.Label>
+          <Form.Control size="sm" type="number" value={pdf.width} onChange={(e) => handlePdfChange(type, 'width', e.target.value)} disabled={pdf.format !== 'custom'} style={{ fontSize: '0.78rem' }} />
         </Form.Group>
       </Col>
       <Col xs={3} md={2}>
         <Form.Group>
-          <Form.Label style={{ fontSize: '0.8rem' }}>Height (mm)</Form.Label>
-          <Form.Control size="sm" type="number" value={pdf.height} onChange={(e) => handlePdfChange(type, 'height', e.target.value)} disabled={pdf.format !== 'custom'} />
+          <Form.Label style={{ fontSize: '0.68rem', color: '#64748b' }}>Height (mm)</Form.Label>
+          <Form.Control size="sm" type="number" value={pdf.height} onChange={(e) => handlePdfChange(type, 'height', e.target.value)} disabled={pdf.format !== 'custom'} style={{ fontSize: '0.78rem' }} />
         </Form.Group>
       </Col>
       <Col xs={6} md={2}>
         <Form.Group>
-          <Form.Label style={{ fontSize: '0.8rem' }}>Orientation</Form.Label>
-          <Form.Select size="sm" value={pdf.orientation} onChange={(e) => handlePdfChange(type, 'orientation', e.target.value)}>
+          <Form.Label style={{ fontSize: '0.68rem', color: '#64748b' }}>Orientation</Form.Label>
+          <Form.Select size="sm" value={pdf.orientation} onChange={(e) => handlePdfChange(type, 'orientation', e.target.value)} style={{ fontSize: '0.78rem' }}>
             <option value="portrait">Portrait</option>
             <option value="landscape">Landscape</option>
           </Form.Select>
         </Form.Group>
       </Col>
       <Col xs={6} md={3}>
-        <div style={{ fontSize: '0.8rem', color: '#64748b', paddingBottom: '0.4rem' }}>
-          <strong>Current:</strong> {pdf.width} x {pdf.height} mm ({pdf.orientation})
+        <div style={{ fontSize: '0.68rem', color: '#94a3b8', paddingBottom: '0.4rem' }}>
+          {pdf.width} x {pdf.height} mm ({pdf.orientation})
         </div>
       </Col>
     </Row>
@@ -382,29 +382,27 @@ function CheckupSettingsTab() {
     <>
       {/* Display setting */}
       <Col xs={12}>
-        <Card className="shadow-sm">
-          <Card.Header className="card-header-theme">
-            <h5 className="mb-0 fs-responsive-md">{icon} {title}</h5>
-          </Card.Header>
-          <Card.Body>
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold" style={{ fontSize: '0.9rem' }}>Default empty field behaviour</Form.Label>
-              <Form.Select
+        <Card className="shadow-sm border-0">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2">{icon} {title.toUpperCase()}</small>
+            <Form.Group className="mb-2">
+              <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Default empty field behaviour</Form.Label>
+              <Form.Select size="sm"
                 value={showEmpty}
                 onChange={(e) => handleShowEmptyToggle(settingsKey, e.target.value)}
-                style={{ maxWidth: '350px' }}
+                style={{ maxWidth: '350px', fontSize: '0.8rem' }}
               >
                 <option value="hide">Hide empty fields</option>
                 <option value="show">Show empty fields (blank)</option>
                 <option value="na">Show empty fields with N/A</option>
               </Form.Select>
-              <Form.Text className="text-muted">
+              <Form.Text className="text-muted" style={{ fontSize: '0.6rem' }}>
                 Each field can override this with its own Display setting below.
               </Form.Text>
             </Form.Group>
             <Form.Group>
-              <Form.Label className="fw-semibold" style={{ fontSize: '0.9rem' }}>Default Notation Template</Form.Label>
-              <Form.Control
+              <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Default Notation Template</Form.Label>
+              <Form.Control size="sm"
                 type="text"
                 defaultValue={settings?.[settingsKey]?.defaultNotation || '{value}({label})'}
                 placeholder="{value}({label})"
@@ -414,10 +412,10 @@ function CheckupSettingsTab() {
                     handleUpdate({ [settingsKey]: { defaultNotation: val } })
                   }
                 }}
-                style={{ maxWidth: '350px', fontSize: '0.9rem' }}
+                style={{ maxWidth: '350px', fontSize: '0.8rem' }}
               />
-              <Form.Text className="text-muted">
-                Template for displaying values with rule labels. Keywords: <code>{'{value}'}</code> = result, <code>{'{label}'}</code> = rule label (e.g. HIGH/LOW), <code>{'{style}'}</code> = apply rule style (B/I/U).
+              <Form.Text className="text-muted" style={{ fontSize: '0.6rem' }}>
+                Keywords: <code>{'{value}'}</code> = result, <code>{'{label}'}</code> = rule label, <code>{'{style}'}</code> = apply rule style.
                 Example: <code>{'{value}'} ({'{label}'})</code> → <em>140 (HIGH)</em>
               </Form.Text>
             </Form.Group>
@@ -427,296 +425,228 @@ function CheckupSettingsTab() {
 
       {/* Fields table */}
       <Col xs={12}>
-        <Card className="shadow-sm">
-          <Card.Header className="card-header-theme d-flex justify-content-between align-items-center">
-            <h5 className="mb-0 fs-responsive-md">{title} Fields</h5>
-            <Badge bg="info">{sortedFields.length} fields</Badge>
-          </Card.Header>
-          <Card.Body className="p-0">
-            <div className="table-responsive">
-              <Table hover className="mb-0 table-mobile-responsive align-middle">
-                <thead className="bg-theme-slate">
-                  <tr>
-                    <th style={{ width: '14%' }}>Key</th>
-                    <th style={{ width: '18%' }}>Label</th>
-                    <th style={{ width: '8%', textAlign: 'center' }}>Order</th>
-                    <th style={{ width: '16%' }}>Group Under</th>
-                    <th style={{ width: '16%' }}>Display</th>
-                    <th style={{ width: '8%', textAlign: 'center' }}>Visible</th>
-                    <th style={{ width: '6%', textAlign: 'center' }}>Delete</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedFields.map(([key, cfg]) => {
-                    const rulesId = `${settingsKey}.${key}`
-                    const isExpanded = expandedRules[rulesId]
-                    const fieldRules = cfg.rules || []
-                    const nr = newRule[rulesId] || {}
-                    return (
-                    <React.Fragment key={key}>
-                    <tr style={{ opacity: cfg.visible === false ? 0.5 : 1 }}>
-                      <td data-label="Key">
-                        <strong className="text-theme">{key}</strong>
-                        {cfg.children && (
-                          <div><Badge bg="light" text="dark" style={{ fontSize: '0.65rem' }}>parent</Badge></div>
-                        )}
-                        {cfg.parent && (
-                          <div><Badge bg="secondary" style={{ fontSize: '0.65rem' }}>child of {cfg.parent}</Badge></div>
-                        )}
-                        <div
-                          className="d-flex align-items-center gap-1 mt-1"
-                          style={{ cursor: 'pointer', fontSize: '0.7rem', color: 'var(--theme-primary, #0891B2)' }}
-                          onClick={() => toggleRules(settingsKey, key)}
-                        >
-                          {isExpanded ? <FaChevronDown style={{ fontSize: '0.55rem' }} /> : <FaChevronRight style={{ fontSize: '0.55rem' }} />}
-                          <span>Rules ({fieldRules.length})</span>
-                        </div>
-                      </td>
-                      <td data-label="Label">
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          defaultValue={cfg.label || key}
-                          onBlur={(e) => {
-                            const val = e.target.value.trim()
-                            if (val && val !== (cfg.label || key)) handleLabelChange(settingsKey, key, val)
-                          }}
-                        />
-                      </td>
-                      <td data-label="Order" style={{ textAlign: 'center' }}>
-                        <Form.Control
-                          size="sm"
-                          type="number"
-                          defaultValue={cfg.order || 0}
-                          onBlur={(e) => handleOrderChange(settingsKey, key, e.target.value)}
-                          style={{ maxWidth: '70px', margin: '0 auto' }}
-                        />
-                      </td>
-                      <td data-label="Group Under">
-                        <Form.Select
-                          size="sm"
-                          value={cfg.parent || ''}
-                          onChange={(e) => handleParentChange(settingsKey, fields, key, e.target.value)}
-                          disabled={!!cfg.children}
-                        >
-                          <option value="">— None —</option>
-                          {parentOptions
-                            .filter(([k]) => k !== key)
-                            .map(([k, c]) => (
-                              <option key={k} value={k}>{c.label || k}</option>
-                            ))
-                          }
-                        </Form.Select>
-                      </td>
-                      <td data-label="Display">
-                        <Form.Select
-                          size="sm"
-                          value={cfg.display || 'default'}
-                          onChange={(e) => handleDisplayChange(settingsKey, key, e.target.value)}
-                        >
-                          <option value="default">Default</option>
-                          <option value="always">Always (N/A)</option>
-                          <option value="valueOnly">Only with value</option>
-                        </Form.Select>
-                      </td>
-                      <td data-label="Visible" style={{ textAlign: 'center' }}>
-                        <Form.Check
-                          type="switch"
-                          checked={cfg.visible !== false}
-                          onChange={(e) => handleToggleVisible(settingsKey, key, e.target.checked)}
-                          className="d-inline-block"
-                        />
-                      </td>
-                      <td data-label="Delete" style={{ textAlign: 'center' }}>
-                        <Button
-                          size="sm"
-                          variant="outline-danger"
-                          onClick={() => handleDeleteField(settingsKey, fields, key)}
-                          title="Delete field"
-                        >
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </tr>
-                    {/* Rules row */}
-                    {isExpanded && (
-                      <tr>
-                        <td colSpan={7} style={{ padding: 0, background: '#f8fafc', borderTop: 'none' }}>
-                          <div style={{ padding: '8px 12px' }}>
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '6px', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px' }}>
-                              <strong>Notation keywords:</strong> <code>{'{value}'}</code> = result value, <code>{'{label}'}</code> = rule label (e.g. HIGH/LOW).
-                              Default: <code>{'{label}'}</code>. Example: <code>{'{value}'} ({'{label}'})</code> → <em>140 (HIGH)</em>
-                            </div>
-                            {fieldRules.length > 0 && (
-                              <table style={{ width: '100%', fontSize: '0.78rem', marginBottom: '6px' }}>
-                                <thead>
-                                  <tr style={{ color: '#888' }}>
-                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Operator</th>
-                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Value</th>
-                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Label</th>
-                                    <th style={{ padding: '2px 4px', fontWeight: 500 }}>Notation</th>
-                                    <th style={{ padding: '2px 4px', width: '60px' }}></th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {fieldRules.map((rule, i) => {
-                                    const isEditing = editingRule?.id === rulesId && editingRule?.index === i
-                                    const er = isEditing ? editingRule : null
-                                    return isEditing ? (
-                                      <tr key={i} style={{ background: '#eef6ff' }}>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          <Form.Select size="sm" style={{ fontSize: '0.72rem', width: '80px' }}
-                                            value={er.operator} onChange={(e) => setEditingRule({ ...er, operator: e.target.value })}>
-                                            {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                          </Form.Select>
-                                        </td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          {er.operator === 'between' ? (
-                                            <span className="d-flex align-items-center gap-1">
-                                              <Form.Control size="sm" type="number" style={{ width: '60px', fontSize: '0.72rem' }}
-                                                value={er.min ?? ''} onChange={(e) => setEditingRule({ ...er, min: e.target.value })} />
-                                              <span style={{ fontSize: '0.72rem' }}>–</span>
-                                              <Form.Control size="sm" type="number" style={{ width: '60px', fontSize: '0.72rem' }}
-                                                value={er.max ?? ''} onChange={(e) => setEditingRule({ ...er, max: e.target.value })} />
-                                            </span>
-                                          ) : (
-                                            <Form.Control size="sm" type="number" style={{ width: '70px', fontSize: '0.72rem' }}
-                                              value={er.value ?? ''} onChange={(e) => setEditingRule({ ...er, value: e.target.value })} />
-                                          )}
-                                        </td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          <Form.Control size="sm" type="text" style={{ width: '80px', fontSize: '0.72rem' }}
-                                            value={er.label || ''} onChange={(e) => setEditingRule({ ...er, label: e.target.value })} />
-                                        </td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          <Form.Control size="sm" type="text" style={{ width: '120px', fontSize: '0.72rem' }}
-                                            value={er.notation ?? '{label}'} onChange={(e) => setEditingRule({ ...er, notation: e.target.value })}
-                                            placeholder="{label}" />
-                                        </td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          <span className="d-flex gap-1">
-                                            <button className="btn btn-link p-0 text-success" style={{ fontSize: '0.7rem' }}
-                                              onClick={() => handleEditRule(settingsKey, key, fieldRules, i)}
-                                              disabled={!isRuleValid(er)}>
-                                              <FaSave />
-                                            </button>
-                                            <button className="btn btn-link p-0 text-secondary" style={{ fontSize: '0.7rem' }}
-                                              onClick={() => setEditingRule(null)}>
-                                              <FaTimes />
-                                            </button>
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    ) : (
-                                      <tr key={i}>
-                                        <td style={{ padding: '2px 4px' }}>{rule.operator}</td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          {rule.operator === 'between' ? `${rule.min} – ${rule.max}` : rule.value}
-                                        </td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          {rule.label}
-                                        </td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          <code style={{ fontSize: '0.68rem', background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px' }}>
-                                            {rule.notation || rule.display || '{label}'}
-                                          </code>
-                                        </td>
-                                        <td style={{ padding: '2px 4px' }}>
-                                          <span className="d-flex gap-1">
-                                            <button className="btn btn-link p-0 text-primary" style={{ fontSize: '0.7rem' }}
-                                              onClick={() => setEditingRule({
-                                                id: rulesId, index: i,
-                                                operator: rule.operator, label: rule.label, notation: rule.notation || rule.display || '{label}',
-                                                value: rule.value, min: rule.min, max: rule.max,
-                                              })}>
-                                              <FaEdit />
-                                            </button>
-                                            <button className="btn btn-link p-0 text-danger" style={{ fontSize: '0.7rem' }}
-                                              onClick={() => handleDeleteRule(settingsKey, key, fieldRules, i)}>
-                                              <FaTrash />
-                                            </button>
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    )
-                                  })}
-                                </tbody>
-                              </table>
-                            )}
-                            {/* Add new rule form */}
-                            <div className="d-flex align-items-end gap-1 flex-wrap">
-                              <Form.Select
-                                size="sm"
-                                style={{ width: '90px', fontSize: '0.75rem' }}
-                                value={nr.operator || ''}
-                                onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, operator: e.target.value } }))}
-                              >
-                                <option value="">Op</option>
-                                {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                              </Form.Select>
-                              {nr.operator === 'between' ? (
-                                <>
-                                  <Form.Control size="sm" type="number" placeholder="Min" style={{ width: '70px', fontSize: '0.75rem' }}
-                                    value={nr.min ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, min: e.target.value } }))} />
-                                  <span style={{ fontSize: '0.75rem', color: '#888' }}>–</span>
-                                  <Form.Control size="sm" type="number" placeholder="Max" style={{ width: '70px', fontSize: '0.75rem' }}
-                                    value={nr.max ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, max: e.target.value } }))} />
-                                </>
-                              ) : (
-                                <Form.Control size="sm" type="number" placeholder="Value" style={{ width: '80px', fontSize: '0.75rem' }}
-                                  value={nr.value ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, value: e.target.value } }))} />
-                              )}
-                              <Form.Control size="sm" type="text" placeholder="Label (HIGH)" style={{ width: '100px', fontSize: '0.75rem' }}
-                                value={nr.label || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, label: e.target.value } }))} />
-                              <Form.Control size="sm" type="text" placeholder="{label}" style={{ width: '120px', fontSize: '0.75rem' }}
-                                value={nr.notation || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, notation: e.target.value } }))} />
-                              <Button size="sm" className="btn-theme-add" style={{ fontSize: '0.75rem', padding: '2px 8px' }}
-                                onClick={() => handleAddRule(settingsKey, key, fieldRules)}
-                                disabled={!isRuleValid(nr)}>
-                                <FaPlus />
-                              </Button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    </React.Fragment>
-                    )
-                  })}
+        <Card className="shadow-sm border-0">
+          <Card.Body className="py-2 px-3">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <small className="fw-bold text-muted">{title.toUpperCase()} FIELDS</small>
+              <Badge bg="info" style={{ fontSize: '0.6rem' }}>{sortedFields.length} fields</Badge>
+            </div>
+            <div>
+              {/* Column headers (desktop) */}
+              <div className="d-none d-md-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.58rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                <span style={{ width: 28 }}>Vis</span>
+                <span style={{ flex: 1 }}>Key</span>
+                <span style={{ flex: 1.5 }}>Label</span>
+                <span style={{ width: 50 }}>Order</span>
+                <span style={{ flex: 1 }}>Group</span>
+                <span style={{ flex: 1 }}>Display</span>
+                <span style={{ width: 24 }}></span>
+              </div>
 
-                  {/* Add new field row */}
-                  <tr style={{ backgroundColor: '#f8fafc' }}>
-                    <td data-label="Key">
-                      <Form.Control size="sm" type="text" placeholder="key" value={newKey} onChange={(e) => setNewKey(e.target.value)} />
-                    </td>
-                    <td data-label="Label">
-                      <Form.Control size="sm" type="text" placeholder="Display Label" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
-                    </td>
-                    <td />
-                    <td data-label="Group Under">
-                      <Form.Select size="sm" value={newParent} onChange={(e) => setNewParent(e.target.value)}>
+              {sortedFields.map(([key, cfg]) => {
+                const rulesId = `${settingsKey}.${key}`
+                const isExpanded = expandedRules[rulesId]
+                const fieldRules = cfg.rules || []
+                const nr = newRule[rulesId] || {}
+                return (
+                <React.Fragment key={key}>
+                  <div className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.75rem', opacity: cfg.visible === false ? 0.5 : 1 }}>
+                    {/* Visible */}
+                    <span style={{ width: 28 }}>
+                      <Form.Check type="checkbox" checked={cfg.visible !== false}
+                        onChange={(e) => handleToggleVisible(settingsKey, key, e.target.checked)} />
+                    </span>
+                    {/* Key */}
+                    <span style={{ flex: 1 }}>
+                      <strong style={{ color: '#0891B2', fontSize: '0.72rem' }}>{key}</strong>
+                      {cfg.children && <Badge bg="light" text="dark" className="ms-1" style={{ fontSize: '0.5rem' }}>parent</Badge>}
+                      {cfg.parent && <Badge bg="secondary" className="ms-1" style={{ fontSize: '0.5rem' }}>child of {cfg.parent}</Badge>}
+                      <div className="d-flex align-items-center gap-1 mt-1"
+                        style={{ cursor: 'pointer', fontSize: '0.62rem', color: '#0891B2' }}
+                        onClick={() => toggleRules(settingsKey, key)}>
+                        {isExpanded ? <FaChevronDown style={{ fontSize: '0.45rem' }} /> : <FaChevronRight style={{ fontSize: '0.45rem' }} />}
+                        <span>Rules ({fieldRules.length})</span>
+                      </div>
+                    </span>
+                    {/* Label */}
+                    <span style={{ flex: 1.5 }}>
+                      <Form.Control size="sm" type="text" defaultValue={cfg.label || key}
+                        onBlur={(e) => { const val = e.target.value.trim(); if (val && val !== (cfg.label || key)) handleLabelChange(settingsKey, key, val) }}
+                        style={{ fontSize: '0.72rem', height: 24 }} />
+                    </span>
+                    {/* Order */}
+                    <span style={{ width: 50 }} className="d-none d-md-block">
+                      <Form.Control size="sm" type="number" defaultValue={cfg.order || 0}
+                        onBlur={(e) => handleOrderChange(settingsKey, key, e.target.value)}
+                        style={{ fontSize: '0.72rem', height: 24, textAlign: 'center' }} />
+                    </span>
+                    {/* Group Under */}
+                    <span style={{ flex: 1 }} className="d-none d-md-block">
+                      <Form.Select size="sm" value={cfg.parent || ''}
+                        onChange={(e) => handleParentChange(settingsKey, fields, key, e.target.value)}
+                        disabled={!!cfg.children} style={{ fontSize: '0.65rem', height: 24, padding: '0 4px' }}>
                         <option value="">— None —</option>
-                        {parentOptions.map(([k, c]) => (
+                        {parentOptions.filter(([k]) => k !== key).map(([k, c]) => (
                           <option key={k} value={k}>{c.label || k}</option>
                         ))}
                       </Form.Select>
-                    </td>
-                    <td />
-                    <td />
-                    <td style={{ textAlign: 'center' }}>
-                      <Button
-                        size="sm"
-                        className="btn-theme-add"
-                        onClick={() => handleAddField(settingsKey, fields, sortedFields, newKey, newLabel, newParent, () => { setNewKey(''); setNewLabel(''); setNewParent('') })}
-                        disabled={!newKey.trim() || !newLabel.trim()}
-                        title="Add field"
-                      >
-                        <FaPlus />
-                      </Button>
-                    </td>
-                  </tr>
-                </tbody>
-              </Table>
+                    </span>
+                    {/* Display */}
+                    <span style={{ flex: 1 }} className="d-none d-md-block">
+                      <Form.Select size="sm" value={cfg.display || 'default'}
+                        onChange={(e) => handleDisplayChange(settingsKey, key, e.target.value)}
+                        style={{ fontSize: '0.65rem', height: 24, padding: '0 4px' }}>
+                        <option value="default">Default</option>
+                        <option value="always">Always (N/A)</option>
+                        <option value="valueOnly">Only with value</option>
+                      </Form.Select>
+                    </span>
+                    {/* Delete */}
+                    <span style={{ width: 24 }}>
+                      <button type="button" onClick={() => handleDeleteField(settingsKey, fields, key)}
+                        style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }} aria-label="Delete field">
+                        <FaTrash size={9} />
+                      </button>
+                    </span>
+                  </div>
+
+                  {/* Rules expandable */}
+                  {isExpanded && (
+                    <div style={{ padding: '6px 8px 6px 36px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '0.6rem', color: '#64748b', marginBottom: '4px', background: '#f1f5f9', padding: '3px 6px', borderRadius: 3 }}>
+                        <code>{'{value}'}</code> = result, <code>{'{label}'}</code> = rule label. Example: <code>{'{value}'} ({'{label}'})</code> → <em>140 (HIGH)</em>
+                      </div>
+                      {fieldRules.length > 0 && (
+                        <div style={{ marginBottom: '4px' }}>
+                          {/* Rules header */}
+                          <div className="d-flex gap-1 mb-1" style={{ fontSize: '0.55rem', color: '#94a3b8' }}>
+                            <span style={{ width: 70 }}>Operator</span>
+                            <span style={{ width: 70 }}>Value</span>
+                            <span style={{ width: 80 }}>Label</span>
+                            <span style={{ flex: 1 }}>Notation</span>
+                            <span style={{ width: 36 }}></span>
+                          </div>
+                          {fieldRules.map((rule, i) => {
+                            const isEditing = editingRule?.id === rulesId && editingRule?.index === i
+                            const er = isEditing ? editingRule : null
+                            return isEditing ? (
+                              <div key={i} className="d-flex align-items-center gap-1 py-1 flex-wrap" style={{ background: '#eef6ff', borderRadius: 3, padding: '2px 4px', fontSize: '0.72rem' }}>
+                                <Form.Select size="sm" style={{ fontSize: '0.65rem', width: 70, height: 22, padding: '0 2px' }}
+                                  value={er.operator} onChange={(e) => setEditingRule({ ...er, operator: e.target.value })}>
+                                  {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                </Form.Select>
+                                {er.operator === 'between' ? (
+                                  <span className="d-flex align-items-center gap-1" style={{ width: 70 }}>
+                                    <Form.Control size="sm" type="number" style={{ width: 30, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                                      value={er.min ?? ''} onChange={(e) => setEditingRule({ ...er, min: e.target.value })} />
+                                    <span style={{ fontSize: '0.6rem' }}>–</span>
+                                    <Form.Control size="sm" type="number" style={{ width: 30, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                                      value={er.max ?? ''} onChange={(e) => setEditingRule({ ...er, max: e.target.value })} />
+                                  </span>
+                                ) : (
+                                  <Form.Control size="sm" type="number" style={{ width: 70, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                                    value={er.value ?? ''} onChange={(e) => setEditingRule({ ...er, value: e.target.value })} />
+                                )}
+                                <Form.Control size="sm" type="text" style={{ width: 80, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                                  value={er.label || ''} onChange={(e) => setEditingRule({ ...er, label: e.target.value })} />
+                                <Form.Control size="sm" type="text" style={{ flex: 1, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                                  value={er.notation ?? '{label}'} onChange={(e) => setEditingRule({ ...er, notation: e.target.value })} placeholder="{label}" />
+                                <span className="d-flex gap-1" style={{ width: 36 }}>
+                                  <button type="button" onClick={() => handleEditRule(settingsKey, key, fieldRules, i)} disabled={!isRuleValid(er)}
+                                    style={{ border: 'none', background: 'none', color: '#16a34a', cursor: 'pointer', padding: 0 }}><FaSave size={9} /></button>
+                                  <button type="button" onClick={() => setEditingRule(null)}
+                                    style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}><FaTimes size={9} /></button>
+                                </span>
+                              </div>
+                            ) : (
+                              <div key={i} className="d-flex align-items-center gap-1 py-1" style={{ fontSize: '0.68rem' }}>
+                                <span style={{ width: 70 }}>{rule.operator}</span>
+                                <span style={{ width: 70 }}>{rule.operator === 'between' ? `${rule.min} – ${rule.max}` : rule.value}</span>
+                                <span style={{ width: 80 }}>{rule.label}</span>
+                                <span style={{ flex: 1 }}>
+                                  <code style={{ fontSize: '0.6rem', background: '#f1f5f9', padding: '1px 3px', borderRadius: 2 }}>
+                                    {rule.notation || rule.display || '{label}'}
+                                  </code>
+                                </span>
+                                <span className="d-flex gap-1" style={{ width: 36 }}>
+                                  <button type="button" onClick={() => setEditingRule({
+                                    id: rulesId, index: i, operator: rule.operator, label: rule.label,
+                                    notation: rule.notation || rule.display || '{label}', value: rule.value, min: rule.min, max: rule.max,
+                                  })} style={{ border: 'none', background: 'none', color: '#0891B2', cursor: 'pointer', padding: 0 }}><FaEdit size={9} /></button>
+                                  <button type="button" onClick={() => handleDeleteRule(settingsKey, key, fieldRules, i)}
+                                    style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }}><FaTrash size={9} /></button>
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {/* Add new rule */}
+                      <div className="d-flex align-items-center gap-1 flex-wrap">
+                        <Form.Select size="sm" style={{ width: 70, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                          value={nr.operator || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, operator: e.target.value } }))}>
+                          <option value="">Op</option>
+                          {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </Form.Select>
+                        {nr.operator === 'between' ? (
+                          <>
+                            <Form.Control size="sm" type="number" placeholder="Min" style={{ width: 50, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                              value={nr.min ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, min: e.target.value } }))} />
+                            <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>–</span>
+                            <Form.Control size="sm" type="number" placeholder="Max" style={{ width: 50, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                              value={nr.max ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, max: e.target.value } }))} />
+                          </>
+                        ) : (
+                          <Form.Control size="sm" type="number" placeholder="Value" style={{ width: 60, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                            value={nr.value ?? ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, value: e.target.value } }))} />
+                        )}
+                        <Form.Control size="sm" type="text" placeholder="Label" style={{ width: 70, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                          value={nr.label || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, label: e.target.value } }))} />
+                        <Form.Control size="sm" type="text" placeholder="{label}" style={{ width: 80, fontSize: '0.65rem', height: 22, padding: '0 2px' }}
+                          value={nr.notation || ''} onChange={(e) => setNewRule(prev => ({ ...prev, [rulesId]: { ...nr, notation: e.target.value } }))} />
+                        <button type="button" onClick={() => handleAddRule(settingsKey, key, fieldRules)} disabled={!isRuleValid(nr)}
+                          style={{ fontSize: '0.6rem', padding: '1px 6px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: !isRuleValid(nr) ? 0.5 : 1 }}>
+                          <FaPlus size={8} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+                )
+              })}
+
+              {/* Add new field row */}
+              <div className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', fontSize: '0.75rem' }}>
+                <span style={{ width: 28 }}></span>
+                <span style={{ flex: 1 }}>
+                  <Form.Control size="sm" type="text" placeholder="key" value={newKey} onChange={(e) => setNewKey(e.target.value)}
+                    style={{ fontSize: '0.72rem', height: 24 }} />
+                </span>
+                <span style={{ flex: 1.5 }}>
+                  <Form.Control size="sm" type="text" placeholder="Display Label" value={newLabel} onChange={(e) => setNewLabel(e.target.value)}
+                    style={{ fontSize: '0.72rem', height: 24 }} />
+                </span>
+                <span style={{ width: 50 }} className="d-none d-md-block"></span>
+                <span style={{ flex: 1 }} className="d-none d-md-block">
+                  <Form.Select size="sm" value={newParent} onChange={(e) => setNewParent(e.target.value)}
+                    style={{ fontSize: '0.65rem', height: 24, padding: '0 4px' }}>
+                    <option value="">— None —</option>
+                    {parentOptions.map(([k, c]) => (
+                      <option key={k} value={k}>{c.label || k}</option>
+                    ))}
+                  </Form.Select>
+                </span>
+                <span style={{ flex: 1 }} className="d-none d-md-block"></span>
+                <span style={{ width: 24 }}>
+                  <button type="button"
+                    onClick={() => handleAddField(settingsKey, fields, sortedFields, newKey, newLabel, newParent, () => { setNewKey(''); setNewLabel(''); setNewParent('') })}
+                    disabled={!newKey.trim() || !newLabel.trim()}
+                    style={{ border: 'none', background: 'none', color: '#0891B2', cursor: 'pointer', padding: 0, opacity: (!newKey.trim() || !newLabel.trim()) ? 0.4 : 1 }}
+                    aria-label="Add field">
+                    <FaPlus size={10} />
+                  </button>
+                </span>
+              </div>
             </div>
           </Card.Body>
         </Card>
@@ -725,22 +655,20 @@ function CheckupSettingsTab() {
   )
 
   return (
-    <Row className="g-3">
+    <Row className="g-2">
       {/* PDF Settings */}
       <Col xs={12}>
-        <Card className="shadow-sm">
-          <Card.Header className="card-header-theme">
-            <h5 className="mb-0 fs-responsive-md"><FaFilePdf className="me-2" />PDF Settings</h5>
-          </Card.Header>
-          <Card.Body>
+        <Card className="shadow-sm border-0">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2"><FaFilePdf className="me-2" style={{ fontSize: '0.7rem' }} />PDF SETTINGS</small>
             {renderPdfRow('invoice', 'Invoice', invoicePdf)}
-            <hr />
+            <div style={{ borderTop: '1px solid #e2e8f0', margin: '6px 0' }} />
             {renderPdfRow('prescription', 'Prescription', prescriptionPdf)}
-            <hr />
-            <Row className="align-items-end">
+            <div style={{ borderTop: '1px solid #e2e8f0', margin: '6px 0' }} />
+            <Row className="align-items-end g-1">
               <Col xs={6} md={3}>
                 <Form.Group>
-                  <Form.Label style={{ fontSize: '0.8rem' }} className="fw-semibold">Default Prescription Valid Days</Form.Label>
+                  <Form.Label style={{ fontSize: '0.68rem', color: '#64748b' }}>Default Prescription Valid Days</Form.Label>
                   <Form.Control
                     size="sm"
                     type="number"
@@ -751,12 +679,13 @@ function CheckupSettingsTab() {
                         handleUpdate({ checkupPdf: { defaultValidDays: val } })
                       }
                     }}
+                    style={{ fontSize: '0.78rem' }}
                   />
                 </Form.Group>
               </Col>
               <Col xs={6} md={9}>
-                <Form.Text className="text-muted">
-                  Default number of days a prescription is valid. Can be overridden per checkup.
+                <Form.Text className="text-muted" style={{ fontSize: '0.6rem' }}>
+                  Default days a prescription is valid. Can be overridden per checkup.
                 </Form.Text>
               </Col>
             </Row>
@@ -766,82 +695,48 @@ function CheckupSettingsTab() {
 
       {/* Footer Contact Details */}
       <Col xs={12}>
-        <Card className="shadow-sm">
-          <Card.Header className="card-header-theme">
-            <h5 className="mb-0 fs-responsive-md"><FaAddressCard className="me-2" />PDF Footer Contact Details</h5>
-          </Card.Header>
-          <Card.Body>
-            <Row className="g-3">
+        <Card className="shadow-sm border-0">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2"><FaAddressCard className="me-2" style={{ fontSize: '0.7rem' }} />PDF FOOTER CONTACT DETAILS</small>
+            <Row className="g-2">
               {['mobile', 'email', 'instagram', 'facebook'].map((key) => {
                 const item = footerSettings[key] || {}
                 return (
                   <Col xs={12} md={6} key={key}>
-                    <Card className="border" style={{ opacity: item.visible === false ? 0.5 : 1 }}>
-                      <Card.Body className="p-2">
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <strong className="text-theme" style={{ fontSize: '0.85rem', textTransform: 'capitalize' }}>{key}</strong>
-                          <Form.Check
-                            type="switch"
-                            checked={item.visible !== false}
-                            onChange={(e) => handleUpdate({ checkupPdf: { footer: { [key]: { visible: e.target.checked } } } })}
-                            className="d-inline-block"
-                          />
-                        </div>
-                        <Row className="g-2">
-                          <Col xs={4}>
-                            <Form.Control
-                              size="sm"
-                              type="text"
-                              defaultValue={item.label || key}
-                              placeholder="Label"
-                              onBlur={(e) => {
-                                const val = e.target.value.trim()
-                                if (val && val !== (item.label || key)) handleUpdate({ checkupPdf: { footer: { [key]: { label: val } } } })
-                              }}
-                            />
-                          </Col>
-                          <Col xs={8}>
-                            <Form.Control
-                              size="sm"
-                              type="text"
-                              defaultValue={item.value || ''}
-                              placeholder="Value"
-                              onBlur={(e) => {
-                                const val = e.target.value.trim()
-                                if (val !== (item.value || '')) handleUpdate({ checkupPdf: { footer: { [key]: { value: val } } } })
-                              }}
-                            />
-                          </Col>
-                        </Row>
-                      </Card.Body>
-                    </Card>
+                    <div className="p-2 rounded" style={{ border: '1px solid #e2e8f0', opacity: item.visible === false ? 0.5 : 1 }}>
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <small className="fw-semibold text-theme" style={{ fontSize: '0.72rem', textTransform: 'capitalize' }}>{key}</small>
+                        <Form.Check type="switch" checked={item.visible !== false}
+                          onChange={(e) => handleUpdate({ checkupPdf: { footer: { [key]: { visible: e.target.checked } } } })} />
+                      </div>
+                      <Row className="g-1">
+                        <Col xs={4}>
+                          <Form.Control size="sm" type="text" defaultValue={item.label || key} placeholder="Label"
+                            onBlur={(e) => { const val = e.target.value.trim(); if (val && val !== (item.label || key)) handleUpdate({ checkupPdf: { footer: { [key]: { label: val } } } }) }}
+                            style={{ fontSize: '0.75rem' }} />
+                        </Col>
+                        <Col xs={8}>
+                          <Form.Control size="sm" type="text" defaultValue={item.value || ''} placeholder="Value"
+                            onBlur={(e) => { const val = e.target.value.trim(); if (val !== (item.value || '')) handleUpdate({ checkupPdf: { footer: { [key]: { value: val } } } }) }}
+                            style={{ fontSize: '0.75rem' }} />
+                        </Col>
+                      </Row>
+                    </div>
                   </Col>
                 )
               })}
               <Col xs={12}>
-                <Form.Group className="mb-2">
-                  <Form.Label style={{ fontSize: '0.85rem' }} className="fw-semibold">Invoice Thank You Text</Form.Label>
-                  <Form.Control
-                    size="sm"
-                    type="text"
-                    defaultValue={footerSettings.thankYouInvoice || ''}
-                    onBlur={(e) => {
-                      const val = e.target.value.trim()
-                      if (val !== (footerSettings.thankYouInvoice || '')) handleUpdate({ checkupPdf: { footer: { thankYouInvoice: val } } })
-                    }}
-                  />
+                <Form.Group className="mb-1">
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Invoice Thank You Text</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={footerSettings.thankYouInvoice || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); if (val !== (footerSettings.thankYouInvoice || '')) handleUpdate({ checkupPdf: { footer: { thankYouInvoice: val } } }) }}
+                    style={{ fontSize: '0.78rem' }} />
                 </Form.Group>
                 <Form.Group>
-                  <Form.Label style={{ fontSize: '0.85rem' }} className="fw-semibold">Prescription Thank You Text</Form.Label>
-                  <Form.Control
-                    size="sm"
-                    type="text"
-                    defaultValue={footerSettings.thankYouPrescription || ''}
-                    onBlur={(e) => {
-                      const val = e.target.value.trim()
-                      if (val !== (footerSettings.thankYouPrescription || '')) handleUpdate({ checkupPdf: { footer: { thankYouPrescription: val } } })
-                    }}
-                  />
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Prescription Thank You Text</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={footerSettings.thankYouPrescription || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); if (val !== (footerSettings.thankYouPrescription || '')) handleUpdate({ checkupPdf: { footer: { thankYouPrescription: val } } }) }}
+                    style={{ fontSize: '0.78rem' }} />
                 </Form.Group>
               </Col>
             </Row>
@@ -851,26 +746,24 @@ function CheckupSettingsTab() {
 
       {/* E-Signature */}
       <Col xs={12}>
-        <Card className="shadow-sm">
-          <Card.Header className="card-header-theme">
-            <h5 className="mb-0 fs-responsive-md"><FaSignature className="me-2" />E-Signature</h5>
-          </Card.Header>
-          <Card.Body>
+        <Card className="shadow-sm border-0">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2"><FaSignature className="me-2" style={{ fontSize: '0.7rem' }} />E-SIGNATURE</small>
             {savedESign && (
-              <div className="mb-3">
-                <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Current Signature</Form.Label>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', background: '#fff', textAlign: 'center' }}>
-                  <img src={savedESign} alt="Saved Signature" style={{ maxHeight: '80px', objectFit: 'contain' }} />
+              <div className="mb-2">
+                <Form.Label style={{ fontSize: '0.68rem', color: '#64748b' }}>Current Signature</Form.Label>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: 4, padding: '6px', background: '#fff', textAlign: 'center' }}>
+                  <img src={savedESign} alt="Saved Signature" style={{ maxHeight: '60px', objectFit: 'contain' }} />
                 </div>
               </div>
             )}
-            <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>{savedESign ? 'Draw New Signature' : 'Draw Signature'}</Form.Label>
-            <div style={{ border: '2px dashed #cbd5e1', borderRadius: '6px', background: '#f8fafc', marginBottom: '0.75rem', touchAction: 'none' }}>
+            <Form.Label style={{ fontSize: '0.68rem', color: '#64748b' }}>{savedESign ? 'Draw New Signature' : 'Draw Signature'}</Form.Label>
+            <div style={{ border: '2px dashed #cbd5e1', borderRadius: 4, background: '#f8fafc', marginBottom: '0.5rem', touchAction: 'none' }}>
               <canvas
                 ref={sigCanvasRef}
                 width={400}
-                height={150}
-                style={{ width: '100%', height: '150px', cursor: 'crosshair', display: 'block' }}
+                height={120}
+                style={{ width: '100%', height: '120px', cursor: 'crosshair', display: 'block' }}
                 onMouseDown={startDraw}
                 onMouseMove={draw}
                 onMouseUp={stopDraw}
@@ -880,33 +773,23 @@ function CheckupSettingsTab() {
                 onTouchEnd={stopDraw}
               />
             </div>
-            <div className="d-flex gap-2">
-              <Button
-                size="sm"
-                className="btn-theme"
-                onClick={saveSignature}
-                disabled={!hasStrokes}
-              >
-                <FaSave className="me-1" /> Save Signature
-              </Button>
-              <Button
-                size="sm"
-                variant="outline-secondary"
-                onClick={clearCanvas}
-              >
-                <FaTimes className="me-1" /> Clear
-              </Button>
+            <div className="d-flex gap-1">
+              <button type="button" onClick={saveSignature} disabled={!hasStrokes}
+                style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: !hasStrokes ? 0.5 : 1 }}>
+                <FaSave size={9} className="me-1" /> Save
+              </button>
+              <button type="button" onClick={clearCanvas}
+                style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 3 }}>
+                <FaTimes size={9} className="me-1" /> Clear
+              </button>
               {savedESign && (
-                <Button
-                  size="sm"
-                  variant="outline-danger"
-                  onClick={async () => {
+                <button type="button" onClick={async () => {
                     const ok = await confirm('Remove saved signature?', { title: 'Remove Signature', variant: 'warning' })
                     if (ok) handleUpdate({ checkupPdf: { eSign: '' } })
                   }}
-                >
-                  <FaTrash className="me-1" /> Remove
-                </Button>
+                  style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 3 }}>
+                  <FaTrash size={9} className="me-1" /> Remove
+                </button>
               )}
             </div>
           </Card.Body>
@@ -915,7 +798,7 @@ function CheckupSettingsTab() {
 
       {/* General Tests */}
       {renderFieldsTable(
-        'generalTests', 'General Tests', <FaStethoscope className="me-2" />,
+        'generalTests', 'General Tests', <FaStethoscope className="me-1" style={{ fontSize: '0.7rem' }} />,
         genFields, sortedGenFields, genParentOptions, genShowEmpty,
         newGenFieldKey, newGenFieldLabel, newGenFieldParent,
         setNewGenFieldKey, setNewGenFieldLabel, setNewGenFieldParent
@@ -923,7 +806,7 @@ function CheckupSettingsTab() {
 
       {/* Lab Results */}
       {renderFieldsTable(
-        'labResults', 'Lab Results', <FaVial className="me-2" />,
+        'labResults', 'Lab Results', <FaVial className="me-1" style={{ fontSize: '0.7rem' }} />,
         labFields, sortedLabFields, labParentOptions, labShowEmpty,
         newLabFieldKey, newLabFieldLabel, newLabFieldParent,
         setNewLabFieldKey, setNewLabFieldLabel, setNewLabFieldParent

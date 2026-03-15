@@ -109,6 +109,8 @@ export const firestoreService = {
         data.push({ id: doc.id, ...doc.data() })
       })
       callback(data)
+    }, (error) => {
+      console.error(`Firestore listener error (${collectionName}):`, error)
     })
   }
 }

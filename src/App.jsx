@@ -13,25 +13,43 @@ import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoadingSpinner from './components/common/LoadingSpinner'
 
+// Retry dynamic imports once on failure (handles stale cache after deploy)
+const lazyRetry = (importFn) => lazy(() =>
+  importFn().catch(() => {
+    // If chunk fails to load (stale cache after deploy), reload the page once
+    const reloaded = sessionStorage.getItem('chunk-reload')
+    if (!reloaded) {
+      sessionStorage.setItem('chunk-reload', '1')
+      window.location.reload()
+      return new Promise(() => {}) // never resolves — page is reloading
+    }
+    sessionStorage.removeItem('chunk-reload')
+    return importFn() // second attempt — let it fail naturally if still broken
+  })
+)
+
+// Clear reload flag on successful page load
+sessionStorage.removeItem('chunk-reload')
+
 // Lazy load pages for better performance
-const Home = lazy(() => import('./pages/Home'))
-const Login = lazy(() => import('./pages/Login'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Patients = lazy(() => import('./pages/Patients'))
-const PatientDetail = lazy(() => import('./pages/PatientDetail'))
-const Checkups = lazy(() => import('./pages/Checkups'))
-const CheckupDetail = lazy(() => import('./pages/CheckupDetail'))
-const CheckupForm = lazy(() => import('./pages/CheckupForm'))
-const Tests = lazy(() => import('./pages/Tests'))
-const TestDetail = lazy(() => import('./pages/TestDetail'))
-const Medicines = lazy(() => import('./pages/Medicines'))
-const MedicineDetail = lazy(() => import('./pages/MedicineDetail'))
-const UserManagement = lazy(() => import('./pages/UserManagement'))
-const UserDetail = lazy(() => import('./pages/UserDetail'))
-const AdminSetup = lazy(() => import('./pages/AdminSetup'))
-const Settings = lazy(() => import('./pages/Settings'))
-const Notifications = lazy(() => import('./pages/Notifications'))
-const SystemMaintenance = lazy(() => import('./pages/SystemMaintenance'))
+const Home = lazyRetry(() => import('./pages/Home'))
+const Login = lazyRetry(() => import('./pages/Login'))
+const Dashboard = lazyRetry(() => import('./pages/Dashboard'))
+const Patients = lazyRetry(() => import('./pages/Patients'))
+const PatientDetail = lazyRetry(() => import('./pages/PatientDetail'))
+const Checkups = lazyRetry(() => import('./pages/Checkups'))
+const CheckupDetail = lazyRetry(() => import('./pages/CheckupDetail'))
+const CheckupForm = lazyRetry(() => import('./pages/CheckupForm'))
+const Tests = lazyRetry(() => import('./pages/Tests'))
+const TestDetail = lazyRetry(() => import('./pages/TestDetail'))
+const Medicines = lazyRetry(() => import('./pages/Medicines'))
+const MedicineDetail = lazyRetry(() => import('./pages/MedicineDetail'))
+const UserManagement = lazyRetry(() => import('./pages/UserManagement'))
+const UserDetail = lazyRetry(() => import('./pages/UserDetail'))
+const AdminSetup = lazyRetry(() => import('./pages/AdminSetup'))
+const Settings = lazyRetry(() => import('./pages/Settings'))
+const Notifications = lazyRetry(() => import('./pages/Notifications'))
+const SystemMaintenance = lazyRetry(() => import('./pages/SystemMaintenance'))
 
 // Create a wrapper component to access notification context
 function AppContent() {
