@@ -1,102 +1,53 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button, Table, Badge, Collapse, Form } from 'react-bootstrap'
-import { FaUserInjured, FaMale, FaFemale, FaUser, FaWeight, FaRulerVertical, FaChevronDown, FaChevronRight } from 'react-icons/fa'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { Container, Row, Col, Card, Badge, Collapse, Form, Table } from 'react-bootstrap'
+import { FaUserInjured, FaChevronDown, FaChevronRight } from 'react-icons/fa'
+import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { selectAllPatients, addPatient, updatePatient, deletePatient, fetchPatients } from '../store/patientsSlice'
 import { selectAllCheckups } from '../store/checkupsSlice'
 import { selectAllTests } from '../store/testsSlice'
 import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
-import { Breadcrumb } from '../components/ui'
-import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
+import { Breadcrumb, PageHeader } from '../components/ui'
+import { usePermission } from '../components/auth/PermissionGate'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
-
-// Custom Gender Icon Selector Component
-const GenderIconSelector = ({ value, onChange, name, disabled, label = 'Gender', required = true }) => {
-  const genderOptions = [
-    { value: 'Male', icon: FaMale, color: '#0891B2' },
-    { value: 'Female', icon: FaFemale, color: '#06B6D4' },
-    { value: 'Other', icon: FaUser, color: '#0aa2c0' }
-  ]
-
-  return (
-    <Form.Group className="mb-3">
-      <Form.Label>
-        {label} {required && <span className="text-danger ms-1">*</span>}
-      </Form.Label>
-      <div className="d-flex gap-3">
-        {genderOptions.map((option) => {
-          const Icon = option.icon
-          const isSelected = value === option.value
-          return (
-            <Icon
-              key={option.value}
-              size={28}
-              onClick={() => !disabled && onChange({ target: { name, value: option.value } })}
-              style={{
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                opacity: disabled ? 0.6 : isSelected ? 1 : 0.4,
-                transition: 'opacity 0.2s',
-                color: isSelected ? option.color : '#9ca3af'
-              }}
-            />
-          )
-        })}
-      </div>
-    </Form.Group>
-  )
-}
 
 function PatientDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const { user } = useSelector(state => state.auth)
   const patients = useSelector(selectAllPatients)
   const checkups = useSelector(selectAllCheckups)
   const tests = useSelector(selectAllTests)
   const { loading } = useSelector(state => state.patients)
-  const user = useSelector(state => state.auth.user)
   const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
-  const { getEntityFields, getInitialFormData, isFieldVisible, isFieldRequired, getFieldLabel } = useSettings()
+  const { isFieldVisible, isFieldRequired, getFieldLabel, getEntityFields } = useSettings()
 
   const isNew = id === 'new'
-  const patient = isNew ? null : patients.find(p => p.id === id)
-
-  // Get fields from settings, excluding gender (rendered as custom component)
-  const visibleFields = getEntityFields('patients').filter(f => f.name !== 'gender')
-
-  const INITIAL_FORM = useMemo(() =>
-    getInitialFormData('patients', { gender: 'Male' }),
-    [getInitialFormData]
-  )
+  const patient = useMemo(() => patients.find(p => p.id === id), [patients, id])
 
   const [patientCheckups, setPatientCheckups] = useState([])
-  const [chartData, setChartData] = useState([])
+  const [healthData, setHealthData] = useState([])
   const [expandedRows, setExpandedRows] = useState({})
+  const [chartView, setChartView] = useState('body')
 
-  const handleFormSubmit = useCallback(async (formData) => {
-    const dataToSubmit = {
-      ...formData,
-      age: parseInt(formData.age),
-    }
+  const INITIAL_FORM = { name: '', age: '', gender: '', mobile: '', email: '', address: '' }
+  const visibleFields = getEntityFields('patients')
 
+  const handleFormSubmit = useCallback(async (dataToSubmit) => {
     try {
       if (isNew) {
         const result = await dispatch(addPatient(dataToSubmit))
-        if (result.type.includes('rejected')) {
-          throw new Error(result.payload || 'Failed to add patient')
-        }
+        if (result.type.includes('rejected')) throw new Error(result.payload || 'Failed to add patient')
         success('Patient added successfully!')
         navigate(`/patients/${result.payload.id}`, { replace: true })
       } else {
         const result = await dispatch(updatePatient({ id, ...dataToSubmit }))
-        if (result.type.includes('rejected')) {
-          throw new Error(result.payload || 'Failed to update patient')
-        }
+        if (result.type.includes('rejected')) throw new Error(result.payload || 'Failed to update patient')
         success('Patient updated successfully!')
       }
     } catch (err) {
@@ -107,70 +58,74 @@ function PatientDetail() {
 
   const form = useForm(INITIAL_FORM, handleFormSubmit)
 
-  // Load patient data into form when editing
   useEffect(() => {
     if (patient) {
       const resetData = { ...INITIAL_FORM }
       Object.keys(resetData).forEach(key => {
         if (patient[key] != null) resetData[key] = String(patient[key])
       })
-      // Restore gender properly
       if (patient.gender) resetData.gender = patient.gender
       form.resetTo(resetData)
     }
   }, [patient?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch patients if store is empty
   useEffect(() => {
-    if (patients.length === 0) {
-      dispatch(fetchPatients())
-    }
+    if (patients.length === 0) dispatch(fetchPatients())
   }, [dispatch, patients.length])
 
-  // Log patient view activity
   useEffect(() => {
     if (!isNew && patient && user) {
       logActivity({
-        userId: user.uid,
-        username: user.username || user.email,
-        userRole: user.role,
+        userId: user.uid, username: user.username || user.email, userRole: user.role,
         activityType: ACTIVITY_TYPES.PATIENT_VIEW,
         description: createActivityDescription(ACTIVITY_TYPES.PATIENT_VIEW, { patientName: patient.name }),
-        metadata: { patientId: id, patientName: patient.name }
-      })
+      }).catch(() => {})
     }
   }, [patient?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Build checkup history data
+  // Build checkup history + health tracking data
   useEffect(() => {
     if (isNew || !id) return
-
     const checkupsForPatient = checkups
       .filter(c => c.patientId === id)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-
     setPatientCheckups(checkupsForPatient)
 
-    const data = checkupsForPatient
-      .filter(c => c.weight || c.height)
-      .reverse()
-      .map(c => ({
-        date: new Date(c.timestamp).toLocaleDateString(),
-        weight: c.weight ? parseFloat(c.weight) : null,
-        height: c.height ? parseFloat(c.height) : null,
-        timestamp: c.timestamp
-      }))
+    // Build comprehensive health data from all checkups
+    const data = [...checkupsForPatient].reverse().map(c => {
+      const date = new Date(c.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const entry = { date, timestamp: c.timestamp }
 
-    setChartData(data)
+      // Weight & Height
+      if (c.weight) entry.weight = parseFloat(c.weight)
+      if (c.height) entry.height = parseFloat(c.height)
+
+      // General tests (BP, Pulse, Temp, SpO2, RBS, BMI)
+      if (c.generalTests) {
+        Object.entries(c.generalTests).forEach(([key, val]) => {
+          const num = parseFloat(val)
+          if (!isNaN(num)) entry[`gt_${key}`] = num
+        })
+      }
+
+      // Lab results
+      if (c.labResults) {
+        Object.entries(c.labResults).forEach(([key, val]) => {
+          const num = parseFloat(val)
+          if (!isNaN(num)) entry[`lr_${key}`] = num
+        })
+      }
+
+      return entry
+    })
+    setHealthData(data)
   }, [id, isNew, checkups])
 
   const handleDelete = async () => {
     if (!(await confirm('Are you sure you want to delete this patient?'))) return
     try {
       const result = await dispatch(deletePatient(id))
-      if (result.type.includes('rejected')) {
-        throw new Error(result.payload || 'Failed to delete patient')
-      }
+      if (result.type.includes('rejected')) throw new Error(result.payload || 'Failed to delete patient')
       success('Patient deleted successfully!')
       navigate('/patients')
     } catch (err) {
@@ -179,24 +134,66 @@ function PatientDetail() {
   }
 
   const toggleRow = (checkupId) => {
-    setExpandedRows(prev => ({
-      ...prev,
-      [checkupId]: !prev[checkupId]
-    }))
+    setExpandedRows(prev => ({ ...prev, [checkupId]: !prev[checkupId] }))
   }
 
-  // Not found (only for edit mode, not new)
+  // Detect which data keys exist across all health data
+  const availableKeys = useMemo(() => {
+    const keys = new Set()
+    healthData.forEach(d => {
+      Object.keys(d).forEach(k => {
+        if (k !== 'date' && k !== 'timestamp' && d[k] != null) keys.add(k)
+      })
+    })
+    return keys
+  }, [healthData])
+
+  const CHART_COLORS = ['#0891B2', '#14B8A6', '#F59E0B', '#ef4444', '#6366f1', '#ec4899', '#22c55e', '#f97316']
+
+  const chartConfigs = {
+    body: {
+      label: 'Body',
+      keys: ['weight', 'height'],
+      labels: { weight: 'Weight (kg)', height: 'Height (cm)' },
+    },
+    vitals: {
+      label: 'Vitals',
+      keys: ['gt_bp', 'gt_pulse', 'gt_temp', 'gt_spo2', 'gt_rbs', 'gt_bmi'],
+      labels: { gt_bp: 'BP', gt_pulse: 'Pulse', gt_temp: 'Temp', gt_spo2: 'SpO2', gt_rbs: 'RBS', gt_bmi: 'BMI' },
+    },
+    lipid: {
+      label: 'Lipid',
+      keys: ['lr_tc', 'lr_tg', 'lr_ldl', 'lr_vldl', 'lr_hdl'],
+      labels: { lr_tc: 'TC', lr_tg: 'TG', lr_ldl: 'LDL', lr_vldl: 'VLDL', lr_hdl: 'HDL' },
+    },
+    renal: {
+      label: 'Renal & Liver',
+      keys: ['lr_bu', 'lr_scr', 'lr_egfr', 'lr_sgot', 'lr_sgpt', 'lr_ggt'],
+      labels: { lr_bu: 'BU', lr_scr: 'SCr', lr_egfr: 'eGFR', lr_sgot: 'SGOT', lr_sgpt: 'SGPT', lr_ggt: 'GGT' },
+    },
+    blood: {
+      label: 'Blood',
+      keys: ['lr_fbs', 'lr_hb', 'lr_esr', 'lr_crp', 'lr_hba1c', 'lr_tsh', 'lr_na', 'lr_k'],
+      labels: { lr_fbs: 'FBS', lr_hb: 'Hb', lr_esr: 'ESR', lr_crp: 'CRP', lr_hba1c: 'HBA1C', lr_tsh: 'TSH', lr_na: 'Na', lr_k: 'K' },
+    },
+    all: {
+      label: 'All',
+      keys: ['weight', 'height', 'gt_bp', 'gt_pulse', 'gt_temp', 'gt_spo2', 'gt_rbs', 'gt_bmi', 'lr_fbs', 'lr_tc', 'lr_tg', 'lr_ldl', 'lr_hdl', 'lr_hb', 'lr_hba1c', 'lr_tsh'],
+      labels: { weight: 'Weight', height: 'Height', gt_bp: 'BP', gt_pulse: 'Pulse', gt_temp: 'Temp', gt_spo2: 'SpO2', gt_rbs: 'RBS', gt_bmi: 'BMI', lr_fbs: 'FBS', lr_tc: 'TC', lr_tg: 'TG', lr_ldl: 'LDL', lr_hdl: 'HDL', lr_hb: 'Hb', lr_hba1c: 'HBA1C', lr_tsh: 'TSH' },
+    },
+  }
+
+  const activeConfig = chartConfigs[chartView]
+  const visibleChartKeys = activeConfig.keys.filter(k => availableKeys.has(k))
+
   if (!isNew && !patient && patients.length > 0) {
     return (
       <Container fluid className="p-3 p-md-4">
-        <Breadcrumb
-          items={[{ label: 'Patients', path: '/patients' }]}
-          current="Not Found"
-        />
-        <Card>
+        <Breadcrumb items={[{ label: 'Patients', path: '/patients' }]} current="Not Found" />
+        <Card className="border-0 shadow-sm">
           <Card.Body className="text-center py-5">
-            <h4>Patient not found</h4>
-            <p className="text-muted">The patient you're looking for doesn't exist or has been removed.</p>
+            <h6>Patient not found</h6>
+            <small className="text-muted">The patient doesn't exist or has been removed.</small>
           </Card.Body>
         </Card>
       </Container>
@@ -213,21 +210,16 @@ function PatientDetail() {
         current={isNew ? 'New Patient' : (patient?.name || 'Patient Details')}
       />
 
-      {/* Header */}
-      <Row className="mb-4">
-        <Col>
-          <h2 className="fs-responsive-lg">
-            <FaUserInjured className="me-2 text-theme" />
-            {isNew ? 'Add New Patient' : 'Patient Details'}
-          </h2>
-        </Col>
-      </Row>
+      <PageHeader
+        icon={FaUserInjured}
+        title={isNew ? 'Add New Patient' : 'Patient Details'}
+      />
 
       {/* Patient Form */}
-      <Row className="mb-4">
+      <Row className="mb-3">
         <Col>
           <EntityForm
-            title={isNew ? 'New Patient Information' : 'Personal Information'}
+            title={isNew ? 'New Patient' : 'Personal Information'}
             fields={visibleFields}
             formData={form.formData}
             formErrors={form.errors}
@@ -236,288 +228,205 @@ function PatientDetail() {
             onDelete={canDelete ? handleDelete : undefined}
             loading={form.isSubmitting || loading}
             isEditing={!isNew}
-          >
-            <Row className="g-3">
-              {visibleFields.slice(0, 2).map((field) => (
-                <Col key={field.name} xs={12} md={field.colSize || 6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      {field.label}
-                      {field.required && <span className="text-danger ms-1">*</span>}
-                    </Form.Label>
-                    <Form.Control
-                      type={field.type}
-                      name={field.name}
-                      value={form.formData[field.name] || ''}
-                      onChange={form.handleChange}
-                      required={field.required}
-                      disabled={form.isSubmitting || !canEdit}
-                    />
-                  </Form.Group>
-                </Col>
-              ))}
-              {isFieldVisible('patients', 'gender') && (
-                <Col xs={12}>
-                  <GenderIconSelector
-                    value={form.formData.gender}
-                    onChange={form.handleChange}
-                    name="gender"
-                    disabled={form.isSubmitting || !canEdit}
-                    label={getFieldLabel('patients', 'gender', 'Gender')}
-                    required={isFieldRequired('patients', 'gender', true)}
-                  />
-                </Col>
-              )}
-              {visibleFields.slice(2).map((field) => (
-                <Col key={field.name} xs={12} md={field.colSize || 6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      {field.label}
-                      {field.required && <span className="text-danger ms-1">*</span>}
-                    </Form.Label>
-                    {field.type === 'textarea' ? (
-                      <Form.Control
-                        as="textarea"
-                        rows={field.rows || 3}
-                        name={field.name}
-                        value={form.formData[field.name] || ''}
-                        onChange={form.handleChange}
-                        required={field.required}
-                        disabled={form.isSubmitting || !canEdit}
-                      />
-                    ) : (
-                      <Form.Control
-                        type={field.type}
-                        name={field.name}
-                        value={form.formData[field.name] || ''}
-                        onChange={form.handleChange}
-                        required={field.required}
-                        disabled={form.isSubmitting || !canEdit}
-                      />
-                    )}
-                  </Form.Group>
-                </Col>
-              ))}
-            </Row>
-          </EntityForm>
+          />
         </Col>
       </Row>
 
-      {/* Checkup history and charts only shown in edit mode */}
+      {/* Health Monitoring — only in edit mode */}
       {!isNew && patient && (
         <>
-          {/* Patient Stats and Graph Section */}
-          <Row className="mb-4">
-            {/* Stats */}
-            <Col xs={12} lg={4} className="mb-3 mb-lg-0">
-              <Card className="h-100 shadow-sm">
-                <Card.Header className="bg-theme-light text-white">
-                  <h5 className="mb-0">Summary</h5>
-                </Card.Header>
-                <Card.Body>
-                  <div className="mb-2">
-                    <strong>Total Checkups:</strong>{' '}
-                    <Badge className="badge-theme-light">
-                      {patientCheckups.length}
-                    </Badge>
-                  </div>
-
-                  {chartData.length > 0 && (
-                    <>
-                      <div className="mb-2">
-                        <FaWeight className="me-2 text-theme" />
-                        <strong>Latest Weight:</strong> {chartData[chartData.length - 1].weight || 'N/A'} kg
-                      </div>
-                      <div className="mb-2">
-                        <FaRulerVertical className="me-2 text-theme-light" />
-                        <strong>Latest Height:</strong> {chartData[chartData.length - 1].height || 'N/A'} cm
-                      </div>
-                    </>
-                  )}
+          {/* Summary Stats */}
+          <Row className="g-3 mb-3">
+            <Col xs={6} md={3}>
+              <Card className="shadow-sm border-0">
+                <Card.Body className="py-2 px-3">
+                  <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Total Checkups</small>
+                  <strong style={{ fontSize: '1rem' }}>{patientCheckups.length}</strong>
                 </Card.Body>
               </Card>
             </Col>
-
-            {/* Height/Weight Graph */}
-            <Col xs={12} lg={8}>
-              <Card className="shadow-sm">
-                <Card.Header className="bg-theme-light text-white">
-                  <h5 className="mb-0">Height & Weight Tracking</h5>
-                </Card.Header>
-                <Card.Body>
-                  {chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fontSize: 12 }}
-                          angle={-45}
-                          textAnchor="end"
-                          height={80}
-                        />
-                        <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
-                        <YAxis yAxisId="right" orientation="right" label={{ value: 'Height (cm)', angle: 90, position: 'insideRight' }} />
-                        <Tooltip />
-                        <Legend />
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="weight"
-                          stroke="#0891B2"
-                          strokeWidth={2}
-                          dot={{ fill: '#0891B2', r: 4 }}
-                          name="Weight (kg)"
-                          connectNulls
-                        />
-                        <Line
-                          yAxisId="right"
-                          type="monotone"
-                          dataKey="height"
-                          stroke="#06B6D4"
-                          strokeWidth={2}
-                          dot={{ fill: '#06B6D4', r: 4 }}
-                          name="Height (cm)"
-                          connectNulls
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="text-center py-5 text-muted">
-                      <FaWeight size={48} className="mb-3" style={{ color: '#cbd5e1' }} />
-                      <p>No height/weight data recorded yet</p>
-                    </div>
-                  )}
-                </Card.Body>
-              </Card>
-            </Col>
+            {healthData.length > 0 && healthData[healthData.length - 1].weight && (
+              <Col xs={6} md={3}>
+                <Card className="shadow-sm border-0">
+                  <Card.Body className="py-2 px-3">
+                    <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Latest Weight</small>
+                    <strong style={{ fontSize: '1rem' }}>{healthData[healthData.length - 1].weight} kg</strong>
+                  </Card.Body>
+                </Card>
+              </Col>
+            )}
+            {healthData.length > 0 && healthData[healthData.length - 1].height && (
+              <Col xs={6} md={3}>
+                <Card className="shadow-sm border-0">
+                  <Card.Body className="py-2 px-3">
+                    <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Latest Height</small>
+                    <strong style={{ fontSize: '1rem' }}>{healthData[healthData.length - 1].height} cm</strong>
+                  </Card.Body>
+                </Card>
+              </Col>
+            )}
+            {healthData.length > 0 && healthData[healthData.length - 1].gt_bp && (
+              <Col xs={6} md={3}>
+                <Card className="shadow-sm border-0">
+                  <Card.Body className="py-2 px-3">
+                    <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Latest BP</small>
+                    <strong style={{ fontSize: '1rem' }}>{healthData[healthData.length - 1].gt_bp}</strong>
+                  </Card.Body>
+                </Card>
+              </Col>
+            )}
           </Row>
 
-          {/* Checkup History Section */}
+          {/* Health Monitoring Chart */}
+          {healthData.length > 0 && (
+            <Row className="mb-3">
+              <Col>
+                <Card className="shadow-sm border-0">
+                  <Card.Body className="py-2 px-3">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <small className="fw-bold text-muted">HEALTH MONITORING</small>
+                      <div className="d-flex gap-1">
+                        {Object.entries(chartConfigs).map(([key, cfg]) => {
+                          const hasData = cfg.keys.some(k => availableKeys.has(k))
+                          if (!hasData) return null
+                          return (
+                            <button
+                              key={key}
+                              className={`btn btn-sm ${chartView === key ? 'btn-primary' : 'btn-outline-secondary'}`}
+                              onClick={() => setChartView(key)}
+                              style={{
+                                fontSize: '0.68rem', padding: '2px 8px', borderRadius: '12px',
+                                ...(chartView === key ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : {}),
+                              }}
+                            >
+                              {cfg.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    {visibleChartKeys.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <LineChart data={healthData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip contentStyle={{ fontSize: '0.78rem' }} />
+                          <Legend wrapperStyle={{ fontSize: '0.72rem' }} />
+                          {visibleChartKeys.map((key, i) => (
+                            <Line
+                              key={key}
+                              type="monotone"
+                              dataKey={key}
+                              stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                              name={activeConfig.labels[key] || key}
+                              connectNulls
+                            />
+                          ))}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-4 text-muted">
+                        <small>No {activeConfig.label} data recorded yet</small>
+                      </div>
+                    )}
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          )}
+
+          {/* Checkup History */}
           <Row>
             <Col>
-              <Card className="shadow-sm">
-                <Card.Header className="bg-theme-light text-white">
-                  <h5 className="mb-0">Checkup History</h5>
-                </Card.Header>
-                <Card.Body className="p-0">
-                  {patientCheckups.length === 0 ? (
-                    <div className="text-center py-4 text-muted">
-                      No checkups recorded yet
-                    </div>
-                  ) : (
-                    <div className="table-responsive">
-                      <Table hover className="mb-0 table-mobile-responsive">
-                        <thead className="bg-theme-slate">
-                          <tr>
-                            <th style={{ width: '5%' }}></th>
-                            <th style={{ width: '20%' }}>Date</th>
-                            <th style={{ width: '15%' }}>Tests Count</th>
-                            <th style={{ width: '60%' }}>General Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {patientCheckups.map((checkup) => {
-                            const isExpanded = expandedRows[checkup.id]
-                            return (
-                              <React.Fragment key={checkup.id}>
-                                <tr
-                                  onClick={() => toggleRow(checkup.id)}
-                                  style={{
-                                    cursor: 'pointer',
-                                    backgroundColor: isExpanded ? '#f0f9ff' : 'transparent'
-                                  }}
-                                >
-                                  <td data-label="" className="text-center">
-                                    {isExpanded ? (
-                                      <FaChevronDown className="text-theme" />
-                                    ) : (
-                                      <FaChevronRight className="text-theme-muted-light" />
-                                    )}
-                                  </td>
-                                  <td data-label="Date">
-                                    <strong className="text-theme">
-                                      {new Date(checkup.timestamp).toLocaleDateString()}
-                                    </strong>
-                                    <br />
-                                    <small className="text-muted">
-                                      {new Date(checkup.timestamp).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </small>
-                                  </td>
-                                  <td data-label="Tests">
-                                    <Badge
-                                      className="badge-theme"
-                                      style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
-                                    >
-                                      {checkup.tests.length} test{checkup.tests.length !== 1 ? 's' : ''}
-                                    </Badge>
-                                  </td>
-                                  <td data-label="Notes">
-                                    {checkup.notes ? (
-                                      <div style={{ fontSize: '0.9rem' }}>{checkup.notes}</div>
-                                    ) : (
-                                      <span className="text-muted">-</span>
-                                    )}
-                                  </td>
-                                </tr>
-
-                                <tr>
-                                  <td colSpan="4" style={{ padding: 0, border: 'none' }}>
-                                    <Collapse in={isExpanded}>
-                                      <div>
-                                        <div className="bg-theme-slate" style={{ padding: '0.5rem 1rem' }}>
-                                          <Table
-                                            size="sm"
-                                            className="mb-0 table-mobile-responsive"
-                                            style={{ backgroundColor: 'white' }}
-                                          >
-                                            <thead className="bg-light-cyan">
-                                              <tr>
-                                                <th style={{ width: '40%' }}>Test Name</th>
-                                                <th style={{ width: '60%' }}>Notes</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody>
-                                              {checkup.tests.map((testItem) => {
-                                                const test = tests.find(t => t.id === testItem.testId)
-
-                                                return test ? (
-                                                  <tr key={testItem.testId}>
-                                                    <td data-label="Test Name">
-                                                      <strong className="text-theme">
-                                                        {test.name}
-                                                      </strong>
-                                                    </td>
-                                                    <td data-label="Notes">
-                                                      {testItem.notes ? (
-                                                        <div style={{ fontSize: '0.85rem' }}>{testItem.notes}</div>
-                                                      ) : (
-                                                        <span className="text-muted" style={{ fontSize: '0.85rem' }}>
-                                                          No specific notes for this test
-                                                        </span>
-                                                      )}
-                                                    </td>
-                                                  </tr>
-                                                ) : null
-                                              })}
-                                            </tbody>
-                                          </Table>
-                                        </div>
-                                      </div>
-                                    </Collapse>
-                                  </td>
-                                </tr>
-                              </React.Fragment>
-                            )
-                          })}
-                        </tbody>
-                      </Table>
-                    </div>
-                  )}
+              <Card className="shadow-sm border-0">
+                <Card.Body className="py-2 px-3">
+                  <small className="fw-bold text-muted d-block mb-2">CHECKUP HISTORY ({patientCheckups.length})</small>
                 </Card.Body>
+                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  {patientCheckups.length === 0 ? (
+                    <div className="text-center py-4 text-muted"><small>No checkups recorded</small></div>
+                  ) : (
+                    <table className="table table-hover mb-0" style={{ fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f8f9fa' }}>
+                          <th style={{ width: '30px', padding: '6px 10px' }}></th>
+                          <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>Date</th>
+                          <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>Tests</th>
+                          <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>Total</th>
+                          <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>Notes</th>
+                          <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase', width: '60px' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {patientCheckups.map(checkup => {
+                          const isExpanded = expandedRows[checkup.id]
+                          return (
+                            <React.Fragment key={checkup.id}>
+                              <tr onClick={() => toggleRow(checkup.id)} style={{ cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
+                                <td style={{ padding: '6px 10px' }}>
+                                  {isExpanded ? <FaChevronDown size={10} className="text-theme" /> : <FaChevronRight size={10} style={{ color: '#cbd5e1' }} />}
+                                </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  <strong>{new Date(checkup.timestamp).toLocaleDateString()}</strong>
+                                  <br />
+                                  <small className="text-muted">{new Date(checkup.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  <Badge bg="light" text="dark" style={{ fontSize: '0.72rem' }}>{checkup.tests?.length || 0}</Badge>
+                                </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  <strong className="text-success">Rs. {checkup.total?.toLocaleString('en-LK', { minimumFractionDigits: 2 })}</strong>
+                                </td>
+                                <td style={{ padding: '6px 10px', color: '#64748b' }}>
+                                  {checkup.notes || '-'}
+                                </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  <button
+                                    className="btn btn-sm btn-outline-secondary"
+                                    style={{ padding: '1px 6px', fontSize: '0.7rem' }}
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/checkups/${checkup.id}`) }}
+                                  >
+                                    Edit
+                                  </button>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td colSpan="6" style={{ padding: 0, border: 'none' }}>
+                                  <Collapse in={isExpanded}>
+                                    <div style={{ padding: '8px 12px', backgroundColor: '#f8f9fa' }}>
+                                      <table className="table table-sm mb-0" style={{ fontSize: '0.78rem', backgroundColor: '#fff' }}>
+                                        <thead>
+                                          <tr>
+                                            <th style={{ padding: '4px 8px', color: '#64748b', fontSize: '0.72rem' }}>Test Name</th>
+                                            <th style={{ padding: '4px 8px', color: '#64748b', fontSize: '0.72rem' }}>Notes</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {checkup.tests?.map(testItem => {
+                                            const test = tests.find(t => t.id === testItem.testId)
+                                            return test ? (
+                                              <tr key={testItem.testId}>
+                                                <td style={{ padding: '4px 8px' }}><strong>{test.name}</strong></td>
+                                                <td style={{ padding: '4px 8px', color: '#64748b' }}>{testItem.notes || '-'}</td>
+                                              </tr>
+                                            ) : null
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </Collapse>
+                                </td>
+                              </tr>
+                            </React.Fragment>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </Card>
             </Col>
           </Row>

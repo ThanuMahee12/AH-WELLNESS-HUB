@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Form, Badge } from 'react-bootstrap'
 import { FaPills, FaTimes } from 'react-icons/fa'
+import { PageHeader } from '../components/ui'
 import { selectAllMedicines, addMedicine, updateMedicine, deleteMedicine, fetchMedicines } from '../store/medicinesSlice'
 import { useForm, useSettings } from '../hooks'
 import { useNotification } from '../context'
@@ -249,10 +250,10 @@ function MedicineDetail() {
           items={[{ label: 'Medicines', path: '/medicines' }]}
           current="Not Found"
         />
-        <Card>
+        <Card className="border-0 shadow-sm">
           <Card.Body className="text-center py-5">
-            <h4>Medicine not found</h4>
-            <p className="text-muted">The medicine you're looking for doesn't exist or has been removed.</p>
+            <h6>Medicine not found</h6>
+            <small className="text-muted">The medicine doesn't exist or has been removed.</small>
           </Card.Body>
         </Card>
       </Container>
@@ -270,14 +271,10 @@ function MedicineDetail() {
         current={isNew ? 'New Medicine' : (medicine?.name || 'Medicine Details')}
       />
 
-      <Row className="mb-4">
-        <Col>
-          <h2 className="fs-responsive-lg">
-            <FaPills className="me-2 text-theme" />
-            {isNew ? 'Add New Medicine' : 'Medicine Details'}
-          </h2>
-        </Col>
-      </Row>
+      <PageHeader
+        icon={FaPills}
+        title={isNew ? 'Add New Medicine' : 'Medicine Details'}
+      />
 
       <Row>
         <Col>

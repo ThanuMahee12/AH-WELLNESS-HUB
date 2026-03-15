@@ -1,11 +1,12 @@
 import { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Row, Col, Badge, Button } from 'react-bootstrap'
-import { FaPlus } from 'react-icons/fa'
+import { Row, Col, Badge } from 'react-bootstrap'
+import { FaUsers } from 'react-icons/fa'
 import { fetchUsers, selectAllUsers } from '../../store/usersSlice'
 import { EnhancedCRUDTable } from '../../components/crud'
 import { usePermission } from '../../components/auth/PermissionGate'
+import { PageHeader } from '../../components/ui'
 import { useSettings } from '../../hooks'
 
 function UsersTab() {
@@ -47,19 +48,12 @@ function UsersTab() {
 
   return (
     <>
-      <Row className="mb-3">
-        <Col className="d-flex justify-content-end">
-          {checkPermission('users', 'create') && (
-            <Button
-              onClick={() => navigate('/users/new')}
-              className="btn-theme-add"
-            >
-              <FaPlus className="me-2" />
-              Add New User
-            </Button>
-          )}
-        </Col>
-      </Row>
+      <PageHeader
+        icon={FaUsers}
+        title="Users"
+        addButtonText="Add User"
+        onAddClick={checkPermission('users', 'create') ? () => navigate('/users/new') : undefined}
+      />
 
       <Row>
         <Col>

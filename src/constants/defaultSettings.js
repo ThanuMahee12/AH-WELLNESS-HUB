@@ -50,7 +50,7 @@ export const ICON_MAP = {
   FaBug,
 }
 
-// Options for the icon dropdown in PagesSettingsTab
+// Options for the icon dropdown in PageControlTab
 export const ICON_OPTIONS = Object.keys(ICON_MAP).map(name => ({
   value: name,
   label: name.replace(/^Fa/, '').replace(/([A-Z])/g, ' $1').trim(),
@@ -96,7 +96,7 @@ export const DEFAULT_SETTINGS = {
       fields: {
         name: { visible: true, required: true, label: 'Patient Name', type: 'text', colSize: 6, placeholder: '' },
         age: { visible: true, required: true, label: 'Age', type: 'number', colSize: 6, placeholder: '' },
-        gender: { visible: true, required: true, label: 'Gender', type: 'custom', colSize: 12, placeholder: '' },
+        gender: { visible: true, required: true, label: 'Gender', type: 'select', colSize: 6, placeholder: '', options: ['Male', 'Female', 'Other'] },
         mobile: { visible: true, required: true, label: 'Mobile', type: 'tel', colSize: 6, placeholder: '' },
         email: { visible: true, required: false, label: 'Email', type: 'email', colSize: 6, placeholder: '' },
         address: { visible: true, required: true, label: 'Address', type: 'textarea', colSize: 12, placeholder: '', rows: 2 },
@@ -208,12 +208,9 @@ export const DEFAULT_SETTINGS = {
       label: 'Settings', icon: 'FaCog', path: '/settings', order: 7,
       roles: ['superadmin', 'maintainer', 'editor'],
       tabs: {
-        forms:  { label: 'Form Fields',         roles: ['superadmin'] },
-        tables: { label: 'Table Columns',        roles: ['superadmin'] },
-        pages:  { label: 'Page Access',          roles: ['superadmin'] },
-        public: { label: 'Public Page Control',  roles: ['superadmin', 'maintainer', 'editor'] },
+        pages:  { label: 'Page Control',          roles: ['superadmin'] },
+        public: { label: 'Public Page',           roles: ['superadmin', 'maintainer', 'editor'] },
         checkup: { label: 'Checkup', roles: ['superadmin'] },
-        feedback: { label: 'Feedback', roles: ['superadmin', 'maintainer', 'editor'] },
       },
     },
     maintenance: {
@@ -314,8 +311,8 @@ export const DEFAULT_SETTINGS = {
     patients: {
       itemsPerPage: 10,
       columns: {
-        gender: { visible: true, label: '', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         name: { visible: true, label: 'Name', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        gender: { visible: true, label: 'Gender', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         age: { visible: true, label: 'Age', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         mobile: { visible: true, label: 'Mobile', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         address: { visible: true, label: 'Address', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },

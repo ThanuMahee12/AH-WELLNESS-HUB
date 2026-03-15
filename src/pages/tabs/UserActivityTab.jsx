@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Row, Col, Card, ButtonGroup, Button, Table, Badge, Alert, Pagination, Form } from 'react-bootstrap'
 import { FaHistory, FaCalendarAlt, FaFilter } from 'react-icons/fa'
+import DateRangePicker from '../../components/ui/DateRangePicker'
 import {
   LineChart,
   Line,
@@ -24,8 +25,9 @@ function UserActivityTab() {
   const { user: currentUser } = useSelector(state => state.auth)
   const users = useSelector(selectAllUsers)
   const [loading, setLoading] = useState(true)
-  const [timeRange, setTimeRange] = useState('all') // Default: All history
-  const [selectedUserId, setSelectedUserId] = useState('') // '' = all users
+  const [timeRange, setTimeRange] = useState('all')
+  const [customDates, setCustomDates] = useState({})
+  const [selectedUserId, setSelectedUserId] = useState('')
   const [stats, setStats] = useState(null)
   const [allActivities, setAllActivities] = useState([])
   const [recentActivities, setRecentActivities] = useState([])
@@ -43,7 +45,7 @@ function UserActivityTab() {
 
   useEffect(() => {
     loadActivityData()
-  }, [timeRange, currentPage, selectedUserId])
+  }, [timeRange, currentPage, selectedUserId, customDates])
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -61,11 +63,12 @@ function UserActivityTab() {
         filterUserId = selectedUserId
       }
 
-      const filters = { days: timeRange }
+      const days = timeRange === 'custom' ? 'all' : timeRange
+      const filters = { days }
       if (filterUserId) filters.userId = filterUserId
 
       // Get stats
-      const statsResult = await getActivityStats(timeRange, filterUserId)
+      const statsResult = await getActivityStats(days, filterUserId)
       if (statsResult.success) {
         setStats(statsResult.data)
       }
@@ -73,7 +76,19 @@ function UserActivityTab() {
       // Get activities
       const activitiesResult = await getUserActivities(filters)
       if (activitiesResult.success) {
-        const activities = activitiesResult.data
+        let activities = activitiesResult.data
+
+        // Client-side filter for custom date range
+        if (timeRange === 'custom' && customDates.startDate && customDates.endDate) {
+          const start = new Date(customDates.startDate)
+          start.setHours(0, 0, 0, 0)
+          const end = new Date(customDates.endDate)
+          end.setHours(23, 59, 59, 999)
+          activities = activities.filter(a => {
+            const d = new Date(a.timestamp)
+            return d >= start && d <= end
+          })
+        }
         setAllActivities(activities)
         setTotalActivities(activities.length)
 
@@ -285,40 +300,19 @@ function UserActivityTab() {
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div className="d-flex align-items-center gap-3 flex-wrap">
-                  <div>
-                    <FaCalendarAlt className="me-2 text-theme" />
-                    <strong>Time Range:</strong>
-                  </div>
-                  <ButtonGroup size="sm">
-                    <Button
-                      variant={timeRange === 'all' ? 'primary' : 'outline-primary'}
-                      onClick={() => setTimeRange('all')}
-                      style={timeRange === 'all' ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                    >
-                      All
-                    </Button>
-                    <Button
-                      variant={timeRange === 7 ? 'primary' : 'outline-primary'}
-                      onClick={() => setTimeRange(7)}
-                      style={timeRange === 7 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                    >
-                      7 Days
-                    </Button>
-                    <Button
-                      variant={timeRange === 30 ? 'primary' : 'outline-primary'}
-                      onClick={() => setTimeRange(30)}
-                      style={timeRange === 30 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                    >
-                      30 Days
-                    </Button>
-                    <Button
-                      variant={timeRange === 90 ? 'primary' : 'outline-primary'}
-                      onClick={() => setTimeRange(90)}
-                      style={timeRange === 90 ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : { color: '#0891B2', borderColor: '#0891B2' }}
-                    >
-                      90 Days
-                    </Button>
-                  </ButtonGroup>
+                  <DateRangePicker
+                    value={timeRange}
+                    onChange={(range, dates) => {
+                      setTimeRange(range)
+                      if (range === 'custom') setCustomDates(dates)
+                    }}
+                    presets={[
+                      { key: 'all', label: 'All' },
+                      { key: 7, label: '7 Days' },
+                      { key: 30, label: '30 Days' },
+                      { key: 90, label: '90 Days' },
+                    ]}
+                  />
                 </div>
                 {isSuperAdmin && (
                   <div className="d-flex align-items-center gap-2">

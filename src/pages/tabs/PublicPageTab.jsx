@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { Card, Form, Row, Col, Button, Table, Modal } from 'react-bootstrap'
+import { Card, Form, Row, Col, Button, Badge, Modal } from 'react-bootstrap'
 import {
   FaPlus, FaTrash, FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe,
   FaFacebook, FaInstagram, FaWhatsapp, FaTwitter, FaLinkedin,
-  FaYoutube, FaTiktok, FaViber, FaClock, FaInfoCircle,
+  FaYoutube, FaTiktok, FaViber, FaClock, FaInfoCircle, FaPaperPlane,
+  FaChevronDown, FaChevronUp,
 } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
+import { submitFeedback, getUserFeedbacks } from '../../services/feedbackService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import FormField from '../../components/ui/FormField'
 
@@ -19,6 +21,28 @@ const extractMapSrc = (input) => {
   if (srcMatch) return srcMatch[1]
   return input.trim()
 }
+
+/** Convert Google Drive share URL to direct image URL */
+const toDirectImageUrl = (url) => {
+  if (!url) return ''
+  // Google Drive file link: /file/d/FILE_ID/view or /file/d/FILE_ID/edit etc
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
+  if (driveMatch) return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`
+  // Google Drive open link: /open?id=FILE_ID
+  const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/)
+  if (openMatch) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`
+  // Google Drive uc link: /uc?id=FILE_ID
+  const ucMatch = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/)
+  if (ucMatch) return `https://lh3.googleusercontent.com/d/${ucMatch[1]}`
+  return url
+}
+
+const SaveBtn = ({ onClick, saving }) => (
+  <button type="button" onClick={onClick} disabled={saving}
+    style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: saving ? 0.5 : 1 }}>
+    {saving ? 'Saving...' : 'Save'}
+  </button>
+)
 
 const EMPTY_FEATURE = { title: '', description: '', imageUrl: '', visible: true }
 const EMPTY_CONTACT_FIELD = { type: 'detail', label: '', icon: 'FaPhone', value: '', url: '', visible: true }
@@ -71,7 +95,7 @@ function PublicPageTab() {
   const dispatch = useDispatch()
   const { settings, loading } = useSettings()
   const { user } = useSelector(state => state.auth)
-  const { error: showError } = useNotification()
+  const { success: showSuccess, error: showError } = useNotification()
 
   const homeContent = settings?.pages?.home?.content || {}
 
@@ -86,6 +110,15 @@ function PublicPageTab() {
   const [formData, setFormData] = useState({ ...EMPTY_FEATURE })
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
+  const [heroImgError, setHeroImgError] = useState(false)
+  const [aboutImgError, setAboutImgError] = useState(false)
+
+  // Feedback state
+  const [feedbackForm, setFeedbackForm] = useState({ title: '', category: 'general', message: '' })
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbacks, setFeedbacks] = useState([])
+  const [feedbacksLoading, setFeedbacksLoading] = useState(true)
+  const [feedbacksExpanded, setFeedbacksExpanded] = useState(false)
 
   useEffect(() => {
     setLocalContent({
@@ -94,6 +127,10 @@ function PublicPageTab() {
       heroImageUrl: homeContent.heroImageUrl || '',
       ctaText: homeContent.ctaText || '',
       ctaAuthText: homeContent.ctaAuthText || '',
+      ctaLink: homeContent.ctaLink || '/login',
+      ctaAuthLink: homeContent.ctaAuthLink || '/dashboard',
+      ctaVisible: homeContent.ctaVisible !== false,
+      ctaAuthVisible: homeContent.ctaAuthVisible !== false,
       aboutTitle: homeContent.aboutTitle || '',
       aboutDescription: homeContent.aboutDescription || '',
       aboutImageUrl: homeContent.aboutImageUrl || '',
@@ -108,6 +145,51 @@ function PublicPageTab() {
       homeContent.aboutTitle, homeContent.aboutDescription, homeContent.aboutImageUrl, homeContent.aboutVisible,
       homeContent.contactTitle, homeContent.contactFields, homeContent.contactMapEmbedUrl, homeContent.contactVisible])
 
+  // Reset image error state when URLs change
+  useEffect(() => { setHeroImgError(false) }, [localContent.heroImageUrl])
+  useEffect(() => { setAboutImgError(false) }, [localContent.aboutImageUrl])
+
+  // Load user feedbacks
+  useEffect(() => {
+    if (user?.uid) {
+      setFeedbacksLoading(true)
+      getUserFeedbacks(user.uid)
+        .then(result => { if (result.success) setFeedbacks(result.data) })
+        .catch(() => {})
+        .finally(() => setFeedbacksLoading(false))
+    }
+  }, [user?.uid])
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackForm.title.trim() || !feedbackForm.message.trim()) {
+      showError('Please fill in title and message')
+      return
+    }
+    setFeedbackSubmitting(true)
+    try {
+      const result = await submitFeedback({
+        title: feedbackForm.title.trim(),
+        message: feedbackForm.message.trim(),
+        category: feedbackForm.category,
+        userId: user.uid,
+        username: user.username || user.email,
+        userRole: user.role,
+      })
+      if (result.success) {
+        showSuccess('Feedback submitted successfully')
+        setFeedbackForm({ title: '', category: 'general', message: '' })
+        const refreshed = await getUserFeedbacks(user.uid)
+        if (refreshed.success) setFeedbacks(refreshed.data)
+      } else {
+        showError('Failed to submit feedback')
+      }
+    } catch {
+      showError('Failed to submit feedback')
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }
+
   const handleContentBlur = async (field) => {
     if (localContent[field] === (homeContent[field] || '')) return
     try {
@@ -117,6 +199,19 @@ function PublicPageTab() {
       })).unwrap()
     } catch (err) {
       showError('Failed to update home content: ' + (err || 'Unknown error'))
+    }
+  }
+
+  const saveSection = async (fields) => {
+    setSaving(true)
+    try {
+      const contentUpdates = {}
+      fields.forEach(f => { contentUpdates[f] = localContent[f] })
+      await dispatch(updateSettings({ data: { pages: { home: { content: contentUpdates } } }, user })).unwrap()
+    } catch (err) {
+      showError('Failed to save: ' + (err || 'Unknown error'))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -159,9 +254,39 @@ function PublicPageTab() {
     }
   }
 
-  // Inline contact field edit
+  // Auto-generate URL based on icon type and value
+  const autoUrl = (icon, value) => {
+    if (!value) return ''
+    const clean = value.replace(/\s+/g, '').replace(/-/g, '')
+    if (icon === 'FaWhatsapp') return `https://wa.me/${clean.replace(/^\+/, '')}`
+    if (icon === 'FaPhone') return `tel:${clean}`
+    if (icon === 'FaEnvelope') return `mailto:${value.trim()}`
+    if (icon === 'FaFacebook') return value.startsWith('http') ? value : `https://facebook.com/${value.trim()}`
+    if (icon === 'FaInstagram') return value.startsWith('http') ? value : `https://instagram.com/${value.trim()}`
+    if (icon === 'FaTwitter') return value.startsWith('http') ? value : `https://twitter.com/${value.trim()}`
+    if (icon === 'FaLinkedin') return value.startsWith('http') ? value : `https://linkedin.com/in/${value.trim()}`
+    if (icon === 'FaYoutube') return value.startsWith('http') ? value : `https://youtube.com/@${value.trim()}`
+    if (icon === 'FaTiktok') return value.startsWith('http') ? value : `https://tiktok.com/@${value.trim()}`
+    return ''
+  }
+
   const updateContactField = (idx, key, value) => {
-    setContactFields(prev => prev.map((f, i) => i === idx ? { ...f, [key]: value } : f))
+    setContactFields(prev => prev.map((f, i) => {
+      if (i !== idx) return f
+      const updated = { ...f, [key]: value }
+      // Auto-generate URL when value or icon changes
+      if (key === 'value' || key === 'icon') {
+        const icon = key === 'icon' ? value : f.icon
+        const val = key === 'value' ? value : f.value
+        updated.url = autoUrl(icon, val)
+        // Default label from icon if empty
+        if (!updated.label) {
+          const opt = CONTACT_ICON_OPTIONS.find(o => o.value === icon)
+          if (opt) updated.label = opt.label
+        }
+      }
+      return updated
+    }))
   }
   const saveContactFields = async () => {
     await saveList('contactFields', contactFields)
@@ -214,370 +339,404 @@ function PublicPageTab() {
 
   return (
     <>
-      {/* Hero Section Settings */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme">
-          <h5 className="mb-0 fs-responsive-md">Home Page — Hero Section</h5>
-        </Card.Header>
-        <Card.Body>
-          <Row className="g-3">
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Hero Title</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.heroTitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, heroTitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('heroTitle')}
-                  placeholder="e.g., AH WELLNESS HUB"
-                />
-              </Form.Group>
+      {/* Hero Section */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <small className="fw-bold text-muted">HERO SECTION</small>
+            <SaveBtn saving={saving} onClick={() => saveSection(['heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
+          </div>
+          <Row className="g-2">
+            {/* Left: fields */}
+            <Col xs={12} md={localContent.heroImageUrl ? 8 : 12}>
+              <Row className="g-2">
+                <Col xs={12}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
+                    <Form.Control size="sm" value={localContent.heroTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroTitle: e.target.value }))} onBlur={() => handleContentBlur('heroTitle')} placeholder="e.g., AH WELLNESS HUB" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
+                <Col xs={12}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Subtitle</Form.Label>
+                    <Form.Control size="sm" as="textarea" rows={2} value={localContent.heroSubtitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroSubtitle: e.target.value }))} onBlur={() => handleContentBlur('heroSubtitle')} placeholder="Description below title" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
+                <Col xs={12}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Hero Image URL</Form.Label>
+                    <Form.Control size="sm" value={localContent.heroImageUrl || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroImageUrl: e.target.value }))} onBlur={() => handleContentBlur('heroImageUrl')} placeholder="Google Drive or direct image URL" style={{ fontSize: '0.8rem' }} />
+                    <Form.Text style={{ fontSize: '0.62rem' }} className="text-muted">Google Drive: File → Share → Copy link. Replace /view with /preview or use direct URL.</Form.Text>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* CTA Buttons */}
+              <div className="mt-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+                <small className="fw-bold text-muted d-block mb-1" style={{ fontSize: '0.62rem' }}>CTA BUTTONS</small>
+                <Row className="g-2">
+                  <Col xs={12} md={6}>
+                    <div className="d-flex align-items-center gap-2">
+                      <Form.Check type="switch" id="cta-visible" checked={localContent.ctaVisible !== false}
+                        onChange={(e) => { setLocalContent(p => ({ ...p, ctaVisible: e.target.checked })); setTimeout(() => handleContentBlur('ctaVisible'), 100) }} />
+                      <div style={{ flex: 1 }}>
+                        <Form.Label style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: 0 }}>Logged Out Text</Form.Label>
+                        <Form.Control size="sm" value={localContent.ctaText || ''} onChange={(e) => setLocalContent(p => ({ ...p, ctaText: e.target.value }))} onBlur={() => handleContentBlur('ctaText')} placeholder="Get Started" style={{ fontSize: '0.78rem' }} />
+                      </div>
+                    </div>
+                    <Form.Group className="mt-1">
+                      <Form.Label style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Link (logged out)</Form.Label>
+                      <Form.Control size="sm" value={localContent.ctaLink || '/login'} onChange={(e) => setLocalContent(p => ({ ...p, ctaLink: e.target.value }))} onBlur={() => handleContentBlur('ctaLink')} placeholder="/login" style={{ fontSize: '0.72rem' }} />
+                    </Form.Group>
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <div className="d-flex align-items-center gap-2">
+                      <Form.Check type="switch" id="cta-auth-visible" checked={localContent.ctaAuthVisible !== false}
+                        onChange={(e) => { setLocalContent(p => ({ ...p, ctaAuthVisible: e.target.checked })); setTimeout(() => handleContentBlur('ctaAuthVisible'), 100) }} />
+                      <div style={{ flex: 1 }}>
+                        <Form.Label style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: 0 }}>Logged In Text</Form.Label>
+                        <Form.Control size="sm" value={localContent.ctaAuthText || ''} onChange={(e) => setLocalContent(p => ({ ...p, ctaAuthText: e.target.value }))} onBlur={() => handleContentBlur('ctaAuthText')} placeholder="Go to Dashboard" style={{ fontSize: '0.78rem' }} />
+                      </div>
+                    </div>
+                    <Form.Group className="mt-1">
+                      <Form.Label style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Link (logged in)</Form.Label>
+                      <Form.Control size="sm" value={localContent.ctaAuthLink || '/dashboard'} onChange={(e) => setLocalContent(p => ({ ...p, ctaAuthLink: e.target.value }))} onBlur={() => handleContentBlur('ctaAuthLink')} placeholder="/dashboard" style={{ fontSize: '0.72rem' }} />
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
             </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Hero Image URL</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.heroImageUrl || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, heroImageUrl: e.target.value }))}
-                  onBlur={() => handleContentBlur('heroImageUrl')}
-                  placeholder="Paste Google Drive or image URL"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Hero Subtitle</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={localContent.heroSubtitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, heroSubtitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('heroSubtitle')}
-                  placeholder="Short description shown below the title"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">CTA Text (Logged Out)</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.ctaText || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, ctaText: e.target.value }))}
-                  onBlur={() => handleContentBlur('ctaText')}
-                  placeholder="e.g., Get Started"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">CTA Text (Logged In)</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.ctaAuthText || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, ctaAuthText: e.target.value }))}
-                  onBlur={() => handleContentBlur('ctaAuthText')}
-                  placeholder="e.g., Go to Dashboard"
-                />
-              </Form.Group>
-            </Col>
+
+            {/* Right: image preview */}
+            {localContent.heroImageUrl && (
+              <Col xs={12} md={4}>
+                <div className="text-center">
+                  <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Preview</Form.Label>
+                  <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                    {heroImgError ? (
+                      <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: '0.72rem' }}>Image failed to load.<br />Check URL format.</div>
+                    ) : (
+                      <img src={toDirectImageUrl(localContent.heroImageUrl)} alt="Hero preview"
+                        style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
+                        onError={() => setHeroImgError(true)} />
+                    )}
+                  </div>
+                </div>
+              </Col>
+            )}
           </Row>
         </Card.Body>
       </Card>
 
-      {/* Features Table */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">Features</h5>
-          <Button
-            size="sm"
-            variant="light"
-            className="d-flex align-items-center gap-1"
-            onClick={() => openModal('feature')}
-          >
-            <FaPlus /> Add
-          </Button>
-        </Card.Header>
-        <Card.Body className="p-0">
+      {/* Features Section */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <small className="fw-bold text-muted">FEATURES</small>
+            <button type="button" onClick={() => openModal('feature')} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+              <FaPlus size={8} className="me-1" />Add
+            </button>
+          </div>
           {features.length === 0 ? (
-            <p className="text-muted text-center py-4 mb-0">No features yet. Click &quot;Add&quot; to create one.</p>
+            <div className="text-center text-muted py-3" style={{ fontSize: '0.78rem' }}>No features yet. Click &quot;Add&quot; to create one.</div>
           ) : (
-            <div className="table-responsive">
-              <Table hover className="mb-0 align-middle">
-                <thead className="thead-theme">
-                  <tr>
-                    <th style={{ width: '50px' }}>#</th>
-                    <th>Title</th>
-                    <th className="d-none d-md-table-cell">Description</th>
-                    <th style={{ width: '80px' }} className="text-end"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {features.map((feature, idx) => (
-                    <tr key={idx}>
-                      <td className="text-muted">{idx + 1}</td>
-                      <td>
-                        <span
-                          className="clickable-link text-theme fw-semibold"
-                          onClick={() => openModal('feature', idx)}
-                        >
-                          {feature.title || '(Untitled)'}
-                        </span>
-                        <div className="d-md-none text-muted mt-1" style={{ fontSize: '0.8rem' }}>
-                          {feature.description?.substring(0, 60)}{feature.description?.length > 60 ? '...' : ''}
-                        </div>
-                      </td>
-                      <td className="d-none d-md-table-cell text-muted" style={{ fontSize: '0.9rem' }}>
-                        {feature.description?.substring(0, 80)}{feature.description?.length > 80 ? '...' : ''}
-                      </td>
-                      <td className="text-end">
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          className="touch-target"
-                          onClick={() => handleDelete('feature', idx)}
-                          title="Delete"
-                        >
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+            <div>
+              {/* Header */}
+              <div className="d-none d-md-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.58rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                <span style={{ width: 24 }}>#</span>
+                <span style={{ width: 28 }}>Vis</span>
+                <span style={{ flex: 1 }}>Title</span>
+                <span style={{ flex: 2 }}>Description</span>
+                <span style={{ width: 24 }}></span>
+              </div>
+              {features.map((feature, idx) => (
+                <div key={idx} className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.75rem' }}>
+                  {/* # */}
+                  <span style={{ width: 24, color: '#94a3b8', fontSize: '0.65rem' }}>{idx + 1}</span>
+                  {/* Visible */}
+                  <span style={{ width: 28 }}>
+                    <Form.Check type="checkbox" checked={feature.visible !== false}
+                      onChange={(e) => { const updated = features.map((f, i) => i === idx ? { ...f, visible: e.target.checked } : f); setFeatures(updated); saveList('blogs', updated) }} />
+                  </span>
+                  {/* Title */}
+                  <span style={{ flex: 1, cursor: 'pointer', color: '#0891B2', fontWeight: 600 }} onClick={() => openModal('feature', idx)}>
+                    {feature.title || '(Untitled)'}
+                    <div className="d-md-none text-muted fw-normal mt-1" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                      {feature.description?.substring(0, 60)}{feature.description?.length > 60 ? '...' : ''}
+                    </div>
+                  </span>
+                  {/* Description (desktop) */}
+                  <span className="d-none d-md-block text-muted" style={{ flex: 2, fontSize: '0.7rem' }}>
+                    {feature.description?.substring(0, 80)}{feature.description?.length > 80 ? '...' : ''}
+                  </span>
+                  {/* Delete */}
+                  <span style={{ width: 24 }}>
+                    <button type="button" onClick={() => handleDelete('feature', idx)} style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }} aria-label="Delete">
+                      <FaTrash size={9} />
+                    </button>
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </Card.Body>
       </Card>
 
-      {/* About Us Section Settings */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">About Us Section</h5>
-          <Form.Check
-            type="switch"
-            id="aboutVisible"
-            label="Visible"
-            checked={localContent.aboutVisible || false}
-            onChange={(e) => {
-              setLocalContent(prev => ({ ...prev, aboutVisible: e.target.checked }))
-              dispatch(updateSettings({
-                data: { pages: { home: { content: { aboutVisible: e.target.checked } } } },
-                user,
-              }))
-            }}
-          />
-        </Card.Header>
-        <Card.Body>
-          <Row className="g-3">
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Title</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.aboutTitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, aboutTitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('aboutTitle')}
-                  placeholder="e.g., About Us"
-                />
+      {/* About Us Section */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">ABOUT US</small>
+              <Form.Check type="switch" id="aboutVisible" label={<span style={{ fontSize: '0.68rem' }}>Visible</span>}
+              checked={localContent.aboutVisible || false}
+              onChange={(e) => { setLocalContent(p => ({ ...p, aboutVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { aboutVisible: e.target.checked } } } }, user })) }} />
+            </div>
+            <SaveBtn saving={saving} onClick={() => saveSection(['aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
+          </div>
+          <Row className="g-2">
+            <Col xs={12} md={localContent.aboutImageUrl ? 8 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
+                <Form.Control size="sm" value={localContent.aboutTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutTitle: e.target.value }))} onBlur={() => handleContentBlur('aboutTitle')} placeholder="e.g., About Us" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Description</Form.Label>
+                <Form.Control size="sm" as="textarea" rows={3} value={localContent.aboutDescription || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutDescription: e.target.value }))} onBlur={() => handleContentBlur('aboutDescription')} placeholder="Write about your organization..." style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Image URL</Form.Label>
+                <Form.Control size="sm" value={localContent.aboutImageUrl || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutImageUrl: e.target.value }))} onBlur={() => handleContentBlur('aboutImageUrl')} placeholder="Google Drive or direct image URL" style={{ fontSize: '0.8rem' }} />
               </Form.Group>
             </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Image URL</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.aboutImageUrl || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, aboutImageUrl: e.target.value }))}
-                  onBlur={() => handleContentBlur('aboutImageUrl')}
-                  placeholder="Paste Google Drive or image URL (optional)"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={4}
-                  value={localContent.aboutDescription || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, aboutDescription: e.target.value }))}
-                  onBlur={() => handleContentBlur('aboutDescription')}
-                  placeholder="Write about your organization..."
-                />
-              </Form.Group>
-            </Col>
+            {localContent.aboutImageUrl && (
+              <Col xs={12} md={4}>
+                <div className="text-center">
+                  <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Preview</Form.Label>
+                  <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                    {aboutImgError ? (
+                      <div style={{ padding: 16, textAlign: 'center', color: '#94a3b8', fontSize: '0.72rem' }}>Image failed to load.</div>
+                    ) : (
+                      <img src={toDirectImageUrl(localContent.aboutImageUrl)} alt="About preview" style={{ width: '100%', maxHeight: 180, objectFit: 'cover' }}
+                        onError={() => setAboutImgError(true)} />
+                    )}
+                  </div>
+                </div>
+              </Col>
+            )}
           </Row>
         </Card.Body>
       </Card>
 
-      {/* Contact Section Settings */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">Contact Section</h5>
-          <Form.Check
-            type="switch"
-            id="contactVisible"
-            label="Visible"
-            checked={localContent.contactVisible || false}
-            onChange={(e) => {
-              setLocalContent(prev => ({ ...prev, contactVisible: e.target.checked }))
-              dispatch(updateSettings({
-                data: { pages: { home: { content: { contactVisible: e.target.checked } } } },
-                user,
-              }))
-            }}
-          />
-        </Card.Header>
-        <Card.Body>
-          <Row className="g-3">
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Section Title</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.contactTitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, contactTitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('contactTitle')}
-                  placeholder="e.g., Contact Us"
-                />
+      {/* Contact Section */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">CONTACT SECTION</small>
+              <Form.Check type="switch" id="contactVisible" label={<span style={{ fontSize: '0.68rem' }}>Visible</span>}
+                checked={localContent.contactVisible || false}
+                onChange={(e) => { setLocalContent(p => ({ ...p, contactVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { contactVisible: e.target.checked } } } }, user })) }} />
+            </div>
+            <SaveBtn saving={saving} onClick={() => saveSection(['contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
+          </div>
+          <Row className="g-2">
+            <Col xs={12} md={localContent.contactMapEmbedUrl ? 6 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Title</Form.Label>
+                <Form.Control size="sm" value={localContent.contactTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, contactTitle: e.target.value }))} placeholder="e.g., Contact Us" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Google Maps Embed</Form.Label>
+                <Form.Control size="sm" as="textarea" rows={2} value={localContent.contactMapEmbedUrl || ''}
+                  onChange={(e) => { setLocalContent(p => ({ ...p, contactMapEmbedUrl: extractMapSrc(e.target.value) })) }}
+                  placeholder="Paste <iframe> tag or embed URL from Google Maps" style={{ fontSize: '0.75rem' }} />
+                <Form.Text style={{ fontSize: '0.6rem' }} className="text-muted">Maps → Share → Embed → copy iframe code. URL auto-extracted.</Form.Text>
               </Form.Group>
             </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Google Maps Embed</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={localContent.contactMapEmbedUrl || ''}
-                  onChange={(e) => {
-                    const extracted = extractMapSrc(e.target.value)
-                    setLocalContent(prev => ({ ...prev, contactMapEmbedUrl: extracted }))
-                  }}
-                  onBlur={() => handleContentBlur('contactMapEmbedUrl')}
-                  placeholder='Paste full <iframe> tag or URL from Google Maps'
-                />
-                <Form.Text className="text-muted">
-                  Google Maps → Share → Embed a map → Paste iframe code. URL is extracted automatically.
-                </Form.Text>
-              </Form.Group>
-            </Col>
+            {localContent.contactMapEmbedUrl && (
+              <Col xs={12} md={6}>
+                <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Map Preview</Form.Label>
+                <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                  <iframe
+                    src={localContent.contactMapEmbedUrl}
+                    width="100%"
+                    height="160"
+                    style={{ border: 0 }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Map preview"
+                  />
+                </div>
+              </Col>
+            )}
           </Row>
         </Card.Body>
       </Card>
 
-      {/* Contact Fields — Inline Edit */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">Contact Details</h5>
-          <Button
-            size="sm"
-            variant="light"
-            className="d-flex align-items-center gap-1"
-            onClick={addContactField}
-          >
-            <FaPlus /> Add
-          </Button>
-        </Card.Header>
-        <Card.Body>
+      {/* Contact Details */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">CONTACT DETAILS</small>
+              <SaveBtn saving={saving} onClick={saveContactFields} />
+            </div>
+            <button type="button" onClick={addContactField} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+              <FaPlus size={8} className="me-1" />Add
+            </button>
+          </div>
+
           {contactFields.length === 0 ? (
-            <p className="text-muted text-center py-3 mb-0">No contact details yet. Click &quot;Add&quot; to create one.</p>
+            <div className="text-center text-muted py-3" style={{ fontSize: '0.78rem' }}>No contact details yet</div>
           ) : (
-            <div className="d-flex flex-column gap-2">
+            <div>
+              {/* Header */}
+              <div className="d-none d-md-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.58rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                <span style={{ width: 28 }}>Vis</span>
+                <span style={{ width: 30 }}>Icon</span>
+                <span style={{ width: 55 }}>Type</span>
+                <span style={{ flex: 1 }}>Value *</span>
+                <span style={{ flex: 1 }}>Label</span>
+                <span style={{ flex: 1 }}>URL (auto)</span>
+                <span style={{ width: 24 }}></span>
+              </div>
+
               {contactFields.map((field, idx) => {
                 const Icon = CONTACT_ICON_MAP[field.icon] || FaInfoCircle
                 return (
-                  <div key={idx} className="border rounded p-2" style={{ background: 'rgba(8,145,178,0.02)' }}>
-                    <Row className="g-2 align-items-center">
-                      {/* Icon dropdown — shows actual icon */}
-                      <Col xs="auto">
-                        <div className="position-relative">
-                          <div className="d-flex align-items-center justify-content-center" style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(8,145,178,0.1), rgba(6,182,212,0.15))' }}>
-                            <Icon style={{ fontSize: '1rem', color: 'var(--theme-primary)' }} />
-                          </div>
-                          <Form.Select
-                            size="sm"
-                            value={field.icon || 'FaPhone'}
-                            onChange={(e) => updateContactField(idx, 'icon', e.target.value)}
-                            onBlur={saveContactFields}
-                            className="position-absolute top-0 start-0 opacity-0"
-                            style={{ width: 36, height: 36, cursor: 'pointer' }}
-                          >
-                            {CONTACT_ICON_OPTIONS.map(opt => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </Form.Select>
-                        </div>
-                      </Col>
-                      <Col xs={4} md={2}>
-                        <Form.Select
-                          size="sm"
-                          value={field.type || 'detail'}
-                          onChange={(e) => updateContactField(idx, 'type', e.target.value)}
-                          onBlur={saveContactFields}
-                        >
-                          <option value="detail">Detail</option>
-                          <option value="social">Social</option>
-                        </Form.Select>
-                      </Col>
-                      <Col>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="Label"
-                          value={field.label || ''}
-                          onChange={(e) => updateContactField(idx, 'label', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                      <Col>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="Value"
-                          value={field.value || ''}
-                          onChange={(e) => updateContactField(idx, 'value', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                      <Col className="d-none d-md-block">
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="URL (optional)"
-                          value={field.url || ''}
-                          onChange={(e) => updateContactField(idx, 'url', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                      <Col xs="auto">
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleDelete('contact', idx)}
-                          title="Delete"
-                        >
-                          <FaTrash />
-                        </Button>
-                      </Col>
-                    </Row>
-                    {/* URL on mobile — second row */}
-                    <Row className="g-2 d-md-none mt-1">
-                      <Col>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="URL (optional)"
-                          value={field.url || ''}
-                          onChange={(e) => updateContactField(idx, 'url', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                    </Row>
+                  <div key={idx} className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.75rem', minWidth: 0 }}>
+                    {/* Visible */}
+                    <span style={{ width: 28 }}>
+                      <Form.Check type="checkbox" checked={field.visible !== false}
+                        onChange={(e) => { updateContactField(idx, 'visible', e.target.checked); setTimeout(saveContactFields, 100) }} />
+                    </span>
+                    {/* Icon */}
+                    <span style={{ width: 30, position: 'relative' }}>
+                      <Icon size={14} style={{ color: '#0891B2' }} />
+                      <Form.Select size="sm" value={field.icon || 'FaPhone'}
+                        onChange={(e) => updateContactField(idx, 'icon', e.target.value)} onBlur={saveContactFields}
+                        className="position-absolute top-0 start-0 opacity-0" style={{ width: 30, height: 24, cursor: 'pointer' }}>
+                        {CONTACT_ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </Form.Select>
+                    </span>
+                    {/* Type */}
+                    <span style={{ width: 55 }}>
+                      <Form.Select size="sm" value={field.type || 'detail'} onChange={(e) => updateContactField(idx, 'type', e.target.value)} onBlur={saveContactFields}
+                        style={{ fontSize: '0.65rem', height: 24, padding: '0 4px' }}>
+                        <option value="detail">Detail</option>
+                        <option value="social">Social</option>
+                      </Form.Select>
+                    </span>
+                    {/* Value (required) */}
+                    <span style={{ flex: 1 }}>
+                      <Form.Control size="sm" value={field.value || ''} onChange={(e) => updateContactField(idx, 'value', e.target.value)} onBlur={saveContactFields}
+                        placeholder="+94 77 123 4567" style={{ fontSize: '0.72rem', height: 24 }} />
+                    </span>
+                    {/* Label (optional, defaults to icon name) */}
+                    <span style={{ flex: 1 }}>
+                      <Form.Control size="sm" value={field.label || ''} onChange={(e) => updateContactField(idx, 'label', e.target.value)} onBlur={saveContactFields}
+                        placeholder={CONTACT_ICON_OPTIONS.find(o => o.value === field.icon)?.label || 'Label'} style={{ fontSize: '0.72rem', height: 24, color: field.label ? '#334155' : '#94a3b8' }} />
+                    </span>
+                    {/* URL (auto-generated, editable) */}
+                    <span style={{ flex: 1 }} className="d-none d-md-block">
+                      <Form.Control size="sm" value={field.url || ''} onChange={(e) => updateContactField(idx, 'url', e.target.value)} onBlur={saveContactFields}
+                        placeholder="auto" style={{ fontSize: '0.65rem', height: 24, color: '#94a3b8' }} />
+                    </span>
+                    {/* Delete */}
+                    <span style={{ width: 24 }}>
+                      <button type="button" onClick={() => handleDelete('contact', idx)} style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }}>
+                        <FaTrash size={9} />
+                      </button>
+                    </span>
                   </div>
                 )
               })}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Feedback Section */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">FEEDBACK</small>
+              <Badge bg="secondary" style={{ fontSize: '0.55rem' }}>{feedbacks.length}</Badge>
+            </div>
+          </div>
+
+          {/* Submit form */}
+          <div className="p-2 rounded mb-2" style={{ backgroundColor: '#f8f9fa' }}>
+            <Row className="g-1">
+              <Col xs={12} md={6}>
+                <Form.Control size="sm" placeholder="Title *" value={feedbackForm.title}
+                  onChange={(e) => setFeedbackForm(p => ({ ...p, title: e.target.value }))}
+                  maxLength={100} style={{ fontSize: '0.75rem', height: 28 }} />
+              </Col>
+              <Col xs={12} md={3}>
+                <Form.Select size="sm" value={feedbackForm.category}
+                  onChange={(e) => setFeedbackForm(p => ({ ...p, category: e.target.value }))}
+                  style={{ fontSize: '0.72rem', height: 28 }}>
+                  <option value="general">General</option>
+                  <option value="bug">Bug Report</option>
+                  <option value="feature">Feature Request</option>
+                  <option value="improvement">Improvement</option>
+                  <option value="complaint">Complaint</option>
+                </Form.Select>
+              </Col>
+              <Col xs={12} md={3} className="d-flex align-items-center">
+                <button type="button" onClick={handleFeedbackSubmit}
+                  disabled={feedbackSubmitting || !feedbackForm.title.trim() || !feedbackForm.message.trim()}
+                  style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: (feedbackSubmitting || !feedbackForm.title.trim() || !feedbackForm.message.trim()) ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                  <FaPaperPlane size={8} className="me-1" />
+                  {feedbackSubmitting ? 'Sending...' : 'Submit'}
+                </button>
+              </Col>
+              <Col xs={12}>
+                <Form.Control size="sm" as="textarea" rows={2} placeholder="Describe your feedback... *"
+                  value={feedbackForm.message} onChange={(e) => setFeedbackForm(p => ({ ...p, message: e.target.value }))}
+                  maxLength={1000} style={{ fontSize: '0.75rem' }} />
+                <Form.Text style={{ fontSize: '0.55rem' }} className="text-muted">{feedbackForm.message.length}/1000</Form.Text>
+              </Col>
+            </Row>
+          </div>
+
+          {/* My feedbacks list */}
+          {feedbacksLoading ? (
+            <div className="text-center text-muted py-2" style={{ fontSize: '0.72rem' }}>Loading...</div>
+          ) : feedbacks.length > 0 && (
+            <div>
+              <div className="d-flex align-items-center gap-1 mb-1" style={{ cursor: 'pointer' }} onClick={() => setFeedbacksExpanded(p => !p)}>
+                <small className="text-muted" style={{ fontSize: '0.62rem' }}>MY FEEDBACKS</small>
+                {feedbacksExpanded ? <FaChevronUp size={8} className="text-muted" /> : <FaChevronDown size={8} className="text-muted" />}
+              </div>
+              {feedbacksExpanded && (
+                <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                  {feedbacks.map(fb => (
+                    <div key={fb.id} className="py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.72rem' }}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center gap-1">
+                          <strong>{fb.title}</strong>
+                          <Badge bg={{ bug: 'danger', feature: 'primary', improvement: 'info', complaint: 'warning', general: 'secondary' }[fb.category] || 'secondary'} style={{ fontSize: '0.55rem' }}>{fb.category}</Badge>
+                          <Badge bg={{ pending: 'warning', reviewed: 'info', resolved: 'success' }[fb.status] || 'secondary'} style={{ fontSize: '0.55rem' }}>{fb.status}</Badge>
+                        </div>
+                        <small className="text-muted" style={{ fontSize: '0.6rem' }}>
+                          {fb.timestamp ? new Date(fb.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                        </small>
+                      </div>
+                      <div className="text-muted" style={{ fontSize: '0.68rem', whiteSpace: 'pre-wrap' }}>{fb.message}</div>
+                      {fb.adminNote && (
+                        <div className="mt-1 p-1 rounded" style={{ backgroundColor: '#f0f9fa', fontSize: '0.65rem' }}>
+                          <strong style={{ color: '#0891B2' }}>Response:</strong> {fb.adminNote}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </Card.Body>

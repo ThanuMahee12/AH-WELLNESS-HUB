@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { Container, Row, Col, Card, Button, Form, Badge } from 'react-bootstrap'
-import { FaClipboardCheck, FaSave, FaTrash, FaPlus, FaTimes, FaStickyNote, FaPrescriptionBottleAlt, FaVial, FaFileInvoice, FaStethoscope } from 'react-icons/fa'
-import { Breadcrumb, RichTextEditor } from '../components/ui'
+import { FaClipboardCheck, FaSave, FaTrash, FaPlus, FaTimes, FaStickyNote, FaPrescriptionBottleAlt, FaVial, FaFileInvoice, FaStethoscope, FaUserInjured, FaFlask, FaCog, FaListAlt, FaPills } from 'react-icons/fa'
+import { Breadcrumb, RichTextEditor, PageHeader } from '../components/ui'
 import Select from 'react-select'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsSlice'
@@ -20,6 +20,8 @@ function CheckupForm() {
   const dispatch = useDispatch()
   const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
+  const { user } = useSelector(state => state.auth)
+  const isEditorOrAbove = ['superadmin', 'admin', 'maintainer', 'editor'].includes(user?.role)
   const { settings, isFieldVisible, isFieldRequired, getFieldLabel, getLabResultFields, getGeneralTestFields } = useSettings()
   const labResultFields = getLabResultFields()
   const generalTestFields = getGeneralTestFields()
@@ -57,6 +59,7 @@ function CheckupForm() {
     address: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState('patient')
 
   // Additional fields (edit mode only)
   const [editedNotes, setEditedNotes] = useState('')
@@ -319,749 +322,375 @@ function CheckupForm() {
     })
   }
 
-  return (
-    <Container fluid className="p-3 p-md-4">
-      <Breadcrumb
-        items={[{ label: 'Checkups', path: '/checkups' }]}
-        current={isNew ? 'New Checkup' : (checkup?.billNo || 'Edit Checkup')}
-      />
+  const TABS = [
+    { key: 'patient', label: 'Patient', icon: FaUserInjured },
+    ...(isEditorOrAbove ? [
+      { key: 'tests', label: 'Tests', icon: FaFlask },
+      { key: 'extra', label: 'Extra', icon: FaCog },
+      { key: 'medicine', label: 'Medicine', icon: FaPills },
+    ] : []),
+    { key: 'summary', label: 'Summary', icon: FaListAlt },
+  ]
 
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h2 className="fs-responsive-lg mb-0">
-              <FaClipboardCheck className="me-2 text-theme" />
-              {isNew ? 'New Checkup / Bill' : 'Edit Checkup'}
-            </h2>
+  // Helper to render general/lab test fields
+  const renderTestFields = (fields, state, setState) => (
+    <Row>
+      {fields.map(({ key, label, children }) => {
+        if (children) {
+          return (
+            <Col xs={12} key={key} className="mb-2">
+              <Form.Group>
+                <Form.Label className="fw-semibold mb-1" style={{ fontSize: '0.82rem' }}>{label}</Form.Label>
+                <Form.Control size="sm" type="text" value={state[key] || ''} onChange={(e) => setState(prev => ({ ...prev, [key]: e.target.value }))} placeholder={label} />
+              </Form.Group>
+              <div className="ps-3 mt-1">
+                <Row>
+                  {children.map(({ key: ck, label: cl }) => (
+                    <Col xs={6} md={4} lg={3} key={ck} className="mb-1">
+                      <Form.Group>
+                        <Form.Label style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '2px' }}>{cl}</Form.Label>
+                        <Form.Control size="sm" type="text" value={state[ck] || ''} onChange={(e) => setState(prev => ({ ...prev, [ck]: e.target.value }))} placeholder={cl} />
+                      </Form.Group>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            </Col>
+          )
+        }
+        return (
+          <Col xs={6} md={4} lg={3} key={key} className="mb-2">
+            <Form.Group>
+              <Form.Label className="fw-semibold mb-1" style={{ fontSize: '0.82rem' }}>{label}</Form.Label>
+              <Form.Control size="sm" type="text" value={state[key] || ''} onChange={(e) => setState(prev => ({ ...prev, [key]: e.target.value }))} placeholder={label} />
+            </Form.Group>
+          </Col>
+        )
+      })}
+    </Row>
+  )
+
+  return (
+    <Container fluid className="p-3 p-md-4 d-flex flex-column" style={{ height: 'calc(100vh - 52px)' }}>
+      <div className="flex-shrink-0">
+        <Breadcrumb items={[{ label: 'Checkups', path: '/checkups' }]} current={isNew ? 'New Checkup' : (checkup?.billNo || 'Edit')} />
+
+        {/* Header + Actions */}
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <PageHeader icon={FaClipboardCheck} title={isNew ? 'New Checkup' : `Edit: ${checkup?.billNo || ''}`} />
+          <div className="d-flex gap-2">
             {!isNew && (
-              <Button
-                variant="outline-info"
-                size="sm"
-                onClick={() => navigate(`/checkups/${id}/details`)}
-              >
-                <FaFileInvoice className="me-1" />
-                Invoice / Prescription
+              <Button size="sm" variant="outline-secondary" onClick={() => navigate(`/checkups/${id}/details`)} style={{ fontSize: '0.72rem' }}>
+                <FaFileInvoice className="me-1" size={10} /> Invoice / Rx
               </Button>
             )}
+            {canDelete && (
+              <Button size="sm" variant="outline-danger" onClick={handleDelete} disabled={isSubmitting} style={{ fontSize: '0.72rem' }}>
+                <FaTrash className="me-1" size={10} /> Delete
+              </Button>
+            )}
+            <Button size="sm" type="submit" form="checkup-form" disabled={isSubmitting || loading} style={{ fontSize: '0.72rem', backgroundColor: '#0891B2', borderColor: '#0891B2' }}>
+              <FaSave className="me-1" size={10} />
+              {isSubmitting ? 'Saving...' : (isNew ? 'Create' : 'Update')}
+            </Button>
           </div>
-        </Col>
-      </Row>
+        </div>
 
-      <Row>
-        <Col>
-          <Card className="shadow-sm">
-            <Card.Header className="card-header-theme">
-              <h5 className="mb-0 fs-responsive-md">
-                {isNew ? 'Checkup Information' : `Edit Checkup: ${checkup?.billNo || checkup?.id || ''}`}
-              </h5>
-            </Card.Header>
+        {/* Tab Bar */}
+        <div className="border-bottom" style={{ backgroundColor: '#fff' }}>
+          <div className="d-flex flex-wrap gap-0">
+            {TABS.map(tab => (
+              <button key={tab.key} type="button" className={`btn btn-link text-decoration-none px-3 py-2 ${activeTab === tab.key ? 'fw-semibold' : ''}`} onClick={() => setActiveTab(tab.key)}
+                style={{ fontSize: '0.8rem', color: activeTab === tab.key ? '#0891B2' : '#64748b', borderRadius: 0, borderBottom: activeTab === tab.key ? '2px solid #0891B2' : '2px solid transparent' }}>
+                <tab.icon className="me-1" size={13} />{tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-            <Form onSubmit={handleSubmit}>
-              <Card.Body className="entity-form-body">
-                {/* Patient Selection Section */}
-                <h6 className="section-heading">
-                  Patient
-                </h6>
+      {/* Scrollable Content */}
+      <div className="flex-grow-1" style={{ overflowY: 'auto', overflowX: 'hidden', minHeight: 0, paddingTop: 12 }}>
+        <Form id="checkup-form" onSubmit={handleSubmit}>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Select Patient *</Form.Label>
-                  <Select
-                    options={patients.map(p => ({
-                      value: p.id,
-                      label: `${p.name} - ${p.age}yr - ${p.mobile}`,
-                      patient: p
-                    }))}
-                    value={patients
-                      .filter(p => p.id === formData.patientId)
-                      .map(p => ({
-                        value: p.id,
-                        label: `${p.name} - ${p.age}yr - ${p.mobile}`
-                      }))[0] || null}
-                    onChange={handlePatientSelect}
-                    placeholder="Search patient by name, mobile..."
-                    isClearable
-                    formatOptionLabel={(option) => (
-                      <div>
-                        <div><strong>{option.patient?.name || option.label.split(' - ')[0]}</strong></div>
-                        <small className="text-muted">
-                          {option.patient?.age}yr, {option.patient?.gender} - {option.patient?.mobile}
-                        </small>
-                      </div>
-                    )}
-                  />
-                </Form.Group>
-
-                <div className="text-center mb-3">
-                  <Button
-                    variant="link"
-                    onClick={() => setShowNewPatientForm(!showNewPatientForm)}
-                  >
-                    {showNewPatientForm ? 'Cancel' : '+ Add New Patient'}
-                  </Button>
-                </div>
-
-                {showNewPatientForm && (
-                  <Card className="mb-3">
-                    <Card.Header className="bg-light">
-                      <strong>New Patient Information</strong>
-                    </Card.Header>
-                    <Card.Body>
-                      <Row>
-                        {isFieldVisible('patients', 'name') && (
-                          <Col md={6}>
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                {getFieldLabel('patients', 'name', 'Name')}
-                                {isFieldRequired('patients', 'name', true) && <span className="text-danger ms-1">*</span>}
-                              </Form.Label>
-                              <Form.Control
-                                type="text"
-                                value={newPatientData.name}
-                                onChange={(e) => setNewPatientData({ ...newPatientData, name: e.target.value })}
-                                required={isFieldRequired('patients', 'name', true)}
-                              />
-                            </Form.Group>
-                          </Col>
-                        )}
-                        {isFieldVisible('patients', 'age') && (
-                          <Col md={3}>
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                {getFieldLabel('patients', 'age', 'Age')}
-                                {isFieldRequired('patients', 'age', true) && <span className="text-danger ms-1">*</span>}
-                              </Form.Label>
-                              <Form.Control
-                                type="number"
-                                value={newPatientData.age}
-                                onChange={(e) => setNewPatientData({ ...newPatientData, age: e.target.value })}
-                                required={isFieldRequired('patients', 'age', true)}
-                              />
-                            </Form.Group>
-                          </Col>
-                        )}
-                        {isFieldVisible('patients', 'gender') && (
-                          <Col md={3}>
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                {getFieldLabel('patients', 'gender', 'Gender')}
-                                {isFieldRequired('patients', 'gender', true) && <span className="text-danger ms-1">*</span>}
-                              </Form.Label>
-                              <Form.Select
-                                value={newPatientData.gender}
-                                onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}
-                              >
-                                <option>Male</option>
-                                <option>Female</option>
-                                <option>Other</option>
-                              </Form.Select>
-                            </Form.Group>
-                          </Col>
-                        )}
-                        {isFieldVisible('patients', 'mobile') && (
-                          <Col md={6}>
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                {getFieldLabel('patients', 'mobile', 'Mobile')}
-                                {isFieldRequired('patients', 'mobile', true) && <span className="text-danger ms-1">*</span>}
-                              </Form.Label>
-                              <Form.Control
-                                type="tel"
-                                value={newPatientData.mobile}
-                                onChange={(e) => setNewPatientData({ ...newPatientData, mobile: e.target.value })}
-                                required={isFieldRequired('patients', 'mobile', true)}
-                              />
-                            </Form.Group>
-                          </Col>
-                        )}
-                        {isFieldVisible('patients', 'email') && (
-                          <Col md={6}>
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                {getFieldLabel('patients', 'email', 'Email')}
-                                {isFieldRequired('patients', 'email', false) && <span className="text-danger ms-1">*</span>}
-                              </Form.Label>
-                              <Form.Control
-                                type="email"
-                                value={newPatientData.email}
-                                onChange={(e) => setNewPatientData({ ...newPatientData, email: e.target.value })}
-                                required={isFieldRequired('patients', 'email', false)}
-                              />
-                            </Form.Group>
-                          </Col>
-                        )}
-                        {isFieldVisible('patients', 'address') && (
-                          <Col md={12}>
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                {getFieldLabel('patients', 'address', 'Address')}
-                                {isFieldRequired('patients', 'address', true) && <span className="text-danger ms-1">*</span>}
-                              </Form.Label>
-                              <Form.Control
-                                as="textarea"
-                                rows={2}
-                                value={newPatientData.address}
-                                onChange={(e) => setNewPatientData({ ...newPatientData, address: e.target.value })}
-                                required={isFieldRequired('patients', 'address', true)}
-                              />
-                            </Form.Group>
-                          </Col>
-                        )}
-                      </Row>
-                      <Button variant="primary" onClick={handleCreateNewPatient} size="sm">
-                        <FaPlus className="me-1" />
-                        Create Patient & Continue
-                      </Button>
-                    </Card.Body>
-                  </Card>
-                )}
-
-                {/* Tests Selection Section */}
-                {isFieldVisible('checkups', 'tests') && (<>
-                <h6 className="section-heading mt-4">
-                  {getFieldLabel('checkups', 'tests', 'Tests')}
-                </h6>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    {getFieldLabel('checkups', 'tests', 'Select Tests')}
-                    {isFieldRequired('checkups', 'tests', true) && <span className="text-danger ms-1">*</span>}
-                  </Form.Label>
-                  <Select
-                    isMulti
-                    options={tests.map(test => ({
-                      value: test.id,
-                      label: test.name,
-                      code: test.code,
-                      price: test.price,
-                      details: test.details
-                    }))}
-                    value={tests
-                      .filter(test => formData.tests.some(t => t.testId === test.id))
-                      .map(test => ({
-                        value: test.id,
-                        label: test.name,
-                        code: test.code
-                      }))}
-                    onChange={handleTestChange}
-                    isDisabled={loading}
-                    placeholder="Search tests by name or code..."
-                    formatOptionLabel={(option, { context }) => {
-                      if (context === 'value') {
-                        return (
-                          <span>
-                            <strong className="text-theme">{option.code}</strong> - {option.label}
-                          </span>
-                        )
-                      }
-                      return (
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <div style={{ fontSize: '14px' }}>
-                              <strong className="text-theme">{option.code}</strong> - <strong>{option.label}</strong>
-                            </div>
-                            {option.details && <small className="text-muted" style={{ fontSize: '12px' }}>{option.details}</small>}
-                          </div>
-                          <Badge className="badge-theme" style={{ fontSize: '11px' }}>Rs. {option.price?.toFixed(2)}</Badge>
-                        </div>
-                      )
-                    }}
-                    styles={testSelectStyles}
-                  />
-                </Form.Group>
-
-                {isFieldVisible('checkups', 'ownTests') && (
-                  <Form.Group className="mb-3">
-                    <Form.Check
-                      type="switch"
-                      id="ownTests"
-                      label={<span>{getFieldLabel('checkups', 'ownTests', 'Own Tests')} <small className="text-muted">(uncheck if patient took tests elsewhere — no charge / commission)</small></span>}
-                      checked={formData.ownTests}
-                      onChange={(e) => setFormData({ ...formData, ownTests: e.target.checked })}
-                    />
-                  </Form.Group>
-                )}
-
-                {isFieldVisible('checkups', 'doctorFees') && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      {getFieldLabel('checkups', 'doctorFees', 'Doctor Fees (Rs.)')}
-                      {isFieldRequired('checkups', 'doctorFees', false) && <span className="text-danger ms-1">*</span>}
-                    </Form.Label>
-                    <Form.Control
-                      type="number"
-                      step="0.01"
-                      value={formData.doctorFees}
-                      onChange={(e) => setFormData({ ...formData, doctorFees: e.target.value })}
-                      placeholder="Enter doctor fees"
-                      required={isFieldRequired('checkups', 'doctorFees', false)}
-                      style={{ maxWidth: '250px' }}
-                    />
-                  </Form.Group>
-                )}
-
-                {isFieldVisible('checkups', 'paid') && (
-                  <Form.Group className="mb-3">
-                    <Form.Check
-                      type="switch"
-                      id="paid"
-                      label={getFieldLabel('checkups', 'paid', 'Paid')}
-                      checked={formData.paid}
-                      onChange={(e) => setFormData({ ...formData, paid: e.target.checked })}
-                    />
-                  </Form.Group>
-                )}
-
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Total Amount: <Badge className={formData.ownTests ? 'badge-theme-light fs-6' : 'bg-secondary fs-6'}>Rs. {calculateTotal().toFixed(2)}</Badge>
-                    {!formData.ownTests && <small className="text-muted ms-2">(outside tests — doctor fees only)</small>}
-                  </Form.Label>
-                </Form.Group>
-                </>)}
-
-                {/* Weight/Height Section */}
-                {(isFieldVisible('checkups', 'weight') || isFieldVisible('checkups', 'height')) && (
-                  <>
-                    <h6 className="section-heading mt-4">
-                      Measurements (Optional)
-                    </h6>
-
-                    <Row>
-                      {isFieldVisible('checkups', 'weight') && (
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>
-                              {getFieldLabel('checkups', 'weight', 'Weight (kg)')}
-                              {isFieldRequired('checkups', 'weight', false) && <span className="text-danger ms-1">*</span>}
-                            </Form.Label>
-                            <Form.Control
-                              type="number"
-                              step="0.1"
-                              value={formData.weight}
-                              onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                              placeholder="Enter weight in kg (optional)"
-                              required={isFieldRequired('checkups', 'weight', false)}
-                            />
-                          </Form.Group>
-                        </Col>
-                      )}
-                      {isFieldVisible('checkups', 'height') && (
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>
-                              {getFieldLabel('checkups', 'height', 'Height (cm)')}
-                              {isFieldRequired('checkups', 'height', false) && <span className="text-danger ms-1">*</span>}
-                            </Form.Label>
-                            <Form.Control
-                              type="number"
-                              step="0.1"
-                              value={formData.height}
-                              onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                              placeholder="Enter height in cm (optional)"
-                              required={isFieldRequired('checkups', 'height', false)}
-                            />
-                          </Form.Group>
-                        </Col>
-                      )}
-                    </Row>
-                  </>
-                )}
-
-                {/* === Additional fields (edit mode only) === */}
-                {!isNew && checkup && (
-                  <>
-                    {/* Notes Section */}
-                    {(isFieldVisible('checkups', 'notes') || isFieldVisible('checkups', 'commonNotes')) && (
-                      <h6 className="section-heading mt-4">
-                        <FaStickyNote className="me-2" />
-                        Notes
-                      </h6>
-                    )}
-
-                    {isFieldVisible('checkups', 'notes') && (
-                      <Form.Group className="mb-3">
-                        <Form.Label>{getFieldLabel('checkups', 'notes', 'Invoice Notes')} <small className="text-muted">(printed on invoice)</small></Form.Label>
-                        <Form.Control
-                          as="textarea"
-                          rows={2}
-                          value={editedNotes}
-                          onChange={(e) => setEditedNotes(e.target.value)}
-                          placeholder="Add general notes for the invoice..."
-                          style={{ fontSize: '0.9rem' }}
-                        />
-                      </Form.Group>
-                    )}
-
-                    {isFieldVisible('checkups', 'commonNotes') && (
-                      <Form.Group className="mb-3">
-                        <Form.Label>{getFieldLabel('checkups', 'commonNotes', 'Common Notes')} <small className="text-muted">(internal)</small></Form.Label>
-                        <RichTextEditor
-                          label=""
-                          value={editedCommonNotes}
-                          onChange={(value) => setEditedCommonNotes(value)}
-                          placeholder="Add common notes for this checkup..."
-                          height="150px"
-                        />
-                      </Form.Group>
-                    )}
-
-                    {/* Test-Specific Notes */}
-                    {isFieldVisible('checkups', 'testNotes') && <div className="mb-3">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <Form.Label className="mb-0">Test Notes <small className="text-muted">(per-test internal notes)</small></Form.Label>
-                        <Button
-                          size="sm"
-                          className="btn-theme-success"
-                          onClick={() => {
-                            const el = document.getElementById('form-test-notes-dropdown')
-                            if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus() }
-                          }}
-                        >
-                          <FaPlus className="me-1" /> Add
-                        </Button>
-                      </div>
-
-                      <div className="mb-3 p-3" style={{ background: '#f8fafc', borderRadius: '6px' }}>
-                        <Select
-                          id="form-test-notes-dropdown"
-                          value={selectedTestForNote}
-                          options={formData.tests
-                            .filter(ti => !editedTestNotes[ti.testId])
-                            .map(ti => {
-                              const t = tests.find(x => x.id === ti.testId)
-                              return t ? { value: ti.testId, label: `${t.code} - ${t.name}` } : null
-                            }).filter(Boolean)}
-                          onChange={(option) => {
-                            setSelectedTestForNote(option)
-                            if (option) setTimeout(() => document.getElementById('form-new-test-note')?.focus(), 100)
-                          }}
-                          placeholder="Select a test to add notes..."
-                          isClearable
-                          styles={{ control: (b) => ({ ...b, fontSize: '0.9rem' }), menu: (b) => ({ ...b, fontSize: '0.9rem' }) }}
-                        />
-                        {selectedTestForNote && (
-                          <div className="mt-2">
-                            <Form.Control
-                              id="form-new-test-note"
-                              as="textarea"
-                              rows={2}
-                              placeholder={`Notes for ${selectedTestForNote.label}...`}
-                              style={{ fontSize: '0.9rem' }}
-                              onKeyDown={(e) => {
-                                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                                  const v = e.target.value.trim()
-                                  if (v) { handleTestNoteChange(selectedTestForNote.value, v); setSelectedTestForNote(null) }
-                                }
-                              }}
-                            />
-                            <div className="d-flex gap-2 mt-1">
-                              <Button size="sm" className="btn-theme-success" onClick={() => {
-                                const v = document.getElementById('form-new-test-note')?.value.trim()
-                                if (v) { handleTestNoteChange(selectedTestForNote.value, v); setSelectedTestForNote(null) }
-                              }}><FaPlus className="me-1" /> Add</Button>
-                              <Button size="sm" variant="secondary" onClick={() => setSelectedTestForNote(null)}>
-                                <FaTimes className="me-1" /> Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {formData.tests
-                        .filter(ti => editedTestNotes[ti.testId])
-                        .map(ti => {
-                          const t = tests.find(x => x.id === ti.testId)
-                          return t ? (
-                            <div key={ti.testId} className="mb-2 p-2" style={{ border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-                              <div className="d-flex justify-content-between align-items-center mb-1">
-                                <span><strong className="text-theme">{t.code}</strong> - {t.name}</span>
-                                <Button size="sm" variant="outline-danger" onClick={() => handleTestNoteChange(ti.testId, '')}><FaTrash /></Button>
-                              </div>
-                              <Form.Control
-                                as="textarea"
-                                rows={2}
-                                value={editedTestNotes[ti.testId] || ''}
-                                onChange={(e) => handleTestNoteChange(ti.testId, e.target.value)}
-                                style={{ fontSize: '0.9rem' }}
-                              />
-                            </div>
-                          ) : null
-                        })}
-                    </div>}
-
-                    {/* Prescription Section */}
-                    {isFieldVisible('checkups', 'prescription') && (<>
-                    <h6 className="section-heading mt-4">
-                      <FaPrescriptionBottleAlt className="me-2" />
-                      {getFieldLabel('checkups', 'prescription', 'Prescription')}
-                      <Badge bg="secondary" className="ms-2" style={{ fontSize: '0.7rem' }}>{prescriptionMedicines.length}</Badge>
-                    </h6>
-
-                    <div className="d-flex justify-content-end mb-2">
-                      <Button size="sm" onClick={handleAddMedicine} className="btn-theme-success">
-                        <FaPlus className="me-1" /> Add Medicine
-                      </Button>
+          {/* ===== PATIENT TAB ===== */}
+          {activeTab === 'patient' && (
+            <div style={{ maxWidth: 700 }}>
+              <Form.Group className="mb-2">
+                <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Select Patient *</Form.Label>
+                <Select
+                  options={patients.map(p => ({ value: p.id, label: `${p.name} - ${p.age}yr - ${p.mobile}`, patient: p }))}
+                  value={patients.filter(p => p.id === formData.patientId).map(p => ({ value: p.id, label: `${p.name} - ${p.age}yr - ${p.mobile}` }))[0] || null}
+                  onChange={handlePatientSelect}
+                  placeholder="Search patient by name, mobile..."
+                  isClearable
+                  formatOptionLabel={(option) => (
+                    <div><strong style={{ fontSize: '0.82rem' }}>{option.patient?.name || option.label.split(' - ')[0]}</strong>
+                      <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{option.patient?.age}yr, {option.patient?.gender} - {option.patient?.mobile}</small>
                     </div>
-
-                    {prescriptionMedicines.map((med, index) => {
-                      const selectedMed = medicines.find(m => m.id === med.medicineId)
-                      return (
-                        <Card key={index} className="mb-2" style={{ border: '1px solid #cbd5e1' }}>
-                          <Card.Body className="p-2 p-md-3">
-                            <Row>
-                              <Col md={5}>
-                                <Form.Group className="mb-2">
-                                  <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Medicine</Form.Label>
-                                  <Select
-                                    value={selectedMed ? {
-                                      value: selectedMed.id,
-                                      label: `${selectedMed.name} - ${Array.isArray(selectedMed.dosage) ? selectedMed.dosage.join(', ') : selectedMed.dosage} - ${selectedMed.brand}`
-                                    } : null}
-                                    onChange={(opt) => handleMedicineChange(index, 'medicineId', opt.value)}
-                                    options={medicines.map(m => ({
-                                      value: m.id,
-                                      label: `${m.name} - ${Array.isArray(m.dosage) ? m.dosage.join(', ') : m.dosage} - ${m.brand}`
-                                    }))}
-                                    placeholder="Select medicine..."
-                                    styles={{ control: (b) => ({ ...b, fontSize: '0.9rem' }), menu: (b) => ({ ...b, fontSize: '0.9rem' }) }}
-                                  />
-                                </Form.Group>
-                              </Col>
-                              <Col xs={6} md={2}>
-                                <Form.Group className="mb-2">
-                                  <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Quantity</Form.Label>
-                                  <Form.Control size="sm" type="text" value={med.quantity} onChange={(e) => handleMedicineChange(index, 'quantity', e.target.value)} placeholder="e.g., 10" />
-                                </Form.Group>
-                              </Col>
-                              <Col xs={6} md={4}>
-                                <Form.Group className="mb-2">
-                                  <Form.Label className="fw-semibold" style={{ fontSize: '0.85rem' }}>Instructions</Form.Label>
-                                  <Form.Control size="sm" type="text" value={med.instructions} onChange={(e) => handleMedicineChange(index, 'instructions', e.target.value)} placeholder="e.g., After meals" />
-                                </Form.Group>
-                              </Col>
-                              <Col md={1} className="d-flex align-items-end">
-                                <Button size="sm" variant="danger" onClick={() => handleRemoveMedicine(index)} className="mb-2"><FaTrash /></Button>
-                              </Col>
-                            </Row>
-                          </Card.Body>
-                        </Card>
-                      )
-                    })}
-
-                    {isFieldVisible('checkups', 'prescriptionNotes') && (
-                      <Form.Group className="mb-3 mt-2">
-                        <Form.Label>{getFieldLabel('checkups', 'prescriptionNotes', 'Prescription Notes / Instructions')}</Form.Label>
-                        <Form.Control
-                          as="textarea"
-                          rows={2}
-                          value={prescriptionNotes}
-                          onChange={(e) => setPrescriptionNotes(e.target.value)}
-                          placeholder="Additional instructions for the prescription..."
-                          style={{ fontSize: '0.9rem' }}
-                        />
-                      </Form.Group>
-                    )}
-                    </>)}
-
-                    {/* Valid Days & Use ESign */}
-                    {(isFieldVisible('checkups', 'validDays') || isFieldVisible('checkups', 'useESign')) && (
-                      <Row className="mt-3">
-                        {isFieldVisible('checkups', 'validDays') && (
-                          <Col md={6}>
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                {getFieldLabel('checkups', 'validDays', 'Prescription Valid Days')}
-                              </Form.Label>
-                              <Form.Control
-                                type="number"
-                                value={formData.validDays}
-                                onChange={(e) => setFormData({ ...formData, validDays: e.target.value })}
-                                placeholder="30"
-                                style={{ maxWidth: '150px' }}
-                              />
-                            </Form.Group>
-                          </Col>
-                        )}
-                        {isFieldVisible('checkups', 'useESign') && (
-                          <Col md={6}>
-                            <Form.Group className="mb-3 d-flex align-items-center" style={{ minHeight: '58px' }}>
-                              <Form.Check
-                                type="switch"
-                                id="useESign"
-                                label={getFieldLabel('checkups', 'useESign', 'Use E-Signature')}
-                                checked={formData.useESign}
-                                onChange={(e) => setFormData({ ...formData, useESign: e.target.checked })}
-                              />
-                            </Form.Group>
-                          </Col>
-                        )}
-                      </Row>
-                    )}
-
-                    {/* General Tests Section */}
-                    {isFieldVisible('checkups', 'generalTests') && generalTestFields.length > 0 && (
-                      <>
-                        <h6 className="section-heading mt-4">
-                          <FaStethoscope className="me-2" />
-                          General Tests
-                        </h6>
-
-                        <Row>
-                          {generalTestFields.map(({ key, label, children }) => {
-                            if (children) {
-                              return (
-                                <Col xs={12} key={key} className="mb-3">
-                                  <Form.Group>
-                                    <Form.Label className="fw-semibold mb-1">{label}</Form.Label>
-                                    <Form.Control
-                                      size="sm"
-                                      type="text"
-                                      value={editedGeneralTests[key] || ''}
-                                      onChange={(e) => setEditedGeneralTests(prev => ({ ...prev, [key]: e.target.value }))}
-                                      placeholder={`Enter ${label}...`}
-                                    />
-                                  </Form.Group>
-                                  <div className="ps-3 mt-2">
-                                    <Row>
-                                      {children.map(({ key: ck, label: cl }) => (
-                                        <Col xs={6} md={4} lg={3} key={ck} className="mb-2">
-                                          <Form.Group>
-                                            <Form.Label style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.15rem' }}>{cl}</Form.Label>
-                                            <Form.Control
-                                              size="sm"
-                                              type="text"
-                                              value={editedGeneralTests[ck] || ''}
-                                              onChange={(e) => setEditedGeneralTests(prev => ({ ...prev, [ck]: e.target.value }))}
-                                              placeholder={cl}
-                                            />
-                                          </Form.Group>
-                                        </Col>
-                                      ))}
-                                    </Row>
-                                  </div>
-                                </Col>
-                              )
-                            }
-                            return (
-                              <Col xs={6} md={4} lg={3} key={key} className="mb-3">
-                                <Form.Group>
-                                  <Form.Label className="fw-semibold mb-1" style={{ fontSize: '0.9rem' }}>{label}</Form.Label>
-                                  <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={editedGeneralTests[key] || ''}
-                                    onChange={(e) => setEditedGeneralTests(prev => ({ ...prev, [key]: e.target.value }))}
-                                    placeholder={`Enter ${label}...`}
-                                  />
-                                </Form.Group>
-                              </Col>
-                            )
-                          })}
-                        </Row>
-                      </>
-                    )}
-
-                    {/* Lab Results Section */}
-                    {isFieldVisible('checkups', 'labResults') && labResultFields.length > 0 && (
-                      <>
-                        <h6 className="section-heading mt-4">
-                          <FaVial className="me-2" />
-                          Lab Results
-                        </h6>
-
-                        <Row>
-                          {labResultFields.map(({ key, label, children }) => {
-                            if (children) {
-                              return (
-                                <Col xs={12} key={key} className="mb-3">
-                                  <Form.Group>
-                                    <Form.Label className="fw-semibold mb-1">{label}</Form.Label>
-                                    <Form.Control
-                                      size="sm"
-                                      type="text"
-                                      value={editedLabResults[key] || ''}
-                                      onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
-                                      placeholder={`Enter ${label}...`}
-                                    />
-                                  </Form.Group>
-                                  <div className="ps-3 mt-2">
-                                    <Row>
-                                      {children.map(({ key: ck, label: cl }) => (
-                                        <Col xs={6} md={4} lg={3} key={ck} className="mb-2">
-                                          <Form.Group>
-                                            <Form.Label style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.15rem' }}>{cl}</Form.Label>
-                                            <Form.Control
-                                              size="sm"
-                                              type="text"
-                                              value={editedLabResults[ck] || ''}
-                                              onChange={(e) => setEditedLabResults(prev => ({ ...prev, [ck]: e.target.value }))}
-                                              placeholder={cl}
-                                            />
-                                          </Form.Group>
-                                        </Col>
-                                      ))}
-                                    </Row>
-                                  </div>
-                                </Col>
-                              )
-                            }
-                            return (
-                              <Col xs={6} md={4} lg={3} key={key} className="mb-3">
-                                <Form.Group>
-                                  <Form.Label className="fw-semibold mb-1" style={{ fontSize: '0.9rem' }}>{label}</Form.Label>
-                                  <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={editedLabResults[key] || ''}
-                                    onChange={(e) => setEditedLabResults(prev => ({ ...prev, [key]: e.target.value }))}
-                                    placeholder={`Enter ${label}...`}
-                                  />
-                                </Form.Group>
-                              </Col>
-                            )
-                          })}
-                        </Row>
-                      </>
-                    )}
-                  </>
-                )}
-
-                {isNew && (
-                  <div className="info-box mt-3">
-                    <p style={{ fontSize: '0.9rem', color: '#0369a1', marginBottom: 0 }}>
-                      <strong>Note:</strong> You can add notes, prescriptions, and lab results after creating the checkup by editing it.
-                    </p>
-                  </div>
-                )}
-              </Card.Body>
-
-              <Card.Footer className="entity-form-footer justify-content-end">
-                <div className="entity-form-actions">
-                  {canDelete && (
-                    <Button
-                      variant="outline-danger"
-                      onClick={handleDelete}
-                      disabled={isSubmitting}
-                      className="entity-form-btn"
-                    >
-                      <FaTrash className="me-1" />
-                      Delete
-                    </Button>
                   )}
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || loading}
-                    className="entity-form-btn btn-theme"
-                  >
-                    <FaSave className="me-1" />
-                    {isSubmitting ? 'Saving...' : (isNew ? 'Create Checkup' : 'Update Checkup')}
-                  </Button>
+                  styles={{ control: (b) => ({ ...b, fontSize: '0.82rem', minHeight: 34 }), menu: (b) => ({ ...b, fontSize: '0.82rem' }) }}
+                />
+              </Form.Group>
+
+              {patient && (
+                <div className="p-2 mb-2 rounded" style={{ backgroundColor: '#f0fdfa', fontSize: '0.78rem' }}>
+                  <strong>{patient.name}</strong> &middot; {patient.age}yr &middot; {patient.gender} &middot; {patient.mobile}
                 </div>
-              </Card.Footer>
-            </Form>
-          </Card>
-        </Col>
-      </Row>
+              )}
+
+              {!patient && (
+                <div className="mb-2">
+                  <button type="button" className="btn btn-link p-0" style={{ fontSize: '0.78rem', color: '#0891B2' }} onClick={() => setShowNewPatientForm(!showNewPatientForm)}>
+                    {showNewPatientForm ? 'Cancel' : '+ Add New Patient'}
+                  </button>
+                </div>
+              )}
+
+              {!patient && showNewPatientForm && (
+                <Card className="border-0 shadow-sm mb-2">
+                  <Card.Body className="p-3">
+                    <small className="fw-bold text-muted d-block mb-2">NEW PATIENT</small>
+                    <Row>
+                      {isFieldVisible('patients', 'name') && <Col md={6}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>{getFieldLabel('patients', 'name', 'Name')} *</Form.Label><Form.Control size="sm" value={newPatientData.name} onChange={(e) => setNewPatientData({ ...newPatientData, name: e.target.value })} required /></Form.Group></Col>}
+                      {isFieldVisible('patients', 'age') && <Col md={3}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>{getFieldLabel('patients', 'age', 'Age')} *</Form.Label><Form.Control size="sm" type="number" value={newPatientData.age} onChange={(e) => setNewPatientData({ ...newPatientData, age: e.target.value })} required /></Form.Group></Col>}
+                      {isFieldVisible('patients', 'gender') && <Col md={3}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Gender *</Form.Label><Form.Select size="sm" value={newPatientData.gender} onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}><option>Male</option><option>Female</option><option>Other</option></Form.Select></Form.Group></Col>}
+                      {isFieldVisible('patients', 'mobile') && <Col md={6}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Mobile *</Form.Label><Form.Control size="sm" type="tel" value={newPatientData.mobile} onChange={(e) => setNewPatientData({ ...newPatientData, mobile: e.target.value })} required /></Form.Group></Col>}
+                      {isFieldVisible('patients', 'email') && <Col md={6}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Email</Form.Label><Form.Control size="sm" type="email" value={newPatientData.email} onChange={(e) => setNewPatientData({ ...newPatientData, email: e.target.value })} /></Form.Group></Col>}
+                      {isFieldVisible('patients', 'address') && <Col md={12}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Address</Form.Label><Form.Control size="sm" as="textarea" rows={1} value={newPatientData.address} onChange={(e) => setNewPatientData({ ...newPatientData, address: e.target.value })} /></Form.Group></Col>}
+                    </Row>
+                    <Button size="sm" onClick={handleCreateNewPatient} style={{ fontSize: '0.75rem', backgroundColor: '#0891B2', borderColor: '#0891B2' }}>
+                      <FaPlus className="me-1" size={10} /> Create & Select
+                    </Button>
+                  </Card.Body>
+                </Card>
+              )}
+
+              {/* Payment & Total */}
+              <div className="mt-3 p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
+                <Row className="align-items-center">
+                  {isFieldVisible('checkups', 'paid') && isEditorOrAbove && (
+                    <Col xs={6}>
+                      <Form.Check type="switch" id="paid-patient" label={<span style={{ fontSize: '0.82rem', fontWeight: 500 }}>Paid</span>}
+                        checked={formData.paid} onChange={(e) => setFormData({ ...formData, paid: e.target.checked })} />
+                    </Col>
+                  )}
+                  <Col xs={6} className="text-end">
+                    <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Total</small>
+                    <strong style={{ fontSize: '1rem', color: formData.paid ? '#16a34a' : '#dc2626' }}>Rs. {calculateTotal().toFixed(2)}</strong>
+                  </Col>
+                </Row>
+              </div>
+
+              {isNew && (
+                <div className="p-2 rounded mt-2" style={{ backgroundColor: '#f0f9ff', fontSize: '0.78rem', color: '#0369a1' }}>
+                  <strong>Tip:</strong> After creating, you can add notes, prescriptions, and lab results by editing.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== TESTS TAB ===== */}
+          {activeTab === 'tests' && (
+            <div style={{ maxWidth: 800 }}>
+              {isFieldVisible('checkups', 'tests') && (
+                <Form.Group className="mb-3">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Select Tests {isFieldRequired('checkups', 'tests', true) && <span className="text-danger">*</span>}</Form.Label>
+                  <Select isMulti options={tests.map(t => ({ value: t.id, label: t.name, code: t.code, price: t.price, details: t.details }))}
+                    value={tests.filter(t => formData.tests.some(ti => ti.testId === t.id)).map(t => ({ value: t.id, label: t.name, code: t.code }))}
+                    onChange={handleTestChange} isDisabled={loading} placeholder="Search tests..."
+                    formatOptionLabel={(option, { context }) => context === 'value'
+                      ? <span style={{ fontSize: '0.78rem' }}><strong>{option.code}</strong> - {option.label}</span>
+                      : <div className="d-flex justify-content-between" style={{ fontSize: '0.82rem' }}><div><strong>{option.code}</strong> - {option.label}{option.details && <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>{option.details}</small>}</div><Badge bg="light" text="dark" style={{ fontSize: '0.68rem' }}>Rs.{option.price?.toFixed(2)}</Badge></div>}
+                    styles={testSelectStyles} />
+                </Form.Group>
+              )}
+
+              <Row className="mb-2">
+                {isFieldVisible('checkups', 'ownTests') && <Col xs={6} md={4}><Form.Check type="switch" id="ownTests" label={<span style={{ fontSize: '0.78rem' }}>Own Tests</span>} checked={formData.ownTests} onChange={(e) => setFormData({ ...formData, ownTests: e.target.checked })} /></Col>}
+              </Row>
+
+              {(isFieldVisible('checkups', 'weight') || isFieldVisible('checkups', 'height')) && (
+                <Row className="mb-3">
+                  {isFieldVisible('checkups', 'weight') && <Col xs={6} md={4}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Weight (kg)</Form.Label><Form.Control size="sm" type="number" step="0.1" value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} placeholder="kg" /></Form.Group></Col>}
+                  {isFieldVisible('checkups', 'height') && <Col xs={6} md={4}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Height (cm)</Form.Label><Form.Control size="sm" type="number" step="0.1" value={formData.height} onChange={(e) => setFormData({ ...formData, height: e.target.value })} placeholder="cm" /></Form.Group></Col>}
+                </Row>
+              )}
+
+              {/* General Tests */}
+              {!isNew && checkup && isFieldVisible('checkups', 'generalTests') && generalTestFields.length > 0 && (
+                <div className="mb-3">
+                  <small className="fw-bold text-muted d-block mb-2">GENERAL TESTS</small>
+                  {renderTestFields(generalTestFields, editedGeneralTests, setEditedGeneralTests)}
+                </div>
+              )}
+
+              {/* Lab Results */}
+              {!isNew && checkup && isFieldVisible('checkups', 'labResults') && labResultFields.length > 0 && (
+                <div className="mb-3">
+                  <small className="fw-bold text-muted d-block mb-2">LAB RESULTS</small>
+                  {renderTestFields(labResultFields, editedLabResults, setEditedLabResults)}
+                </div>
+              )}
+
+              {/* Test Notes - in Tests tab */}
+              {!isNew && checkup && isFieldVisible('checkups', 'testNotes') && formData.tests.length > 0 && (
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <small className="fw-bold text-muted">TEST NOTES</small>
+                    <Button size="sm" variant="outline-secondary" style={{ fontSize: '0.72rem' }} onClick={() => { const el = document.getElementById('form-test-notes-dropdown'); if (el) el.focus() }}>
+                      <FaPlus className="me-1" size={9} /> Add
+                    </Button>
+                  </div>
+                  <div className="mb-2 p-2 rounded" style={{ background: '#f8f9fa' }}>
+                    <Select id="form-test-notes-dropdown" value={selectedTestForNote}
+                      options={formData.tests.filter(ti => !editedTestNotes[ti.testId]).map(ti => { const t = tests.find(x => x.id === ti.testId); return t ? { value: ti.testId, label: `${t.code} - ${t.name}` } : null }).filter(Boolean)}
+                      onChange={(opt) => { setSelectedTestForNote(opt); if (opt) setTimeout(() => document.getElementById('form-new-test-note')?.focus(), 100) }}
+                      placeholder="Select test..." isClearable styles={{ control: (b) => ({ ...b, fontSize: '0.8rem', minHeight: 34 }), menu: (b) => ({ ...b, fontSize: '0.8rem' }) }} />
+                    {selectedTestForNote && (
+                      <div className="mt-1">
+                        <Form.Control id="form-new-test-note" as="textarea" rows={2} size="sm" placeholder={`Notes for ${selectedTestForNote.label}...`}
+                          onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { const v = e.target.value.trim(); if (v) { handleTestNoteChange(selectedTestForNote.value, v); setSelectedTestForNote(null) } } }} />
+                        <div className="d-flex gap-1 mt-1">
+                          <Button size="sm" style={{ fontSize: '0.72rem', backgroundColor: '#0891B2', borderColor: '#0891B2' }} onClick={() => { const v = document.getElementById('form-new-test-note')?.value.trim(); if (v) { handleTestNoteChange(selectedTestForNote.value, v); setSelectedTestForNote(null) } }}>Add</Button>
+                          <Button size="sm" variant="outline-secondary" style={{ fontSize: '0.72rem' }} onClick={() => setSelectedTestForNote(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {formData.tests.filter(ti => editedTestNotes[ti.testId]).map(ti => { const t = tests.find(x => x.id === ti.testId); return t ? (
+                    <div key={ti.testId} className="mb-1 p-2 rounded" style={{ border: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
+                      <div className="d-flex justify-content-between mb-1"><span><strong>{t.code}</strong> - {t.name}</span><button type="button" className="btn btn-sm btn-outline-danger" style={{ padding: '0 4px', fontSize: '0.65rem' }} onClick={() => handleTestNoteChange(ti.testId, '')}><FaTrash size={9} /></button></div>
+                      <Form.Control as="textarea" rows={1} size="sm" value={editedTestNotes[ti.testId] || ''} onChange={(e) => handleTestNoteChange(ti.testId, e.target.value)} />
+                    </div>
+                  ) : null })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== EXTRA TAB (edit only) ===== */}
+          {activeTab === 'extra' && isEditorOrAbove && (
+            <div style={{ maxWidth: 700 }}>
+              {/* Doctor Fees */}
+              {isFieldVisible('checkups', 'doctorFees') && (
+                <Form.Group className="mb-2">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Doctor Fees (Rs.)</Form.Label>
+                  <Form.Control size="sm" type="number" step="0.01" value={formData.doctorFees} onChange={(e) => setFormData({ ...formData, doctorFees: e.target.value })} placeholder="0.00" style={{ maxWidth: '200px' }} />
+                </Form.Group>
+              )}
+
+              {/* Notes */}
+              {isFieldVisible('checkups', 'notes') && (
+                <Form.Group className="mb-2">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Invoice Notes <small className="text-muted">(printed on invoice)</small></Form.Label>
+                  <Form.Control as="textarea" rows={2} size="sm" value={editedNotes} onChange={(e) => setEditedNotes(e.target.value)} placeholder="Notes for invoice..." />
+                </Form.Group>
+              )}
+              {isFieldVisible('checkups', 'commonNotes') && (
+                <Form.Group className="mb-3">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Common Notes <small className="text-muted">(internal)</small></Form.Label>
+                  <RichTextEditor label="" value={editedCommonNotes} onChange={setEditedCommonNotes} placeholder="Internal notes..." height="120px" />
+                </Form.Group>
+              )}
+
+              {/* Valid Days & ESign */}
+              <Row className="mb-2">
+                {isFieldVisible('checkups', 'validDays') && <Col xs={6} md={4}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Valid Days</Form.Label><Form.Control size="sm" type="number" value={formData.validDays} onChange={(e) => setFormData({ ...formData, validDays: e.target.value })} placeholder="30" /></Form.Group></Col>}
+                {isFieldVisible('checkups', 'useESign') && <Col xs={6} md={4} className="d-flex align-items-end mb-2"><Form.Check type="switch" id="useESign" label={<span style={{ fontSize: '0.78rem' }}>E-Signature</span>} checked={formData.useESign} onChange={(e) => setFormData({ ...formData, useESign: e.target.checked })} /></Col>}
+              </Row>
+            </div>
+          )}
+
+          {/* ===== MEDICINE TAB (edit only) ===== */}
+          {activeTab === 'medicine' && isEditorOrAbove && isFieldVisible('checkups', 'prescription') && (
+            <div style={{ maxWidth: 800 }}>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <small className="fw-bold text-muted">PRESCRIPTION ({prescriptionMedicines.length})</small>
+                <Button size="sm" onClick={handleAddMedicine} style={{ fontSize: '0.72rem', backgroundColor: '#0891B2', borderColor: '#0891B2' }}>
+                  <FaPlus className="me-1" size={10} /> Add Medicine
+                </Button>
+              </div>
+
+              {prescriptionMedicines.map((med, index) => {
+                const selectedMed = medicines.find(m => m.id === med.medicineId)
+                return (
+                  <div key={index} className="mb-2 p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
+                    <Row>
+                      <Col md={5}>
+                        <Form.Label style={{ fontSize: '0.75rem', color: '#64748b' }}>Medicine</Form.Label>
+                        <Select value={selectedMed ? { value: selectedMed.id, label: `${selectedMed.name} - ${Array.isArray(selectedMed.dosage) ? selectedMed.dosage.join(', ') : selectedMed.dosage}` } : null}
+                          onChange={(opt) => handleMedicineChange(index, 'medicineId', opt.value)}
+                          options={medicines.map(m => ({ value: m.id, label: `${m.name} - ${Array.isArray(m.dosage) ? m.dosage.join(', ') : m.dosage} - ${m.brand}` }))}
+                          placeholder="Select..." styles={{ control: (b) => ({ ...b, fontSize: '0.8rem', minHeight: 34 }), menu: (b) => ({ ...b, fontSize: '0.8rem' }) }} />
+                      </Col>
+                      <Col xs={4} md={2}><Form.Label style={{ fontSize: '0.75rem', color: '#64748b' }}>Qty</Form.Label><Form.Control size="sm" value={med.quantity} onChange={(e) => handleMedicineChange(index, 'quantity', e.target.value)} placeholder="10" /></Col>
+                      <Col xs={6} md={4}><Form.Label style={{ fontSize: '0.75rem', color: '#64748b' }}>Instructions</Form.Label><Form.Control size="sm" value={med.instructions} onChange={(e) => handleMedicineChange(index, 'instructions', e.target.value)} placeholder="After meals" /></Col>
+                      <Col xs={2} md={1} className="d-flex align-items-end pb-1"><button type="button" className="btn btn-sm btn-outline-danger" style={{ padding: '2px 6px' }} onClick={() => handleRemoveMedicine(index)}><FaTrash size={10} /></button></Col>
+                    </Row>
+                  </div>
+                )
+              })}
+
+              {isFieldVisible('checkups', 'prescriptionNotes') && (
+                <Form.Group className="mt-2">
+                  <Form.Label style={{ fontSize: '0.78rem' }}>Prescription Notes</Form.Label>
+                  <Form.Control as="textarea" rows={2} size="sm" value={prescriptionNotes} onChange={(e) => setPrescriptionNotes(e.target.value)} placeholder="Additional instructions..." />
+                </Form.Group>
+              )}
+            </div>
+          )}
+
+          {/* ===== SUMMARY TAB (edit only) ===== */}
+          {activeTab === 'summary' && (
+            <div style={{ maxWidth: 600 }}>
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="p-3">
+                  <small className="fw-bold text-muted d-block mb-2">CHECKUP SUMMARY</small>
+                  <table className="table table-sm mb-0" style={{ fontSize: '0.82rem' }}>
+                    <tbody>
+                      <tr><td className="text-muted" style={{ width: '40%' }}>Bill No</td><td><strong>{checkup.billNo}</strong></td></tr>
+                      <tr><td className="text-muted">Patient</td><td><strong>{patient?.name}</strong> &middot; {patient?.age}yr &middot; {patient?.gender}</td></tr>
+                      <tr><td className="text-muted">Tests</td><td>{formData.tests.length} test{formData.tests.length !== 1 ? 's' : ''}</td></tr>
+                      <tr><td className="text-muted">Own Tests</td><td>{formData.ownTests ? 'Yes' : 'No (outside)'}</td></tr>
+                      <tr><td className="text-muted">Doctor Fees</td><td>Rs. {parseFloat(formData.doctorFees || 0).toFixed(2)}</td></tr>
+                      <tr><td className="text-muted">Total</td><td><strong className="text-success">Rs. {calculateTotal().toFixed(2)}</strong></td></tr>
+                      <tr><td className="text-muted">Paid</td><td>{formData.paid ? <Badge bg="success" style={{ fontSize: '0.7rem' }}>Paid</Badge> : <Badge bg="warning" text="dark" style={{ fontSize: '0.7rem' }}>Unpaid</Badge>}</td></tr>
+                      {formData.weight && <tr><td className="text-muted">Weight</td><td>{formData.weight} kg</td></tr>}
+                      {formData.height && <tr><td className="text-muted">Height</td><td>{formData.height} cm</td></tr>}
+                      <tr><td className="text-muted">Prescriptions</td><td>{prescriptionMedicines.length} medicine{prescriptionMedicines.length !== 1 ? 's' : ''}</td></tr>
+                      <tr><td className="text-muted">E-Signature</td><td>{formData.useESign ? 'Yes' : 'No'}</td></tr>
+                    </tbody>
+                  </table>
+
+                  {/* Tests breakdown */}
+                  {formData.tests.length > 0 && (
+                    <div className="mt-3">
+                      <small className="fw-bold text-muted d-block mb-1">TESTS</small>
+                      {formData.tests.map(ti => {
+                        const t = tests.find(x => x.id === ti.testId)
+                        return t ? <div key={ti.testId} className="d-flex justify-content-between py-1 border-bottom" style={{ fontSize: '0.78rem' }}><span>{t.code} - {t.name}</span><span>Rs. {t.price?.toFixed(2)}</span></div> : null
+                      })}
+                    </div>
+                  )}
+
+                  {/* Medicines breakdown */}
+                  {prescriptionMedicines.length > 0 && (
+                    <div className="mt-3">
+                      <small className="fw-bold text-muted d-block mb-1">MEDICINES</small>
+                      {prescriptionMedicines.map((med, i) => {
+                        const m = medicines.find(x => x.id === med.medicineId)
+                        return m ? <div key={i} className="d-flex justify-content-between py-1 border-bottom" style={{ fontSize: '0.78rem' }}><span>{m.name}</span><span>{med.quantity} &middot; {med.instructions}</span></div> : null
+                      })}
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            </div>
+          )}
+
+        </Form>
+      </div>
     </Container>
   )
 }

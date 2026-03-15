@@ -128,25 +128,25 @@ html, body {
   }
 }
 
-/* Card table headers - matches theme.css cyan gradient */
+/* Card table headers - clean style */
 .table thead,
 .table-mobile-responsive thead,
 table.table thead {
-  background: linear-gradient(135deg, var(--theme-primary, #0891B2) 0%, var(--theme-primary-light, #06B6D4) 100%) !important;
-  color: #fff !important;
+  background: #f8f9fa !important;
   display: table-header-group;
 }
 
 .table thead th,
 .table-mobile-responsive thead th,
 table.table thead th {
-  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-top: none !important;
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.5px;
-  padding: 1rem;
-  color: #fff !important;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  padding: 8px 12px;
+  color: #334155 !important;
   background: transparent !important;
 }
 

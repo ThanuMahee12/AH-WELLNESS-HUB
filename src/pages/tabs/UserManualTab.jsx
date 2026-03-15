@@ -165,16 +165,53 @@ const sections = [
     title: 'Settings — Public Page Control',
     roles: ['superadmin', 'maintainer', 'editor'],
     content: [
-      { step: 'Go to Settings > Public Page Control tab. This controls the public-facing home page.' },
-      { step: 'Hero Section: Edit the main title, subtitle, hero image URL, CTA button text, and authenticated CTA text.' },
-      { step: 'Blog Cards: Add, edit, reorder, or hide blog/feature cards. Each card has a title, description, image URL, and visible toggle.' },
-      { step: 'Click "Add Blog" to create a new blog card. Click the eye icon to toggle visibility. Click the trash icon to remove.' },
-      { step: 'About Section: Edit the about title, description, and image URL. Toggle "aboutVisible" to show/hide the entire section.' },
-      { step: 'Contact Section: Edit contact details (Phone, Email, Address) and social links (Facebook, Instagram, WhatsApp).' },
-      { step: 'Each contact field has: label, icon, value (display text), URL (clickable link), and visible toggle.' },
-      { step: 'Google Maps: Paste a Google Maps embed URL in the "contactMapEmbedUrl" field to show a map on the contact section.' },
-      { step: 'Toggle "contactVisible" to show/hide the entire contact section.' },
-      { step: 'All changes are saved to Firestore and update the public home page in real-time.' },
+      { step: 'Go to Settings > Public Page Control tab. This controls the public-facing home page (visible to everyone, even without login).' },
+      { step: '--- HERO SECTION ---', heading: true },
+      { step: 'Hero Title: The main heading displayed at the top of the home page (e.g., "AH WELLNESS HUB & ASIRI LABORATORIES").' },
+      { step: 'Hero Subtitle: A short description below the title explaining what the system does.' },
+      { step: 'Hero Image URL: Paste a direct image URL (e.g., from Imgur, Firebase Storage, or any hosted image). Leave empty to use default.' },
+      { step: 'CTA Text: The button text shown to visitors who are NOT logged in (e.g., "Get Started"). This button takes them to the login page.' },
+      { step: 'CTA Auth Text: The button text shown to users who ARE logged in (e.g., "Go to Dashboard"). This button takes them to the dashboard.' },
+      { step: '--- BLOG / FEATURE CARDS ---', heading: true },
+      { step: 'Blog cards appear as a grid on the home page showcasing your services or features.' },
+      { step: 'Each card has: Title, Description, Image URL, and a Visible toggle.' },
+      { step: 'Click "Add Blog" to create a new card. You can add unlimited cards.' },
+      { step: 'Click the eye icon to show/hide a card without deleting it.' },
+      { step: 'Click the trash icon to permanently remove a card.' },
+      { step: 'Reorder cards by changing their position in the list.' },
+      { step: 'Image URL: Use a direct link to an image. Recommended size: 400x300px or similar landscape ratio.' },
+      { step: '--- ABOUT SECTION ---', heading: true },
+      { step: 'About Title: The heading for the about section (e.g., "About Us").' },
+      { step: 'About Description: A detailed paragraph about your organization, services, and mission.' },
+      { step: 'About Image URL: An image displayed alongside the about text. Use a direct image link.' },
+      { step: 'Toggle "aboutVisible" to show or hide the entire about section on the home page.' },
+      { step: '--- CONTACT SECTION ---', heading: true },
+      { step: 'Contact Title: The heading for the contact section (e.g., "Contact Us").' },
+      { step: 'Contact Fields: Each field has a type (detail or social), label, icon, value, URL, and visible toggle.' },
+      { step: 'Phone: Set value to your phone number (e.g., "+94 77 123 4567"). Set URL to "tel:+94771234567" so clicking it makes a call.' },
+      { step: 'Email: Set value to your email. Set URL to "mailto:your@email.com" so clicking it opens the mail app.' },
+      { step: 'Address: Set value to your physical address. URL can be a Google Maps link to your location.' },
+      { step: 'Facebook: Set URL to your Facebook page (e.g., "https://facebook.com/yourpage"). Value is the display text.' },
+      { step: 'Instagram: Set URL to your Instagram profile (e.g., "https://instagram.com/yourhandle").' },
+      { step: 'WhatsApp: Set URL to "https://wa.me/94771234567" (replace with your number, no spaces or dashes). Clicking it opens WhatsApp chat.' },
+      { step: 'Toggle "visible" on each field to show/hide individual contact items.' },
+      { step: '--- GOOGLE MAPS EMBED ---', heading: true },
+      { step: 'To get a Google Maps embed URL:' },
+      { step: '1. Go to Google Maps (maps.google.com) and search for your location.' },
+      { step: '2. Click "Share" (the share icon).' },
+      { step: '3. Click the "Embed a map" tab.' },
+      { step: '4. Click "COPY HTML" to copy the iframe code.' },
+      { step: '5. From the copied code, extract ONLY the URL inside src="...". It looks like: https://www.google.com/maps/embed?pb=!1m18!1m12...' },
+      { step: '6. Paste that URL (not the full iframe tag) into the "contactMapEmbedUrl" field.' },
+      { step: 'The map will appear in the contact section of the home page.' },
+      { step: 'Toggle "contactVisible" to show or hide the entire contact section including the map.' },
+      { step: '--- IMAGE URLS GUIDE ---', heading: true },
+      { step: 'All image fields accept direct URLs to images hosted online. Options to host images:' },
+      { step: 'Imgur: Go to imgur.com, upload image, right-click the image and copy the direct image URL (ends in .jpg/.png).' },
+      { step: 'Firebase Storage: Upload to Firebase Console > Storage, get the download URL.' },
+      { step: 'Any CDN/hosting: Use any publicly accessible image URL that ends with an image extension.' },
+      { step: 'Tip: Always use HTTPS URLs for security. Recommended image sizes: Hero (1200x600), Blog (400x300), About (600x400).' },
+      { step: 'All changes save to the database and update the public home page instantly.' },
     ],
   },
   {
@@ -200,11 +237,11 @@ const sections = [
     title: 'Settings — Feedback',
     roles: ['superadmin', 'maintainer', 'editor'],
     content: [
-      { step: 'Go to Settings > Feedback tab to submit feedback to the system administrator.' },
+      { step: 'Go to Settings > Public Page tab and scroll to the FEEDBACK section at the bottom.' },
       { step: 'Enter a title summarizing your feedback.' },
       { step: 'Select a category: Bug Report, Feature Request, Improvement, Complaint, or General.' },
-      { step: 'Write your detailed message (up to 1000 characters) and click "Submit Feedback".' },
-      { step: 'Your submitted feedbacks are listed below the form with status: Pending, Reviewed, or Resolved.' },
+      { step: 'Write your detailed message (up to 1000 characters) and click "Submit".' },
+      { step: 'Expand "MY FEEDBACKS" to see your submitted feedbacks with status: Pending, Reviewed, or Resolved.' },
       { step: 'When the admin responds, their reply appears below your feedback message.' },
     ],
   },
@@ -251,7 +288,13 @@ function UserManualTab() {
                   <Accordion.Body className="py-2 px-3">
                     <ol className="mb-0" style={{ fontSize: '0.83rem', paddingLeft: '1.2rem' }}>
                       {section.content.map((item, idx) => (
-                        <li key={idx} className="mb-1">{item.step}</li>
+                        item.heading ? (
+                          <li key={idx} className="mb-1 mt-2 fw-bold list-unstyled" style={{ marginLeft: '-1.2rem', color: '#0891B2', fontSize: '0.85rem' }}>
+                            {item.step.replace(/^---\s*/, '').replace(/\s*---$/, '')}
+                          </li>
+                        ) : (
+                          <li key={idx} className="mb-1">{item.step}</li>
+                        )
                       ))}
                     </ol>
                   </Accordion.Body>

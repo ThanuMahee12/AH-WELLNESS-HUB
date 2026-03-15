@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { Row, Col, Card, Table, Badge, Pagination, Form, Button, ButtonGroup, Tab, Nav } from 'react-bootstrap'
+import { Row, Col, Card, Badge, Pagination, Form } from 'react-bootstrap'
 import {
   FaCalendarAlt, FaBug, FaTrash, FaSortAmountDown, FaSortAmountUp, FaSync,
   FaChartBar, FaUserInjured, FaClipboardCheck, FaFlask, FaPills, FaUsers,
@@ -15,6 +15,7 @@ import { encrypt, decrypt } from '../utils/crypto'
 import { useNotification } from '../context'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import PageHeader from '../components/ui/PageHeader'
+import DateRangePicker from '../components/ui/DateRangePicker'
 
 const GITHUB_REPO = 'ThanuMahee12/AH-WELLNESS-HUB'
 
@@ -61,6 +62,7 @@ function SystemMaintenance() {
   const [logsLoading, setLogsLoading] = useState(false)
   const [logs, setLogs] = useState([])
   const [logsTimeRange, setLogsTimeRange] = useState('all')
+  const [logsCustomDates, setLogsCustomDates] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const [logsPerPage, setLogsPerPage] = useState(20)
   const [sortField, setSortField] = useState('timestamp')
@@ -71,6 +73,7 @@ function SystemMaintenance() {
   const [reportLoading, setReportLoading] = useState(false)
   const [dailyReports, setDailyReports] = useState([])
   const [reportDays, setReportDays] = useState(7)
+  const [reportCustomDates, setReportCustomDates] = useState({})
   const [expandedDay, setExpandedDay] = useState(null)
 
   // Complaints state
@@ -103,12 +106,12 @@ function SystemMaintenance() {
   // Load error logs
   useEffect(() => {
     if (activeTab === 'error-logs') loadLogs()
-  }, [logsTimeRange, activeTab])
+  }, [logsTimeRange, logsCustomDates, activeTab])
 
   // Load daily report
   useEffect(() => {
     if (activeTab === 'daily-report') loadDailyReport()
-  }, [reportDays, activeTab])
+  }, [reportDays, reportCustomDates, activeTab])
 
   // Load complaints
   useEffect(() => {
@@ -122,9 +125,21 @@ function SystemMaintenance() {
   const loadLogs = async () => {
     setLogsLoading(true)
     try {
-      const result = await getErrorLogs(logsTimeRange)
+      const days = logsTimeRange === 'custom' ? 'all' : logsTimeRange
+      const result = await getErrorLogs(days)
       if (result.success) {
-        setLogs(result.data)
+        let data = result.data
+        if (logsTimeRange === 'custom' && logsCustomDates.startDate && logsCustomDates.endDate) {
+          const start = new Date(logsCustomDates.startDate)
+          start.setHours(0, 0, 0, 0)
+          const end = new Date(logsCustomDates.endDate)
+          end.setHours(23, 59, 59, 999)
+          data = data.filter(l => {
+            const d = new Date(l.timestamp)
+            return d >= start && d <= end
+          })
+        }
+        setLogs(data)
       } else {
         showError('Failed to load error logs')
       }
@@ -138,15 +153,28 @@ function SystemMaintenance() {
   const loadDailyReport = async () => {
     setReportLoading(true)
     try {
-      const result = await getUserActivities({ days: reportDays })
+      const days = reportDays === 'custom' ? 'all' : reportDays
+      const result = await getUserActivities({ days })
       if (!result.success) {
         showError('Failed to load activity data')
         return
       }
 
+      let activities = result.data
+      if (reportDays === 'custom' && reportCustomDates.startDate && reportCustomDates.endDate) {
+        const start = new Date(reportCustomDates.startDate)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(reportCustomDates.endDate)
+        end.setHours(23, 59, 59, 999)
+        activities = activities.filter(a => {
+          const d = new Date(a.timestamp)
+          return d >= start && d <= end
+        })
+      }
+
       // Group activities by date
       const grouped = {}
-      result.data.forEach(activity => {
+      activities.forEach(activity => {
         const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
         const dateKey = date.toISOString().split('T')[0]
 
@@ -505,770 +533,394 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
   }
 
   return (
-    <div className="p-3 p-md-4">
-      <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-        <PageHeader
-          title="System Maintenance"
-          subtitle="Daily reports and error logs"
-          icon={FaBug}
-        />
-        <div className="d-flex align-items-center gap-2">
+    <div className="p-2 p-md-3 d-flex flex-column" style={{ height: 'calc(100vh - 52px)' }}>
+      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 flex-shrink-0">
+        <PageHeader title="System Maintenance" subtitle="Reports, complaints & error logs" icon={FaBug} />
+        <div className="d-flex align-items-center gap-1">
           {showTokenInput ? (
             <div className="d-flex align-items-center gap-1">
-              <Form.Control
-                size="sm"
-                type="password"
-                placeholder="ghp_xxxxx..."
-                defaultValue={githubToken}
-                style={{ width: '220px', fontSize: '0.8rem' }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveGithubToken(e.target.value)
-                  if (e.key === 'Escape') setShowTokenInput(false)
-                }}
-                autoFocus
-              />
-              <Button
-                size="sm"
-                variant="success"
-                onClick={(e) => saveGithubToken(e.target.closest('.d-flex').querySelector('input').value)}
-                style={{ fontSize: '0.75rem' }}
-              >
-                Save
-              </Button>
-              <Button size="sm" variant="outline-secondary" onClick={() => setShowTokenInput(false)} style={{ fontSize: '0.75rem' }}>
-                Cancel
-              </Button>
+              <Form.Control size="sm" type="password" placeholder="ghp_xxxxx..." defaultValue={githubToken}
+                style={{ maxWidth: '180px', width: '100%', fontSize: '0.72rem', height: 26 }}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveGithubToken(e.target.value); if (e.key === 'Escape') setShowTokenInput(false) }}
+                autoFocus />
+              <button type="button" onClick={(e) => saveGithubToken(e.target.closest('.d-flex').querySelector('input').value)}
+                style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: 3 }}>Save</button>
+              <button type="button" onClick={() => setShowTokenInput(false)}
+                style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 3 }}>Cancel</button>
             </div>
           ) : (
-            <Button
-              size="sm"
-              variant={githubToken ? 'outline-success' : 'outline-secondary'}
-              onClick={() => setShowTokenInput(true)}
-              style={{ fontSize: '0.78rem' }}
+            <button type="button" onClick={() => setShowTokenInput(true)}
               title={githubToken ? 'GitHub token configured — click to change' : 'Add GitHub token for direct issue creation'}
-            >
-              <FaGithub className="me-1" />
-              {githubToken ? 'Token Set' : 'Set GitHub Token'}
-            </Button>
+              style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: githubToken ? '#f0fdf4' : '#f8f9fa', color: githubToken ? '#16a34a' : '#64748b', border: `1px solid ${githubToken ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: 3 }}>
+              <FaGithub size={10} className="me-1" />{githubToken ? 'Token Set' : 'GitHub Token'}
+            </button>
           )}
         </div>
       </div>
 
-      <Tab.Container activeKey={activeTab} onSelect={setActiveTab}>
-        <Nav variant="tabs" className="mb-3">
-          <Nav.Item>
-            <Nav.Link eventKey="daily-report">
-              <FaChartBar className="me-1" /> Daily Report
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="complaints">
-              <FaCommentDots className="me-1" /> Complaints
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="error-logs">
-              <FaBug className="me-1" /> Error Logs
-            </Nav.Link>
-          </Nav.Item>
-        </Nav>
+      {/* Tab Bar */}
+      <div className="flex-shrink-0 border-bottom mb-0">
+        <div className="d-flex gap-0">
+          {[
+            { key: 'daily-report', label: 'Daily Report', icon: FaChartBar },
+            { key: 'complaints', label: 'Complaints', icon: FaCommentDots },
+            { key: 'error-logs', label: 'Error Logs', icon: FaBug },
+          ].map(tab => (
+            <button key={tab.key} type="button"
+              className={`btn btn-link text-decoration-none px-3 py-1 ${activeTab === tab.key ? 'fw-semibold' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+              style={{ fontSize: '0.72rem', color: activeTab === tab.key ? '#0891B2' : '#94a3b8', borderRadius: 0,
+                borderBottom: activeTab === tab.key ? '2px solid #0891B2' : '2px solid transparent' }}>
+              <tab.icon className="me-1" size={11} />{tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <Tab.Content>
+      {/* Scrollable Content */}
+      <div className="flex-grow-1" style={{ overflowY: 'auto', overflowX: 'hidden', minHeight: 0, paddingTop: '8px' }}>
           {/* ===== DAILY REPORT TAB ===== */}
-          <Tab.Pane eventKey="daily-report">
-            {/* Time Range Filter */}
-            <Row className="mb-3">
-              <Col>
-                <Card className="shadow-sm">
-                  <Card.Body className="py-2 px-3">
-                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                      <div className="d-flex align-items-center gap-3 flex-wrap">
-                        <div>
-                          <FaCalendarAlt className="me-2 text-theme" />
-                          <strong style={{ fontSize: '0.85rem' }}>Period:</strong>
-                        </div>
-                        <ButtonGroup size="sm">
-                          {[
-                            { value: 7, label: '7 Days' },
-                            { value: 14, label: '14 Days' },
-                            { value: 30, label: '30 Days' },
-                            { value: 'all', label: 'All' },
-                          ].map(opt => (
-                            <Button
-                              key={opt.value}
-                              variant={reportDays === opt.value ? 'primary' : 'outline-primary'}
-                              onClick={() => setReportDays(opt.value)}
-                              style={reportDays === opt.value
-                                ? { backgroundColor: '#0891B2', borderColor: '#0891B2' }
-                                : { color: '#0891B2', borderColor: '#0891B2' }}
-                            >
-                              {opt.label}
-                            </Button>
-                          ))}
-                        </ButtonGroup>
-                      </div>
-                      <Button size="sm" variant="outline-secondary" onClick={loadDailyReport} title="Refresh">
-                        <FaSync />
-                      </Button>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+          {activeTab === 'daily-report' && (<>
+            <Card className="shadow-sm border-0 mb-2">
+              <Card.Body className="py-2 px-3">
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <DateRangePicker value={reportDays}
+                    onChange={(range, dates) => { setReportDays(range); if (range === 'custom') setReportCustomDates(dates) }}
+                    presets={[{ key: 7, label: '7d' }, { key: 14, label: '14d' }, { key: 30, label: '30d' }, { key: 'all', label: 'All' }]} />
+                  <button type="button" onClick={loadDailyReport} title="Refresh"
+                    style={{ border: 'none', background: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}><FaSync size={11} /></button>
+                </div>
+              </Card.Body>
+            </Card>
 
             {reportLoading ? (
               <LoadingSpinner text="Generating daily reports..." />
             ) : dailyReports.length === 0 ? (
-              <Card className="shadow-sm">
-                <Card.Body className="text-center text-muted py-4">
-                  <FaChartBar size={24} className="mb-2 d-block mx-auto" style={{ opacity: 0.3 }} />
-                  <small>No activity data found for the selected period</small>
-                </Card.Body>
-              </Card>
+              <div className="text-center text-muted py-4" style={{ fontSize: '0.78rem' }}>
+                <FaChartBar size={20} className="mb-2 d-block mx-auto" style={{ opacity: 0.3 }} />
+                No activity data found for the selected period
+              </div>
             ) : (
-              <div style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+              <div>
                 {dailyReports.map(day => {
                   const isExpanded = expandedDay === day.date
                   const isToday = day.date === new Date().toISOString().split('T')[0]
-
-                  // Get summary counts for key categories
                   const patientsCreated = day.byType['patient_create'] || 0
                   const checkupsCreated = day.byType['checkup_create'] || 0
                   const invoices = day.byType['checkup_pdf_invoice'] || 0
-                  const prescriptions = day.byType['checkup_pdf_prescription'] || 0
 
                   return (
-                    <Card
-                      key={day.date}
-                      className="shadow-sm mb-2"
-                      style={isToday ? { borderLeft: '3px solid #0891B2' } : {}}
-                    >
-                      <Card.Header
-                        className="py-2 px-3"
-                        style={{ cursor: 'pointer', backgroundColor: isExpanded ? '#f0f9fa' : '#f8f9fa' }}
-                        onClick={() => setExpandedDay(isExpanded ? null : day.date)}
-                      >
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center gap-2">
-                            <strong style={{ fontSize: '0.88rem' }}>
-                              {formatDate(day.date)}
-                              {isToday && <Badge bg="info" className="ms-2" style={{ fontSize: '0.65rem' }}>Today</Badge>}
-                            </strong>
-                          </div>
-                          <div className="d-flex align-items-center gap-3" style={{ fontSize: '0.78rem' }}>
-                            <span title="Total Activities">
-                              <Badge bg="secondary" pill>{day.total} actions</Badge>
-                            </span>
-                            {patientsCreated > 0 && (
-                              <span className="text-success">
-                                <FaUserInjured size={11} className="me-1" />{patientsCreated} patients
-                              </span>
-                            )}
-                            {checkupsCreated > 0 && (
-                              <span className="text-primary">
-                                <FaClipboardCheck size={11} className="me-1" />{checkupsCreated} checkups
-                              </span>
-                            )}
-                            {invoices > 0 && (
-                              <span className="text-info">{invoices} invoices</span>
-                            )}
-                            {prescriptions > 0 && (
-                              <span className="text-info">{prescriptions} prescriptions</span>
-                            )}
-                            <span className="text-muted">
-                              <FaSignInAlt size={11} className="me-1" />{day.logins}
-                            </span>
-                          </div>
+                    <div key={day.date} className="mb-1" style={isToday ? { borderLeft: '3px solid #0891B2', borderRadius: 4 } : {}}>
+                      <div className="d-flex justify-content-between align-items-center py-1 px-2"
+                        style={{ cursor: 'pointer', backgroundColor: isExpanded ? '#f0f9fa' : 'transparent', borderBottom: '1px solid #f1f5f9', borderRadius: isExpanded ? '4px 4px 0 0' : 0 }}
+                        onClick={() => setExpandedDay(isExpanded ? null : day.date)}>
+                        <div className="d-flex align-items-center gap-2">
+                          <strong style={{ fontSize: '0.75rem' }}>{formatDate(day.date)}</strong>
+                          {isToday && <Badge bg="info" style={{ fontSize: '0.5rem' }}>Today</Badge>}
                         </div>
-                      </Card.Header>
+                        <div className="d-flex align-items-center gap-2" style={{ fontSize: '0.68rem' }}>
+                          <Badge bg="secondary" pill style={{ fontSize: '0.55rem' }}>{day.total}</Badge>
+                          {patientsCreated > 0 && <span className="text-success d-none d-md-inline"><FaUserInjured size={9} className="me-1" />{patientsCreated}</span>}
+                          {checkupsCreated > 0 && <span className="text-primary d-none d-md-inline"><FaClipboardCheck size={9} className="me-1" />{checkupsCreated}</span>}
+                          {invoices > 0 && <span className="text-info d-none d-md-inline">{invoices} inv</span>}
+                          <span className="text-muted"><FaSignInAlt size={9} className="me-1" />{day.logins}</span>
+                        </div>
+                      </div>
 
                       {isExpanded && (
-                        <Card.Body className="py-2 px-3">
-                          <Row>
-                            {/* Activity Breakdown */}
+                        <div className="py-2 px-2" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', borderRadius: '0 0 4px 4px' }}>
+                          <Row className="g-2">
                             <Col md={7}>
-                              <small className="fw-bold text-muted d-block mb-1">ACTIVITY BREAKDOWN</small>
-                              <Table size="sm" className="mb-0" style={{ fontSize: '0.8rem' }}>
-                                <tbody>
-                                  {Object.entries(day.byType)
-                                    .sort((a, b) => b[1] - a[1])
-                                    .map(([type, count]) => (
-                                      <tr key={type}>
-                                        <td style={{ padding: '3px 8px', width: '60%' }}>
-                                          {getActivityIcon(type)}
-                                          {activityLabels[type] || type.replace(/_/g, ' ')}
-                                        </td>
-                                        <td style={{ padding: '3px 8px' }}>
-                                          <Badge bg={getTypeBadgeColor(type)} pill style={{ fontSize: '0.72rem' }}>
-                                            {count}
-                                          </Badge>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                </tbody>
-                              </Table>
+                              <small className="fw-bold text-muted d-block mb-1" style={{ fontSize: '0.58rem' }}>ACTIVITY BREAKDOWN</small>
+                              {Object.entries(day.byType).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
+                                <div key={type} className="d-flex justify-content-between align-items-center py-1" style={{ fontSize: '0.72rem', borderBottom: '1px solid #f1f5f9' }}>
+                                  <span>{getActivityIcon(type)}{activityLabels[type] || type.replace(/_/g, ' ')}</span>
+                                  <Badge bg={getTypeBadgeColor(type)} pill style={{ fontSize: '0.55rem' }}>{count}</Badge>
+                                </div>
+                              ))}
                             </Col>
-
-                            {/* User Breakdown */}
                             <Col md={5}>
-                              <small className="fw-bold text-muted d-block mb-1">BY USER</small>
-                              <Table size="sm" className="mb-0" style={{ fontSize: '0.8rem' }}>
-                                <tbody>
-                                  {Object.entries(day.byUser)
-                                    .sort((a, b) => b[1].total - a[1].total)
-                                    .map(([username, data]) => (
-                                      <tr key={username}>
-                                        <td style={{ padding: '3px 8px' }}>
-                                          <strong>{username}</strong>
-                                        </td>
-                                        <td style={{ padding: '3px 8px' }}>
-                                          <Badge bg="secondary" pill style={{ fontSize: '0.72rem' }}>
-                                            {data.total}
-                                          </Badge>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                </tbody>
-                              </Table>
+                              <small className="fw-bold text-muted d-block mb-1" style={{ fontSize: '0.58rem' }}>BY USER</small>
+                              {Object.entries(day.byUser).sort((a, b) => b[1].total - a[1].total).map(([username, data]) => (
+                                <div key={username} className="d-flex justify-content-between align-items-center py-1" style={{ fontSize: '0.72rem', borderBottom: '1px solid #f1f5f9' }}>
+                                  <strong>{username}</strong>
+                                  <Badge bg="secondary" pill style={{ fontSize: '0.55rem' }}>{data.total}</Badge>
+                                </div>
+                              ))}
                             </Col>
                           </Row>
-                        </Card.Body>
+                        </div>
                       )}
-                    </Card>
+                    </div>
                   )
                 })}
               </div>
             )}
-          </Tab.Pane>
+          </>)}
 
           {/* ===== COMPLAINTS TAB ===== */}
-          <Tab.Pane eventKey="complaints">
-            {/* Filter */}
-            <Row className="mb-3">
-              <Col>
-                <Card className="shadow-sm">
-                  <Card.Body className="py-2 px-3">
-                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                      <div className="d-flex align-items-center gap-3 flex-wrap">
-                        <strong style={{ fontSize: '0.85rem' }}>Status:</strong>
-                        <ButtonGroup size="sm">
-                          {[
-                            { value: 'all', label: 'All' },
-                            { value: 'pending', label: 'Pending' },
-                            { value: 'reviewed', label: 'Reviewed' },
-                            { value: 'resolved', label: 'Resolved' },
-                          ].map(opt => (
-                            <Button
-                              key={opt.value}
-                              variant={complaintFilter === opt.value ? 'primary' : 'outline-primary'}
-                              onClick={() => setComplaintFilter(opt.value)}
-                              style={complaintFilter === opt.value
-                                ? { backgroundColor: '#0891B2', borderColor: '#0891B2' }
-                                : { color: '#0891B2', borderColor: '#0891B2' }}
-                            >
-                              {opt.label}
-                              {opt.value !== 'all' && (
-                                <Badge bg="light" text="dark" className="ms-1" style={{ fontSize: '0.65rem' }}>
-                                  {complaints.filter(c => c.status === opt.value).length}
-                                </Badge>
-                              )}
-                            </Button>
-                          ))}
-                        </ButtonGroup>
-                      </div>
-                      <Button size="sm" variant="outline-secondary" onClick={loadComplaints} title="Refresh">
-                        <FaSync />
-                      </Button>
+          {activeTab === 'complaints' && (<>
+            <Card className="shadow-sm border-0 mb-2">
+              <Card.Body className="py-2 px-3">
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div className="d-flex align-items-center gap-1 flex-wrap">
+                    {[{ value: 'all', label: 'All' }, { value: 'pending', label: 'Pending' }, { value: 'reviewed', label: 'Reviewed' }, { value: 'resolved', label: 'Resolved' }].map(opt => (
+                      <button key={opt.value} type="button" onClick={() => setComplaintFilter(opt.value)}
+                        style={{ fontSize: '0.62rem', padding: '2px 8px', borderRadius: 3, border: `1px solid ${complaintFilter === opt.value ? '#0891B2' : '#e2e8f0'}`,
+                          backgroundColor: complaintFilter === opt.value ? '#0891B2' : '#fff', color: complaintFilter === opt.value ? '#fff' : '#64748b' }}>
+                        {opt.label}
+                        {opt.value !== 'all' && <span className="ms-1" style={{ fontSize: '0.55rem', opacity: 0.8 }}>({complaints.filter(c => c.status === opt.value).length})</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="d-flex align-items-center gap-2">
+                    {/* Inline stats */}
+                    <div className="d-none d-md-flex align-items-center gap-2" style={{ fontSize: '0.6rem', color: '#94a3b8' }}>
+                      <span>{complaints.length} total</span>
+                      <span className="text-warning">{complaints.filter(c => c.status === 'pending').length} pending</span>
+                      <span className="text-success">{complaints.filter(c => c.status === 'resolved').length} resolved</span>
                     </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-
-            {/* Stats */}
-            <Row className="mb-3">
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0 text-theme">{complaints.length}</h4>
-                    <small className="text-muted">Total</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0 text-warning">{complaints.filter(c => c.status === 'pending').length}</h4>
-                    <small className="text-muted">Pending</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0 text-info">{complaints.filter(c => c.status === 'reviewed').length}</h4>
-                    <small className="text-muted">Reviewed</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0 text-success">{complaints.filter(c => c.status === 'resolved').length}</h4>
-                    <small className="text-muted">Resolved</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+                    <button type="button" onClick={loadComplaints} title="Refresh"
+                      style={{ border: 'none', background: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}><FaSync size={11} /></button>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
 
             {complaintsLoading ? (
               <LoadingSpinner text="Loading complaints..." />
             ) : filteredComplaints.length === 0 ? (
-              <Card className="shadow-sm">
-                <Card.Body className="text-center text-muted py-4">
-                  <FaCommentDots size={24} className="mb-2 d-block mx-auto" style={{ opacity: 0.3 }} />
-                  <small>No complaints found</small>
-                </Card.Body>
-              </Card>
+              <div className="text-center text-muted py-4" style={{ fontSize: '0.78rem' }}>
+                <FaCommentDots size={20} className="mb-2 d-block mx-auto" style={{ opacity: 0.3 }} />
+                No complaints found
+              </div>
             ) : (
-              <div style={{ maxHeight: 'calc(100vh - 340px)', overflowY: 'auto' }}>
+              <div>
                 {filteredComplaints.map(fb => {
                   const isExpanded = expandedComplaint === fb.id
-                  const getCategoryBadge = (cat) => {
-                    const v = { bug: 'danger', feature: 'primary', improvement: 'info', complaint: 'warning', general: 'secondary' }
-                    return <Badge bg={v[cat] || 'secondary'} style={{ fontSize: '0.68rem' }}>{cat}</Badge>
-                  }
-                  const getStatusBadge = (status) => {
-                    const v = { pending: 'warning', reviewed: 'info', resolved: 'success' }
-                    return <Badge bg={v[status] || 'secondary'} style={{ fontSize: '0.68rem' }}>{status}</Badge>
-                  }
+                  const catColors = { bug: 'danger', feature: 'primary', improvement: 'info', complaint: 'warning', general: 'secondary' }
+                  const statusColors = { pending: 'warning', reviewed: 'info', resolved: 'success' }
 
                   return (
-                    <Card key={fb.id} className="shadow-sm mb-2" style={fb.status === 'pending' ? { borderLeft: '3px solid #f59e0b' } : {}}>
-                      <Card.Header
-                        className="py-2 px-3"
-                        style={{ cursor: 'pointer', backgroundColor: isExpanded ? '#f0f9fa' : '#f8f9fa' }}
-                        onClick={() => setExpandedComplaint(isExpanded ? null : fb.id)}
-                      >
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
-                            <strong>{fb.title}</strong>
-                            {getCategoryBadge(fb.category)}
-                            {getStatusBadge(fb.status)}
-                          </div>
-                          <div className="d-flex align-items-center gap-2" style={{ fontSize: '0.78rem' }}>
-                            <span className="text-muted">{fb.username}</span>
-                            <Badge bg="light" text="dark" style={{ fontSize: '0.65rem' }}>{fb.userRole}</Badge>
-                            <small className="text-muted">
-                              {new Date(fb.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </small>
-                          </div>
+                    <div key={fb.id} style={fb.status === 'pending' ? { borderLeft: '3px solid #f59e0b', borderRadius: 4 } : {}}>
+                      <div className="d-flex justify-content-between align-items-center py-1 px-2"
+                        style={{ cursor: 'pointer', backgroundColor: isExpanded ? '#f0f9fa' : 'transparent', borderBottom: '1px solid #f1f5f9' }}
+                        onClick={() => setExpandedComplaint(isExpanded ? null : fb.id)}>
+                        <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
+                          <strong>{fb.title}</strong>
+                          <Badge bg={catColors[fb.category] || 'secondary'} style={{ fontSize: '0.5rem' }}>{fb.category}</Badge>
+                          <Badge bg={statusColors[fb.status] || 'secondary'} style={{ fontSize: '0.5rem' }}>{fb.status}</Badge>
                         </div>
-                      </Card.Header>
+                        <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.65rem' }}>
+                          <span className="text-muted">{fb.username}</span>
+                          <Badge bg="light" text="dark" style={{ fontSize: '0.5rem' }}>{fb.userRole}</Badge>
+                          <small className="text-muted">{new Date(fb.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
+                        </div>
+                      </div>
 
                       {isExpanded && (
-                        <Card.Body className="py-2 px-3">
-                          <p style={{ fontSize: '0.83rem', whiteSpace: 'pre-wrap' }} className="mb-2">{fb.message}</p>
-
-                          <div className="d-flex align-items-center gap-1 mb-2" style={{ fontSize: '0.78rem' }}>
-                            <small className="text-muted">
-                              Submitted: {new Date(fb.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </small>
-                          </div>
+                        <div className="py-2 px-3" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          <p style={{ fontSize: '0.75rem', whiteSpace: 'pre-wrap' }} className="mb-1">{fb.message}</p>
+                          <small className="text-muted d-block mb-2" style={{ fontSize: '0.62rem' }}>
+                            {new Date(fb.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </small>
 
                           {fb.adminNote && (
-                            <div className="p-2 rounded mb-2" style={{ backgroundColor: '#f0f9fa', fontSize: '0.8rem' }}>
-                              <strong className="text-theme">Admin Response:</strong> {fb.adminNote}
+                            <div className="p-2 rounded mb-2" style={{ backgroundColor: '#f0f9fa', fontSize: '0.72rem' }}>
+                              <strong style={{ color: '#0891B2' }}>Response:</strong> {fb.adminNote}
                             </div>
                           )}
 
-                          {/* Reply form */}
                           {replyingTo === fb.id && (
                             <div className="mb-2">
-                              <Form.Control
-                                as="textarea"
-                                rows={2}
-                                size="sm"
-                                placeholder="Write a reply..."
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                style={{ fontSize: '0.82rem' }}
-                              />
+                              <Form.Control as="textarea" rows={2} size="sm" placeholder="Write a reply..." value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)} style={{ fontSize: '0.75rem' }} />
                               <div className="d-flex gap-1 mt-1">
-                                <Button size="sm" variant="success" onClick={() => handleReply(fb.id)} style={{ fontSize: '0.75rem' }}>
-                                  Send & Resolve
-                                </Button>
-                                <Button size="sm" variant="outline-secondary" onClick={() => { setReplyingTo(null); setReplyText('') }} style={{ fontSize: '0.75rem' }}>
-                                  Cancel
-                                </Button>
+                                <button type="button" onClick={() => handleReply(fb.id)}
+                                  style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: 3 }}>Send & Resolve</button>
+                                <button type="button" onClick={() => { setReplyingTo(null); setReplyText('') }}
+                                  style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 3 }}>Cancel</button>
                               </div>
                             </div>
                           )}
 
-                          {/* Action buttons */}
-                          <div className="d-flex gap-1">
+                          <div className="d-flex gap-1 flex-wrap">
                             {fb.status === 'pending' && (
-                              <Button
-                                size="sm"
-                                variant="outline-info"
-                                onClick={() => handleStatusChange(fb.id, 'reviewed')}
-                                style={{ fontSize: '0.75rem' }}
-                              >
-                                <FaEye className="me-1" size={10} /> Mark Reviewed
-                              </Button>
+                              <button type="button" onClick={() => handleStatusChange(fb.id, 'reviewed')}
+                                style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#0891B2', border: '1px solid #0891B2', borderRadius: 3 }}>
+                                <FaEye size={8} className="me-1" />Reviewed</button>
                             )}
-                            {fb.status !== 'resolved' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline-success"
-                                  onClick={() => handleStatusChange(fb.id, 'resolved')}
-                                  style={{ fontSize: '0.75rem' }}
-                                >
-                                  <FaCheck className="me-1" size={10} /> Resolve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline-primary"
-                                  onClick={() => { setReplyingTo(fb.id); setReplyText('') }}
-                                  style={{ fontSize: '0.75rem' }}
-                                >
-                                  <FaReply className="me-1" size={10} /> Reply & Resolve
-                                </Button>
-                              </>
-                            )}
+                            {fb.status !== 'resolved' && (<>
+                              <button type="button" onClick={() => handleStatusChange(fb.id, 'resolved')}
+                                style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 3 }}>
+                                <FaCheck size={8} className="me-1" />Resolve</button>
+                              <button type="button" onClick={() => { setReplyingTo(fb.id); setReplyText('') }}
+                                style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#0891B2', border: '1px solid #bae6fd', borderRadius: 3 }}>
+                                <FaReply size={8} className="me-1" />Reply</button>
+                            </>)}
                             {createdIssues[fb.id] ? (
-                              <a
-                                href={createdIssues[fb.id].url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-sm btn-success"
-                                style={{ fontSize: '0.75rem' }}
-                              >
-                                <FaGithub className="me-1" size={10} />
-                                Issue #{createdIssues[fb.id].number}
-                              </a>
+                              <a href={createdIssues[fb.id].url} target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: 3, textDecoration: 'none' }}>
+                                <FaGithub size={8} className="me-1" />#{createdIssues[fb.id].number}</a>
                             ) : (
-                              <Button
-                                size="sm"
-                                variant="outline-dark"
-                                disabled={creatingIssue === fb.id}
-                                onClick={() => createComplaintIssue(fb)}
-                                style={{ fontSize: '0.75rem' }}
-                              >
-                                <FaGithub className="me-1" size={10} />
-                                {creatingIssue === fb.id ? 'Creating...' : 'Create Issue'}
-                              </Button>
+                              <button type="button" disabled={creatingIssue === fb.id} onClick={() => createComplaintIssue(fb)}
+                                style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#333', border: '1px solid #e2e8f0', borderRadius: 3, opacity: creatingIssue === fb.id ? 0.5 : 1 }}>
+                                <FaGithub size={8} className="me-1" />{creatingIssue === fb.id ? '...' : 'Issue'}</button>
                             )}
-                            <Button
-                              size="sm"
-                              variant="outline-danger"
-                              onClick={() => handleDeleteComplaint(fb.id)}
-                              style={{ fontSize: '0.75rem' }}
-                            >
-                              <FaTrash className="me-1" size={10} /> Delete
-                            </Button>
+                            <button type="button" onClick={() => handleDeleteComplaint(fb.id)}
+                              style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 3 }}>
+                              <FaTrash size={8} className="me-1" />Delete</button>
                           </div>
-                        </Card.Body>
+                        </div>
                       )}
-                    </Card>
+                    </div>
                   )
                 })}
               </div>
             )}
-          </Tab.Pane>
+          </>)}
 
           {/* ===== ERROR LOGS TAB ===== */}
-          <Tab.Pane eventKey="error-logs">
-            {/* Filters */}
-            <Row className="mb-3">
-              <Col>
-                <Card className="shadow-sm">
-                  <Card.Body className="py-2 px-3">
-                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                      <div className="d-flex align-items-center gap-3 flex-wrap">
-                        <div>
-                          <FaCalendarAlt className="me-2 text-theme" />
-                          <strong style={{ fontSize: '0.85rem' }}>Time Range:</strong>
-                        </div>
-                        <ButtonGroup size="sm">
-                          {[
-                            { value: 'all', label: 'All' },
-                            { value: 1, label: '24h' },
-                            { value: 7, label: '7 Days' },
-                            { value: 30, label: '30 Days' },
-                          ].map(opt => (
-                            <Button
-                              key={opt.value}
-                              variant={logsTimeRange === opt.value ? 'primary' : 'outline-primary'}
-                              onClick={() => setLogsTimeRange(opt.value)}
-                              style={logsTimeRange === opt.value
-                                ? { backgroundColor: '#0891B2', borderColor: '#0891B2' }
-                                : { color: '#0891B2', borderColor: '#0891B2' }}
-                            >
-                              {opt.label}
-                            </Button>
-                          ))}
-                        </ButtonGroup>
-                      </div>
-
-                      <div className="d-flex align-items-center gap-2">
-                        <Form.Select
-                          size="sm"
-                          value={logsPerPage}
-                          onChange={(e) => setLogsPerPage(Number(e.target.value))}
-                          style={{ width: 'auto' }}
-                        >
-                          <option value={10}>10 / page</option>
-                          <option value={20}>20 / page</option>
-                          <option value={50}>50 / page</option>
-                          <option value={100}>100 / page</option>
-                        </Form.Select>
-
-                        <Button size="sm" variant="outline-secondary" onClick={loadLogs} title="Refresh">
-                          <FaSync />
-                        </Button>
-
-                        {logs.length > 0 && (
-                          <Button size="sm" variant="outline-danger" onClick={handleClearAll} title="Clear all logs">
-                            <FaTrash className="me-1" /> Clear All
-                          </Button>
-                        )}
+          {activeTab === 'error-logs' && (<>
+            <Card className="shadow-sm border-0 mb-2">
+              <Card.Body className="py-2 px-3">
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <DateRangePicker value={logsTimeRange}
+                    onChange={(range, dates) => { setLogsTimeRange(range); if (range === 'custom') setLogsCustomDates(dates) }}
+                    presets={[{ key: 'all', label: 'All' }, { key: 1, label: '24h' }, { key: 7, label: '7d' }, { key: 30, label: '30d' }]} />
+                  <div className="d-flex align-items-center gap-1">
+                    <Form.Select size="sm" value={logsPerPage} onChange={(e) => setLogsPerPage(Number(e.target.value))}
+                      style={{ width: 'auto', fontSize: '0.68rem', height: 24, padding: '0 4px' }}>
+                      <option value={10}>10</option><option value={20}>20</option><option value={50}>50</option><option value={100}>100</option>
+                    </Form.Select>
+                    <button type="button" onClick={loadLogs} title="Refresh"
+                      style={{ border: 'none', background: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}><FaSync size={11} /></button>
+                    {logs.length > 0 && (
+                      <button type="button" onClick={handleClearAll} title="Clear all logs"
+                        style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 3 }}>
+                        <FaTrash size={8} className="me-1" />Clear All
+                      </button>
+                    )}
                       </div>
                     </div>
                   </Card.Body>
                 </Card>
-              </Col>
-            </Row>
 
-            {/* Stats */}
-            <Row className="mb-3">
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0 text-theme">{logs.length}</h4>
-                    <small className="text-muted">Total Errors</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0 text-danger">
-                      {logs.filter(l => l.source === 'ErrorBoundary').length}
-                    </h4>
-                    <small className="text-muted">Render Crashes</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0 text-warning">
-                      {logs.filter(l => l.source === 'window.onerror').length}
-                    </h4>
-                    <small className="text-muted">Runtime Errors</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col xs={6} md={3}>
-                <Card className="text-center shadow-sm">
-                  <Card.Body className="py-2">
-                    <h4 className="mb-0" style={{ color: '#333' }}>
-                      {logs.filter(l => l.source === 'unhandledrejection').length}
-                    </h4>
-                    <small className="text-muted">Unhandled Promises</small>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+            {/* Inline stats */}
+            <div className="d-flex gap-2 mb-2 flex-wrap">
+              {[
+                { label: 'Total', value: logs.length, color: '#0891B2' },
+                { label: 'Crashes', value: logs.filter(l => l.source === 'ErrorBoundary').length, color: '#dc2626' },
+                { label: 'Runtime', value: logs.filter(l => l.source === 'window.onerror').length, color: '#f59e0b' },
+                { label: 'Promises', value: logs.filter(l => l.source === 'unhandledrejection').length, color: '#333' },
+              ].map(s => (
+                <div key={s.label} className="text-center px-3 py-1 rounded" style={{ border: '1px solid #e2e8f0', flex: 1, minWidth: 70 }}>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: '0.55rem', color: '#94a3b8' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
 
-            {/* Error Logs Table */}
+            {/* Error Logs */}
             {logsLoading ? (
               <LoadingSpinner text="Loading error logs..." />
             ) : (
-              <Card className="shadow-sm">
-                <Card.Header className="py-2 px-3">
-                  <small className="fw-bold text-muted">ERROR LOGS ({sortedLogs.length})</small>
-                </Card.Header>
-                <Card.Body className="p-0">
+              <Card className="shadow-sm border-0">
+                <Card.Body className="py-2 px-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <small className="fw-bold text-muted">ERROR LOGS ({sortedLogs.length})</small>
+                  </div>
+
                   {paginatedLogs.length === 0 ? (
-                    <div className="text-center text-muted py-4">
-                      <FaBug size={24} className="mb-2 d-block mx-auto" style={{ opacity: 0.3 }} />
-                      <small>No error logs found</small>
+                    <div className="text-center text-muted py-4" style={{ fontSize: '0.78rem' }}>
+                      <FaBug size={20} className="mb-2 d-block mx-auto" style={{ opacity: 0.3 }} />
+                      No error logs found
                     </div>
                   ) : (
-                    <div style={{ maxHeight: 'calc(100vh - 420px)', overflowY: 'auto', overflowX: 'auto' }}>
-                      <Table size="sm" hover className="mb-0" style={{ fontSize: '0.82rem' }}>
-                        <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                          <tr style={{ backgroundColor: '#f8f9fa' }}>
-                            <th
-                              style={{ cursor: 'pointer', width: '160px', padding: '8px 10px' }}
-                              onClick={() => handleSort('timestamp')}
-                            >
-                              Time <SortIcon field="timestamp" />
-                            </th>
-                            <th
-                              style={{ cursor: 'pointer', width: '120px', padding: '8px 10px' }}
-                              onClick={() => handleSort('source')}
-                            >
-                              Source <SortIcon field="source" />
-                            </th>
-                            <th
-                              style={{ cursor: 'pointer', padding: '8px 10px' }}
-                              onClick={() => handleSort('message')}
-                            >
-                              Message <SortIcon field="message" />
-                            </th>
-                            <th
-                              style={{ cursor: 'pointer', width: '100px', padding: '8px 10px' }}
-                              onClick={() => handleSort('username')}
-                            >
-                              User <SortIcon field="username" />
-                            </th>
-                            <th style={{ width: '50px', padding: '8px 10px' }}>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paginatedLogs.map(log => (
-                            <React.Fragment key={log.id}>
-                              <tr
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
-                              >
-                                <td className="text-muted" style={{ padding: '6px 10px' }}>
-                                  {formatTimestamp(log.timestamp)}
-                                </td>
-                                <td style={{ padding: '6px 10px' }}>
-                                  {getSourceBadge(log.source)}
-                                </td>
-                                <td style={{ padding: '6px 10px', maxWidth: '400px' }}>
-                                  <span className="text-truncate d-inline-block" style={{ maxWidth: '100%' }}>
-                                    {log.message}
-                                  </span>
-                                </td>
-                                <td style={{ padding: '6px 10px' }}>
-                                  {log.username || <span className="text-muted">-</span>}
-                                </td>
-                                <td style={{ padding: '6px 10px' }}>
-                                  <Button
-                                    size="sm"
-                                    variant="link"
-                                    className="text-danger p-0"
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(log.id) }}
-                                    title="Delete"
-                                  >
-                                    <FaTrash size={12} />
-                                  </Button>
-                                </td>
-                              </tr>
-                              {expandedLog === log.id && (
-                                <tr>
-                                  <td colSpan={5} style={{ backgroundColor: '#f8f9fa', padding: '10px 14px' }}>
-                                    <div style={{ fontSize: '0.78rem' }}>
-                                      <div className="mb-1"><strong>URL:</strong> {log.url || 'N/A'}</div>
-                                      <div className="mb-1"><strong>User:</strong> {log.username || 'N/A'} ({log.userRole || 'N/A'})</div>
-                                      {log.stack && (
-                                        <div className="mb-1">
-                                          <strong>Stack Trace:</strong>
-                                          <pre style={{
-                                            fontSize: '0.72rem',
-                                            backgroundColor: '#fff',
-                                            border: '1px solid #dee2e6',
-                                            borderRadius: '4px',
-                                            padding: '8px',
-                                            maxHeight: '200px',
-                                            overflowY: 'auto',
-                                            whiteSpace: 'pre-wrap',
-                                            wordBreak: 'break-word',
-                                            margin: '4px 0 0',
-                                          }}>
-                                            {log.stack}
-                                          </pre>
-                                        </div>
-                                      )}
-                                      {log.componentStack && (
-                                        <div>
-                                          <strong>Component Stack:</strong>
-                                          <pre style={{
-                                            fontSize: '0.72rem',
-                                            backgroundColor: '#fff',
-                                            border: '1px solid #dee2e6',
-                                            borderRadius: '4px',
-                                            padding: '8px',
-                                            maxHeight: '150px',
-                                            overflowY: 'auto',
-                                            whiteSpace: 'pre-wrap',
-                                            wordBreak: 'break-word',
-                                            margin: '4px 0 0',
-                                          }}>
-                                            {log.componentStack}
-                                          </pre>
-                                        </div>
-                                      )}
-                                      <div className="mt-2">
-                                        {createdIssues[log.id] ? (
-                                          <a
-                                            href={createdIssues[log.id].url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="btn btn-sm btn-success"
-                                            style={{ fontSize: '0.75rem' }}
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            <FaGithub className="me-1" size={12} />
-                                            Issue #{createdIssues[log.id].number}
-                                          </a>
-                                        ) : (
-                                          <Button
-                                            size="sm"
-                                            variant="outline-dark"
-                                            disabled={creatingIssue === log.id}
-                                            onClick={(e) => { e.stopPropagation(); createErrorIssue(log) }}
-                                            style={{ fontSize: '0.75rem' }}
-                                          >
-                                            <FaGithub className="me-1" size={12} />
-                                            {creatingIssue === log.id ? 'Creating...' : 'Create Issue'}
-                                          </Button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
+                    <div>
+                      {/* Column headers */}
+                      <div className="d-none d-md-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.55rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                        <span style={{ width: 130, cursor: 'pointer' }} onClick={() => handleSort('timestamp')}>Time <SortIcon field="timestamp" /></span>
+                        <span style={{ width: 90, cursor: 'pointer' }} onClick={() => handleSort('source')}>Source <SortIcon field="source" /></span>
+                        <span style={{ flex: 1, cursor: 'pointer' }} onClick={() => handleSort('message')}>Message <SortIcon field="message" /></span>
+                        <span style={{ width: 80, cursor: 'pointer' }} onClick={() => handleSort('username')}>User <SortIcon field="username" /></span>
+                        <span style={{ width: 24 }}></span>
+                      </div>
+
+                      {paginatedLogs.map(log => (
+                        <React.Fragment key={log.id}>
+                          <div className="d-flex flex-wrap align-items-center gap-1 py-1 px-1"
+                            style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.72rem', cursor: 'pointer' }}
+                            onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}>
+                            <span style={{ width: 130, color: '#94a3b8', fontSize: '0.65rem' }}>{formatTimestamp(log.timestamp)}</span>
+                            <span style={{ width: 90 }}>{getSourceBadge(log.source)}</span>
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.message}</span>
+                            <span className="d-none d-md-inline" style={{ width: 80, color: '#64748b', fontSize: '0.65rem' }}>{log.username || '-'}</span>
+                            <span style={{ width: 24 }}>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); handleDelete(log.id) }}
+                                style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }} aria-label="Delete">
+                                <FaTrash size={9} /></button>
+                            </span>
+                          </div>
+
+                          {expandedLog === log.id && (
+                            <div style={{ padding: '8px 8px 8px 28px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
+                              <div className="mb-1"><strong>URL:</strong> <span className="text-muted">{log.url || 'N/A'}</span></div>
+                              <div className="mb-1"><strong>User:</strong> <span className="text-muted">{log.username || 'N/A'} ({log.userRole || 'N/A'})</span></div>
+                              {log.stack && (
+                                <div className="mb-1">
+                                  <strong>Stack Trace:</strong>
+                                  <pre style={{ fontSize: '0.62rem', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: 3,
+                                    padding: '6px', maxHeight: 160, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: '3px 0 0' }}>
+                                    {log.stack}
+                                  </pre>
+                                </div>
                               )}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </Table>
+                              {log.componentStack && (
+                                <div className="mb-1">
+                                  <strong>Component Stack:</strong>
+                                  <pre style={{ fontSize: '0.62rem', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: 3,
+                                    padding: '6px', maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: '3px 0 0' }}>
+                                    {log.componentStack}
+                                  </pre>
+                                </div>
+                              )}
+                              <div className="mt-1">
+                                {createdIssues[log.id] ? (
+                                  <a href={createdIssues[log.id].url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                                    style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: 3, textDecoration: 'none' }}>
+                                    <FaGithub size={9} className="me-1" />#{createdIssues[log.id].number}</a>
+                                ) : (
+                                  <button type="button" disabled={creatingIssue === log.id}
+                                    onClick={(e) => { e.stopPropagation(); createErrorIssue(log) }}
+                                    style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#333', border: '1px solid #e2e8f0', borderRadius: 3, opacity: creatingIssue === log.id ? 0.5 : 1 }}>
+                                    <FaGithub size={9} className="me-1" />{creatingIssue === log.id ? 'Creating...' : 'Create Issue'}</button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
                     </div>
                   )}
-                </Card.Body>
 
-                {totalPages > 1 && (
-                  <Card.Footer className="py-2 px-3">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <small className="text-muted">
+                  {totalPages > 1 && (
+                    <div className="d-flex justify-content-between align-items-center mt-2 pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
+                      <small className="text-muted" style={{ fontSize: '0.6rem' }}>
                         {((currentPage - 1) * logsPerPage) + 1}-{Math.min(currentPage * logsPerPage, sortedLogs.length)} of {sortedLogs.length}
                       </small>
                       <Pagination size="sm" className="mb-0">
                         <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
                         <Pagination.Prev onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} />
                         {Array.from({ length: totalPages }, (_, i) => i + 1)
-                          .filter(page =>
-                            page === 1 || page === totalPages || (page >= currentPage - 2 && page <= currentPage + 2)
-                          )
+                          .filter(page => page === 1 || page === totalPages || (page >= currentPage - 2 && page <= currentPage + 2))
                           .map((page, index, array) => {
                             const prevPage = array[index - 1]
                             const showEllipsis = prevPage && page - prevPage > 1
                             return (
                               <span key={page}>
                                 {showEllipsis && <Pagination.Ellipsis disabled />}
-                                <Pagination.Item
-                                  active={page === currentPage}
-                                  onClick={() => setCurrentPage(page)}
-                                >
-                                  {page}
-                                </Pagination.Item>
+                                <Pagination.Item active={page === currentPage} onClick={() => setCurrentPage(page)}>{page}</Pagination.Item>
                               </span>
                             )
                           })}
@@ -1276,13 +928,12 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                         <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
                       </Pagination>
                     </div>
-                  </Card.Footer>
-                )}
+                  )}
+                </Card.Body>
               </Card>
             )}
-          </Tab.Pane>
-        </Tab.Content>
-      </Tab.Container>
+          </>)}
+      </div>
     </div>
   )
 }
