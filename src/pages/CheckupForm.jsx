@@ -462,9 +462,25 @@ function CheckupForm() {
                 </Card>
               )}
 
+              {/* Payment & Total */}
+              <div className="mt-3 p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
+                <Row className="align-items-center">
+                  {isFieldVisible('checkups', 'paid') && (
+                    <Col xs={6}>
+                      <Form.Check type="switch" id="paid-patient" label={<span style={{ fontSize: '0.82rem', fontWeight: 500 }}>Paid</span>}
+                        checked={formData.paid} onChange={(e) => setFormData({ ...formData, paid: e.target.checked })} />
+                    </Col>
+                  )}
+                  <Col xs={6} className="text-end">
+                    <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Total</small>
+                    <strong style={{ fontSize: '1rem', color: formData.paid ? '#16a34a' : '#dc2626' }}>Rs. {calculateTotal().toFixed(2)}</strong>
+                  </Col>
+                </Row>
+              </div>
+
               {isNew && (
-                <div className="p-2 rounded mt-3" style={{ backgroundColor: '#f0f9ff', fontSize: '0.78rem', color: '#0369a1' }}>
-                  <strong>Tip:</strong> After creating the checkup, you can add notes, prescriptions, and lab results by editing it.
+                <div className="p-2 rounded mt-2" style={{ backgroundColor: '#f0f9ff', fontSize: '0.78rem', color: '#0369a1' }}>
+                  <strong>Tip:</strong> After creating, you can add notes, prescriptions, and lab results by editing.
                 </div>
               )}
             </div>
@@ -488,17 +504,6 @@ function CheckupForm() {
 
               <Row className="mb-2">
                 {isFieldVisible('checkups', 'ownTests') && <Col xs={6} md={4}><Form.Check type="switch" id="ownTests" label={<span style={{ fontSize: '0.78rem' }}>Own Tests</span>} checked={formData.ownTests} onChange={(e) => setFormData({ ...formData, ownTests: e.target.checked })} /></Col>}
-                {isFieldVisible('checkups', 'paid') && <Col xs={6} md={4}><Form.Check type="switch" id="paid" label={<span style={{ fontSize: '0.78rem' }}>Paid</span>} checked={formData.paid} onChange={(e) => setFormData({ ...formData, paid: e.target.checked })} /></Col>}
-              </Row>
-
-              <Row className="mb-3">
-                {isFieldVisible('checkups', 'doctorFees') && <Col xs={6} md={4}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Doctor Fees (Rs.)</Form.Label><Form.Control size="sm" type="number" step="0.01" value={formData.doctorFees} onChange={(e) => setFormData({ ...formData, doctorFees: e.target.value })} placeholder="0.00" /></Form.Group></Col>}
-                <Col xs={6} md={4} className="d-flex align-items-end mb-2">
-                  <div className="p-2 rounded w-100" style={{ backgroundColor: '#f0fdfa', fontSize: '0.82rem' }}>
-                    <small className="text-muted d-block" style={{ fontSize: '0.68rem' }}>Total</small>
-                    <strong>Rs. {calculateTotal().toFixed(2)}</strong>
-                  </div>
-                </Col>
               </Row>
 
               {(isFieldVisible('checkups', 'weight') || isFieldVisible('checkups', 'height')) && (
@@ -523,31 +528,12 @@ function CheckupForm() {
                   {renderTestFields(labResultFields, editedLabResults, setEditedLabResults)}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* ===== EXTRA TAB (edit only) ===== */}
-          {activeTab === 'extra' && !isNew && checkup && (
-            <div style={{ maxWidth: 700 }}>
-              {/* Notes */}
-              {isFieldVisible('checkups', 'notes') && (
-                <Form.Group className="mb-2">
-                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Invoice Notes <small className="text-muted">(printed on invoice)</small></Form.Label>
-                  <Form.Control as="textarea" rows={2} size="sm" value={editedNotes} onChange={(e) => setEditedNotes(e.target.value)} placeholder="Notes for invoice..." />
-                </Form.Group>
-              )}
-              {isFieldVisible('checkups', 'commonNotes') && (
-                <Form.Group className="mb-3">
-                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Common Notes <small className="text-muted">(internal)</small></Form.Label>
-                  <RichTextEditor label="" value={editedCommonNotes} onChange={setEditedCommonNotes} placeholder="Internal notes..." height="120px" />
-                </Form.Group>
-              )}
-
-              {/* Test Notes */}
-              {isFieldVisible('checkups', 'testNotes') && (
+              {/* Test Notes - in Tests tab */}
+              {!isNew && checkup && isFieldVisible('checkups', 'testNotes') && formData.tests.length > 0 && (
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center mb-1">
-                    <Form.Label className="mb-0" style={{ fontSize: '0.82rem', fontWeight: 500 }}>Test Notes</Form.Label>
+                    <small className="fw-bold text-muted">TEST NOTES</small>
                     <Button size="sm" variant="outline-secondary" style={{ fontSize: '0.72rem' }} onClick={() => { const el = document.getElementById('form-test-notes-dropdown'); if (el) el.focus() }}>
                       <FaPlus className="me-1" size={9} /> Add
                     </Button>
@@ -575,6 +561,33 @@ function CheckupForm() {
                     </div>
                   ) : null })}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== EXTRA TAB (edit only) ===== */}
+          {activeTab === 'extra' && !isNew && checkup && (
+            <div style={{ maxWidth: 700 }}>
+              {/* Doctor Fees */}
+              {isFieldVisible('checkups', 'doctorFees') && (
+                <Form.Group className="mb-2">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Doctor Fees (Rs.)</Form.Label>
+                  <Form.Control size="sm" type="number" step="0.01" value={formData.doctorFees} onChange={(e) => setFormData({ ...formData, doctorFees: e.target.value })} placeholder="0.00" style={{ maxWidth: '200px' }} />
+                </Form.Group>
+              )}
+
+              {/* Notes */}
+              {isFieldVisible('checkups', 'notes') && (
+                <Form.Group className="mb-2">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Invoice Notes <small className="text-muted">(printed on invoice)</small></Form.Label>
+                  <Form.Control as="textarea" rows={2} size="sm" value={editedNotes} onChange={(e) => setEditedNotes(e.target.value)} placeholder="Notes for invoice..." />
+                </Form.Group>
+              )}
+              {isFieldVisible('checkups', 'commonNotes') && (
+                <Form.Group className="mb-3">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Common Notes <small className="text-muted">(internal)</small></Form.Label>
+                  <RichTextEditor label="" value={editedCommonNotes} onChange={setEditedCommonNotes} placeholder="Internal notes..." height="120px" />
+                </Form.Group>
               )}
 
               {/* Valid Days & ESign */}
