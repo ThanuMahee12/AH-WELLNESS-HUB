@@ -1,20 +1,16 @@
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Container } from 'react-bootstrap'
-import { FaCog, FaWpforms, FaTable, FaShieldAlt, FaGlobe, FaStethoscope, FaCommentDots } from 'react-icons/fa'
+import { FaCog, FaShieldAlt, FaGlobe, FaStethoscope, FaCommentDots } from 'react-icons/fa'
 import { PageHeader, TabLayout } from '../components/ui'
 import { useSettings } from '../hooks/useSettings'
 
-import FormsSettingsTab from './tabs/FormsSettingsTab'
-import TablesSettingsTab from './tabs/TablesSettingsTab'
 import PageControlTab from './tabs/PageControlTab'
 import PublicPageTab from './tabs/PublicPageTab'
 import CheckupSettingsTab from './tabs/LabResultsSettingsTab'
 import FeedbackTab from './tabs/FeedbackTab'
 
 const SETTINGS_TABS = [
-  { key: 'forms', icon: FaWpforms, component: FormsSettingsTab },
-  { key: 'tables', icon: FaTable, component: TablesSettingsTab },
   { key: 'pages', icon: FaShieldAlt, component: PageControlTab },
   { key: 'public', icon: FaGlobe, component: PublicPageTab },
   { key: 'checkup', icon: FaStethoscope, component: CheckupSettingsTab },
