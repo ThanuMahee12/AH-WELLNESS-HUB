@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Container, Row, Col, Card, Button, Table, Badge, Collapse, Form } from 'react-bootstrap'
-import { FaUserInjured, FaMale, FaFemale, FaUser, FaWeight, FaRulerVertical, FaChevronDown, FaChevronRight } from 'react-icons/fa'
+import { FaUserInjured, FaWeight, FaRulerVertical, FaChevronDown, FaChevronRight } from 'react-icons/fa'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { selectAllPatients, addPatient, updatePatient, deletePatient, fetchPatients } from '../store/patientsSlice'
 import { selectAllCheckups } from '../store/checkupsSlice'
@@ -13,42 +13,6 @@ import { EntityForm } from '../components/crud'
 import { Breadcrumb } from '../components/ui'
 import { PermissionGate, usePermission } from '../components/auth/PermissionGate'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
-
-// Custom Gender Icon Selector Component
-const GenderIconSelector = ({ value, onChange, name, disabled, label = 'Gender', required = true }) => {
-  const genderOptions = [
-    { value: 'Male', icon: FaMale, color: '#0891B2' },
-    { value: 'Female', icon: FaFemale, color: '#06B6D4' },
-    { value: 'Other', icon: FaUser, color: '#0aa2c0' }
-  ]
-
-  return (
-    <Form.Group className="mb-3">
-      <Form.Label>
-        {label} {required && <span className="text-danger ms-1">*</span>}
-      </Form.Label>
-      <div className="d-flex gap-3">
-        {genderOptions.map((option) => {
-          const Icon = option.icon
-          const isSelected = value === option.value
-          return (
-            <Icon
-              key={option.value}
-              size={28}
-              onClick={() => !disabled && onChange({ target: { name, value: option.value } })}
-              style={{
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                opacity: disabled ? 0.6 : isSelected ? 1 : 0.4,
-                transition: 'opacity 0.2s',
-                color: isSelected ? option.color : '#9ca3af'
-              }}
-            />
-          )
-        })}
-      </div>
-    </Form.Group>
-  )
-}
 
 function PatientDetail() {
   const { id } = useParams()
@@ -257,15 +221,26 @@ function PatientDetail() {
                 </Col>
               ))}
               {isFieldVisible('patients', 'gender') && (
-                <Col xs={12}>
-                  <GenderIconSelector
-                    value={form.formData.gender}
-                    onChange={form.handleChange}
-                    name="gender"
-                    disabled={form.isSubmitting || !canEdit}
-                    label={getFieldLabel('patients', 'gender', 'Gender')}
-                    required={isFieldRequired('patients', 'gender', true)}
-                  />
+                <Col xs={12} md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label style={{ fontSize: '0.82rem' }}>
+                      {getFieldLabel('patients', 'gender', 'Gender')}
+                      {isFieldRequired('patients', 'gender', true) && <span className="text-danger ms-1">*</span>}
+                    </Form.Label>
+                    <Form.Select
+                      size="sm"
+                      name="gender"
+                      value={form.formData.gender || ''}
+                      onChange={form.handleChange}
+                      disabled={form.isSubmitting || !canEdit}
+                      required={isFieldRequired('patients', 'gender', true)}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </Form.Select>
+                  </Form.Group>
                 </Col>
               )}
               {visibleFields.slice(2).map((field) => (

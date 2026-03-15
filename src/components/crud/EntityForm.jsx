@@ -23,9 +23,9 @@ const EntityForm = React.memo(({
   };
 
   return (
-    <Card className="shadow-sm">
-      <Card.Header className="card-header-theme">
-        <h5 className="mb-0 fs-responsive-md">{title}</h5>
+    <Card className="shadow-sm border-0">
+      <Card.Header className="py-2 px-3" style={{ backgroundColor: '#f8f9fa' }}>
+        <small className="fw-bold" style={{ color: '#334155', fontSize: '0.85rem' }}>{title}</small>
       </Card.Header>
 
       <Form onSubmit={handleSubmit}>
@@ -79,19 +79,21 @@ const EntityForm = React.memo(({
           <div className="entity-form-actions">
             {isEditing && onDelete && (
               <Button
+                size="sm"
                 variant="outline-danger"
                 onClick={onDelete}
                 disabled={loading}
-                className="entity-form-btn"
+                style={{ fontSize: '0.8rem' }}
               >
-                <FaTrash className="me-1" />
+                <FaTrash className="me-1" size={11} />
                 Delete
               </Button>
             )}
             <Button
+              size="sm"
               type="submit"
               disabled={loading}
-              className="entity-form-btn btn-theme"
+              style={{ fontSize: '0.8rem', backgroundColor: '#0891B2', borderColor: '#0891B2' }}
             >
               {loading ? (
                 <>
@@ -100,7 +102,7 @@ const EntityForm = React.memo(({
                 </>
               ) : (
                 <>
-                  <FaSave className="me-1" />
+                  <FaSave className="me-1" size={11} />
                   {isEditing ? 'Update' : 'Save'}
                 </>
               )}

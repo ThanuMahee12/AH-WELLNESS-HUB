@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Container, Row, Col } from 'react-bootstrap'
-import { FaUserInjured, FaMale, FaFemale, FaUser } from 'react-icons/fa'
+import { FaUserInjured } from 'react-icons/fa'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { PageHeader } from '../components/ui'
 import { EnhancedCRUDTable } from '../components/crud'
@@ -24,11 +24,9 @@ function Patients() {
   // Custom renderers for specific columns — only rendering logic, not column definitions
   const COLUMN_RENDERERS = useMemo(() => ({
     gender: {
-      render: (value) => {
-        if (value === 'Male') return <FaMale className="text-theme" size={18} />
-        if (value === 'Female') return <FaFemale className="text-theme-light" size={18} />
-        return <FaUser style={{ color: '#0aa2c0' }} size={18} />
-      }
+      render: (value) => (
+        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>{value || '-'}</span>
+      )
     },
     name: {
       render: (value, item) => (

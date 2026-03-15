@@ -96,7 +96,7 @@ export const DEFAULT_SETTINGS = {
       fields: {
         name: { visible: true, required: true, label: 'Patient Name', type: 'text', colSize: 6, placeholder: '' },
         age: { visible: true, required: true, label: 'Age', type: 'number', colSize: 6, placeholder: '' },
-        gender: { visible: true, required: true, label: 'Gender', type: 'custom', colSize: 12, placeholder: '' },
+        gender: { visible: true, required: true, label: 'Gender', type: 'select', colSize: 6, placeholder: '', options: ['Male', 'Female', 'Other'] },
         mobile: { visible: true, required: true, label: 'Mobile', type: 'tel', colSize: 6, placeholder: '' },
         email: { visible: true, required: false, label: 'Email', type: 'email', colSize: 6, placeholder: '' },
         address: { visible: true, required: true, label: 'Address', type: 'textarea', colSize: 12, placeholder: '', rows: 2 },

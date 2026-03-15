@@ -2,10 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Form } from 'react-bootstrap';
 
-/**
- * Reusable Form Field Component
- * Handles text, email, number, tel, textarea, select inputs
- */
 const FormField = React.memo(({
   label,
   name,
@@ -21,6 +17,9 @@ const FormField = React.memo(({
   rows = 3,
   ...rest
 }) => {
+  const inputStyle = { fontSize: '0.82rem' };
+  const labelStyle = { fontSize: '0.82rem', fontWeight: 500, color: '#334155' };
+
   const renderInput = () => {
     switch (type) {
       case 'textarea':
@@ -28,6 +27,7 @@ const FormField = React.memo(({
           <Form.Control
             as="textarea"
             rows={rows}
+            size="sm"
             name={name}
             value={value}
             onChange={onChange}
@@ -36,6 +36,7 @@ const FormField = React.memo(({
             required={required}
             disabled={disabled}
             isInvalid={!!error}
+            style={inputStyle}
             {...rest}
           />
         );
@@ -43,6 +44,7 @@ const FormField = React.memo(({
       case 'select':
         return (
           <Form.Select
+            size="sm"
             name={name}
             value={value}
             onChange={onChange}
@@ -50,9 +52,11 @@ const FormField = React.memo(({
             required={required}
             disabled={disabled}
             isInvalid={!!error}
+            style={inputStyle}
             {...rest}
           >
             {placeholder && <option value="">{placeholder}</option>}
+            {!placeholder && <option value="">Select...</option>}
             {options.map((option) => (
               <option
                 key={typeof option === 'object' ? option.value : option}
@@ -75,13 +79,14 @@ const FormField = React.memo(({
             onBlur={onBlur}
             disabled={disabled}
             isInvalid={!!error}
+            style={{ fontSize: '0.82rem' }}
             {...rest}
           />
         );
 
       case 'radio':
         return (
-          <div>
+          <div className="d-flex gap-3">
             {options.map((option) => (
               <Form.Check
                 key={typeof option === 'object' ? option.value : option}
@@ -96,6 +101,7 @@ const FormField = React.memo(({
                 disabled={disabled}
                 isInvalid={!!error}
                 inline
+                style={{ fontSize: '0.82rem' }}
                 {...rest}
               />
             ))}
@@ -106,6 +112,7 @@ const FormField = React.memo(({
         return (
           <Form.Control
             type={type}
+            size="sm"
             name={name}
             value={value}
             onChange={onChange}
@@ -114,6 +121,7 @@ const FormField = React.memo(({
             required={required}
             disabled={disabled}
             isInvalid={!!error}
+            style={inputStyle}
             {...rest}
           />
         );
@@ -122,9 +130,9 @@ const FormField = React.memo(({
 
   if (type === 'checkbox' || type === 'radio') {
     return (
-      <Form.Group className="mb-3" controlId={name}>
+      <Form.Group className="mb-2" controlId={name}>
         {type === 'radio' && label && (
-          <Form.Label>
+          <Form.Label style={labelStyle}>
             {label}
             {required && <span className="text-danger ms-1">*</span>}
           </Form.Label>
@@ -136,9 +144,9 @@ const FormField = React.memo(({
   }
 
   return (
-    <Form.Group className="mb-3" controlId={name}>
+    <Form.Group className="mb-2" controlId={name}>
       {label && (
-        <Form.Label>
+        <Form.Label style={labelStyle}>
           {label}
           {required && <span className="text-danger ms-1">*</span>}
         </Form.Label>
@@ -152,25 +160,15 @@ const FormField = React.memo(({
 FormField.displayName = 'FormField';
 
 FormField.propTypes = {
-  /** Field label */
   label: PropTypes.string,
-  /** Field name (required) */
   name: PropTypes.string.isRequired,
-  /** Input type */
   type: PropTypes.oneOf(['text', 'email', 'number', 'tel', 'password', 'textarea', 'select', 'checkbox', 'radio', 'date', 'time', 'datetime-local']),
-  /** Field value */
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.bool]),
-  /** Change handler */
   onChange: PropTypes.func,
-  /** Blur handler */
   onBlur: PropTypes.func,
-  /** Error message */
   error: PropTypes.string,
-  /** Whether field is required */
   required: PropTypes.bool,
-  /** Placeholder text */
   placeholder: PropTypes.string,
-  /** Options for select/radio inputs */
   options: PropTypes.arrayOf(
     PropTypes.oneOfType([
       PropTypes.string,
@@ -180,9 +178,7 @@ FormField.propTypes = {
       })
     ])
   ),
-  /** Whether field is disabled */
   disabled: PropTypes.bool,
-  /** Rows for textarea */
   rows: PropTypes.number
 };
 
