@@ -437,13 +437,15 @@ function CheckupForm() {
                 </div>
               )}
 
-              <div className="mb-2">
-                <button type="button" className="btn btn-link p-0" style={{ fontSize: '0.78rem', color: '#0891B2' }} onClick={() => setShowNewPatientForm(!showNewPatientForm)}>
-                  {showNewPatientForm ? 'Cancel' : '+ Add New Patient'}
-                </button>
-              </div>
+              {!patient && (
+                <div className="mb-2">
+                  <button type="button" className="btn btn-link p-0" style={{ fontSize: '0.78rem', color: '#0891B2' }} onClick={() => setShowNewPatientForm(!showNewPatientForm)}>
+                    {showNewPatientForm ? 'Cancel' : '+ Add New Patient'}
+                  </button>
+                </div>
+              )}
 
-              {showNewPatientForm && (
+              {!patient && showNewPatientForm && (
                 <Card className="border-0 shadow-sm mb-2">
                   <Card.Body className="p-3">
                     <small className="fw-bold text-muted d-block mb-2">NEW PATIENT</small>
