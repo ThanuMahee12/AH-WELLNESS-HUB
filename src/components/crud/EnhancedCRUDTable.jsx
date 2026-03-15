@@ -1,26 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Table, Button, Card, Form, Row, Col, Pagination, InputGroup, Dropdown } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaSearch, FaSortUp, FaSortDown, FaSort, FaSortAmountDown } from 'react-icons/fa';
+import { Table, Button, Card, Form, Pagination, Dropdown } from 'react-bootstrap';
+import { FaEdit, FaTrash, FaSearch, FaSortUp, FaSortDown, FaSort, FaSortAmountDown, FaTimes } from 'react-icons/fa';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
 
-/**
- * Enhanced CRUD Table Component with Pagination, Search, and Sorting
- *
- * @param {Object} props
- * @param {Array} props.data - Array of data items
- * @param {Array} props.columns - Column definitions with sortable flag
- * @param {Function} props.onEdit - Edit handler
- * @param {Function} props.onDelete - Delete handler
- * @param {boolean} props.loading - Loading state
- * @param {string} props.error - Error message
- * @param {string} props.emptyMessage - Message when no data
- * @param {Function} props.renderActions - Custom actions renderer
- * @param {Function} props.renderCell - Custom cell renderer
- * @param {number} props.itemsPerPage - Items per page (default: 10)
- * @param {Array} props.searchFields - Fields to search in
- */
 const EnhancedCRUDTable = React.memo(({
   data = [],
   columns = [],
@@ -38,55 +22,36 @@ const EnhancedCRUDTable = React.memo(({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
-  // Filter data based on search term
+  // Filter
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return data;
-
     const searchLower = searchTerm.toLowerCase();
     return data.filter(item => {
-      // If searchFields specified, search only those fields
-      if (searchFields.length > 0) {
-        return searchFields.some(field => {
-          const value = item[field];
-          return value && String(value).toLowerCase().includes(searchLower);
-        });
-      }
-
-      // Otherwise search all columns
-      return columns.some(column => {
-        const value = item[column.key];
+      const fields = searchFields.length > 0 ? searchFields : columns.map(c => c.key);
+      return fields.some(field => {
+        const value = item[field];
         return value && String(value).toLowerCase().includes(searchLower);
       });
     });
   }, [data, searchTerm, searchFields, columns]);
 
-  // Sort data
+  // Sort
   const sortedData = useMemo(() => {
     if (!sortConfig.key) return filteredData;
-
-    const sorted = [...filteredData].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-
-      // Handle null/undefined
-      if (aValue == null) return 1;
-      if (bValue == null) return -1;
-
-      // Numeric comparison
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+    return [...filteredData].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
       }
-
-      // String comparison
-      const aStr = String(aValue).toLowerCase();
-      const bStr = String(bValue).toLowerCase();
-
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
       if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-
-    return sorted;
   }, [filteredData, sortConfig]);
 
   // Pagination
@@ -94,10 +59,7 @@ const EnhancedCRUDTable = React.memo(({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
-  // Reset to page 1 when search changes
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  React.useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleSort = (key) => {
     setSortConfig(prev => {
@@ -110,204 +72,168 @@ const EnhancedCRUDTable = React.memo(({
   };
 
   const getSortIcon = (columnKey) => {
-    if (sortConfig.key !== columnKey) return <FaSort className="ms-1" style={{ opacity: 0.3 }} />;
+    if (sortConfig.key !== columnKey) return <FaSort className="ms-1" style={{ opacity: 0.2 }} size={10} />;
     return sortConfig.direction === 'asc'
-      ? <FaSortUp className="ms-1 text-theme" />
-      : <FaSortDown className="ms-1 text-theme" />;
+      ? <FaSortUp className="ms-1 text-theme" size={10} />
+      : <FaSortDown className="ms-1 text-theme" size={10} />;
   };
 
-  // Get sortable columns for mobile dropdown
   const sortableColumns = columns.filter(col => col.sortable !== false);
 
-  // Get current sort label for mobile dropdown
   const getCurrentSortLabel = () => {
     if (!sortConfig.key) return 'Sort by...';
     const column = columns.find(c => c.key === sortConfig.key);
-    const direction = sortConfig.direction === 'asc' ? '↑' : '↓';
-    return `${column?.label || sortConfig.key} ${direction}`;
+    const dir = sortConfig.direction === 'asc' ? '↑' : '↓';
+    return `${column?.label || sortConfig.key} ${dir}`;
   };
 
   const defaultRenderActions = (item) => (
-    <>
+    <div className="d-flex gap-1 justify-content-center">
       {onEdit && (
-        <Button
-          size="sm"
-          onClick={() => onEdit(item)}
-          className="me-2 btn-theme-outline"
-        >
-          <FaEdit className="me-1" />
-          Edit
-        </Button>
+        <button className="btn btn-sm btn-outline-secondary" onClick={() => onEdit(item)} style={{ padding: '2px 8px', fontSize: '0.72rem' }}>
+          <FaEdit size={11} />
+        </button>
       )}
       {onDelete && (
-        <Button
-          size="sm"
-          onClick={() => onDelete(item.id)}
-          className="btn-theme-outline-light"
-        >
-          <FaTrash className="me-1" />
-          Delete
-        </Button>
+        <button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(item.id)} style={{ padding: '2px 8px', fontSize: '0.72rem' }}>
+          <FaTrash size={11} />
+        </button>
       )}
-    </>
+    </div>
   );
 
   const defaultRenderCell = (item, column) => {
-    if (column.render) {
-      return column.render(item[column.key], item);
-    }
+    if (column.render) return column.render(item[column.key], item);
     return item[column.key];
   };
 
-  if (loading && data.length === 0) {
-    return <LoadingSpinner text="Loading data..." />;
-  }
-
-  if (error) {
-    return <ErrorAlert message={error} />;
-  }
+  if (loading && data.length === 0) return <LoadingSpinner text="Loading data..." />;
+  if (error) return <ErrorAlert message={error} />;
 
   return (
     <Card className="shadow-sm border-0">
-      {/* Search Bar */}
-      <Card.Header className="bg-white border-bottom">
-        <Row className="align-items-center">
-          <Col xs={12} md={6} className="mb-2 mb-md-0">
-            <InputGroup>
-              <InputGroup.Text style={{ backgroundColor: '#f8f9fa', border: '1px solid #dee2e6' }}>
-                <FaSearch style={{ color: '#6c757d' }} />
-              </InputGroup.Text>
-              <Form.Control
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ border: '1px solid #dee2e6' }}
-              />
-              {searchTerm && (
-                <Button
-                  variant="outline-secondary"
-                  onClick={() => setSearchTerm('')}
-                  size="sm"
-                >
-                  Clear
-                </Button>
-              )}
-            </InputGroup>
-          </Col>
-          <Col xs={12} md={6} className="text-md-end">
-            <small className="text-muted">
-              Showing {paginatedData.length > 0 ? startIndex + 1 : 0} - {Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} items
-              {searchTerm && ` (filtered from ${data.length} total)`}
-            </small>
-          </Col>
-        </Row>
+      {/* Search + Info */}
+      <Card.Body className="py-2 px-3 border-bottom">
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div className="position-relative" style={{ minWidth: '200px', maxWidth: '320px', flex: 1 }}>
+            <FaSearch className="position-absolute text-muted" size={12} style={{ left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+            <Form.Control
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="sm"
+              style={{ paddingLeft: 30, fontSize: '0.8rem', border: '1px solid #e2e8f0', borderRadius: 6 }}
+            />
+            {searchTerm && (
+              <button
+                className="btn btn-link position-absolute p-0 text-muted"
+                style={{ right: 8, top: '50%', transform: 'translateY(-50%)' }}
+                onClick={() => setSearchTerm('')}
+              >
+                <FaTimes size={11} />
+              </button>
+            )}
+          </div>
+          <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+            {sortedData.length > 0 ? `${startIndex + 1}-${Math.min(startIndex + itemsPerPage, sortedData.length)}` : '0'} of {sortedData.length}
+            {searchTerm && ` (${data.length} total)`}
+          </small>
+        </div>
 
-        {/* Mobile Sort Dropdown - Only visible on mobile */}
+        {/* Mobile Sort */}
         {sortableColumns.length > 0 && (
-          <Row className="mt-2 d-md-none">
-            <Col xs={12}>
-              <Dropdown className="mobile-sort-dropdown">
-                <Dropdown.Toggle
-                  variant="outline-secondary"
-                  size="sm"
-                  className="w-100 d-flex align-items-center justify-content-between"
-                >
-                  <span>
-                    <FaSortAmountDown className="me-2" />
-                    {getCurrentSortLabel()}
-                  </span>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="w-100">
-                  {sortConfig.key && (
-                    <>
-                      <Dropdown.Item
-                        onClick={() => setSortConfig({ key: null, direction: null })}
-                        className="text-muted"
-                      >
-                        Clear sort
-                      </Dropdown.Item>
-                      <Dropdown.Divider />
-                    </>
-                  )}
-                  {sortableColumns.map((column) => (
-                    <React.Fragment key={column.key}>
-                      <Dropdown.Item
-                        onClick={() => setSortConfig({ key: column.key, direction: 'asc' })}
-                        active={sortConfig.key === column.key && sortConfig.direction === 'asc'}
-                      >
-                        <FaSortUp className="me-2" />
-                        {column.label} (A-Z)
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        onClick={() => setSortConfig({ key: column.key, direction: 'desc' })}
-                        active={sortConfig.key === column.key && sortConfig.direction === 'desc'}
-                      >
-                        <FaSortDown className="me-2" />
-                        {column.label} (Z-A)
-                      </Dropdown.Item>
-                    </React.Fragment>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-            </Col>
-          </Row>
+          <div className="d-md-none mt-2">
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-secondary" size="sm" className="w-100" style={{ fontSize: '0.75rem' }}>
+                <FaSortAmountDown className="me-1" size={11} />
+                {getCurrentSortLabel()}
+              </Dropdown.Toggle>
+              <Dropdown.Menu className="w-100" style={{ fontSize: '0.8rem' }}>
+                {sortConfig.key && (
+                  <>
+                    <Dropdown.Item onClick={() => setSortConfig({ key: null, direction: null })} className="text-muted">Clear sort</Dropdown.Item>
+                    <Dropdown.Divider />
+                  </>
+                )}
+                {sortableColumns.map(col => (
+                  <React.Fragment key={col.key}>
+                    <Dropdown.Item
+                      onClick={() => setSortConfig({ key: col.key, direction: 'asc' })}
+                      active={sortConfig.key === col.key && sortConfig.direction === 'asc'}
+                    >
+                      {col.label} ↑
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => setSortConfig({ key: col.key, direction: 'desc' })}
+                      active={sortConfig.key === col.key && sortConfig.direction === 'desc'}
+                    >
+                      {col.label} ↓
+                    </Dropdown.Item>
+                  </React.Fragment>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
         )}
-      </Card.Header>
+      </Card.Body>
 
       {/* Table */}
-      <Card.Body className="p-0">
-        <Table striped hover responsive className="mb-0 table-mobile-responsive">
+      <div className="table-responsive">
+        <Table hover className="mb-0 table-mobile-responsive" style={{ fontSize: '0.82rem' }}>
           <thead>
-            <tr>
-              {columns.map((column) => (
+            <tr style={{ backgroundColor: '#f8f9fa' }}>
+              {columns.map(col => (
                 <th
-                  key={column.key}
-                  className={column.headerClassName || ''}
-                  onClick={() => column.sortable !== false && handleSort(column.key)}
+                  key={col.key}
+                  className={col.headerClassName || ''}
+                  onClick={() => col.sortable !== false && handleSort(col.key)}
                   style={{
-                    cursor: column.sortable !== false ? 'pointer' : 'default',
-                    userSelect: 'none'
+                    cursor: col.sortable !== false ? 'pointer' : 'default',
+                    userSelect: 'none',
+                    padding: '8px 12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#64748b',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                    borderBottom: '1px solid #e2e8f0',
                   }}
                 >
-                  {column.label}
-                  {column.sortable !== false && getSortIcon(column.key)}
+                  {col.label}
+                  {col.sortable !== false && getSortIcon(col.key)}
                 </th>
               ))}
               {(onEdit || onDelete || renderActions) && (
-                <th className="text-center">Actions</th>
+                <th style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>
+                  Actions
+                </th>
               )}
             </tr>
           </thead>
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length + 1}
-                  className="text-center py-4 text-muted"
-                >
+                <td colSpan={columns.length + 1} className="text-center py-4 text-muted" style={{ fontSize: '0.82rem' }}>
                   {searchTerm ? 'No results found' : emptyMessage}
                 </td>
               </tr>
             ) : (
-              paginatedData.map((item) => (
-                <tr key={item.id}>
-                  {columns.map((column) => (
+              paginatedData.map(item => (
+                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  {columns.map(col => (
                     <td
-                      key={column.key}
-                      data-label={column.label}
-                      className={column.cellClassName || ''}
+                      key={col.key}
+                      data-label={col.label}
+                      className={col.cellClassName || ''}
+                      style={{ padding: '8px 12px', verticalAlign: 'middle' }}
                     >
-                      {renderCell
-                        ? renderCell(item, column)
-                        : defaultRenderCell(item, column)}
+                      {renderCell ? renderCell(item, col) : defaultRenderCell(item, col)}
                     </td>
                   ))}
                   {(onEdit || onDelete || renderActions) && (
-                    <td data-label="Actions" className="text-center">
-                      {renderActions
-                        ? renderActions(item)
-                        : defaultRenderActions(item)}
+                    <td data-label="Actions" style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
+                      {renderActions ? renderActions(item) : defaultRenderActions(item)}
                     </td>
                   )}
                 </tr>
@@ -315,57 +241,30 @@ const EnhancedCRUDTable = React.memo(({
             )}
           </tbody>
         </Table>
-      </Card.Body>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <Card.Footer className="bg-white border-top">
-          <div className="d-flex justify-content-center align-items-center flex-wrap">
+        <Card.Footer className="py-2 px-3 bg-white border-top">
+          <div className="d-flex justify-content-between align-items-center">
+            <small className="text-muted" style={{ fontSize: '0.7rem' }}>
+              Page {currentPage} of {totalPages}
+            </small>
             <Pagination className="mb-0" size="sm">
-              <Pagination.First
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-              />
-              <Pagination.Prev
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              />
-
-              {/* Page numbers */}
-              {[...Array(totalPages)].map((_, index) => {
-                const pageNum = index + 1;
-                // Show first, last, current, and adjacent pages
-                if (
-                  pageNum === 1 ||
-                  pageNum === totalPages ||
-                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                ) {
-                  return (
-                    <Pagination.Item
-                      key={pageNum}
-                      active={pageNum === currentPage}
-                      onClick={() => setCurrentPage(pageNum)}
-                    >
-                      {pageNum}
-                    </Pagination.Item>
-                  );
-                } else if (
-                  pageNum === currentPage - 2 ||
-                  pageNum === currentPage + 2
-                ) {
-                  return <Pagination.Ellipsis key={pageNum} disabled />;
+              <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
+              <Pagination.Prev onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} />
+              {[...Array(totalPages)].map((_, i) => {
+                const p = i + 1;
+                if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+                  return <Pagination.Item key={p} active={p === currentPage} onClick={() => setCurrentPage(p)}>{p}</Pagination.Item>;
+                }
+                if (p === currentPage - 2 || p === currentPage + 2) {
+                  return <Pagination.Ellipsis key={p} disabled />;
                 }
                 return null;
               })}
-
-              <Pagination.Next
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              />
-              <Pagination.Last
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-              />
+              <Pagination.Next onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} />
+              <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
             </Pagination>
           </div>
         </Card.Footer>
@@ -375,6 +274,23 @@ const EnhancedCRUDTable = React.memo(({
 });
 
 EnhancedCRUDTable.displayName = 'EnhancedCRUDTable';
-EnhancedCRUDTable.propTypes = {  data: PropTypes.arrayOf(PropTypes.object),  columns: PropTypes.arrayOf(PropTypes.shape({    key: PropTypes.string.isRequired,    label: PropTypes.string.isRequired,    sortable: PropTypes.bool,    render: PropTypes.func  })).isRequired,  onEdit: PropTypes.func,  onDelete: PropTypes.func,  loading: PropTypes.bool,  error: PropTypes.string,  emptyMessage: PropTypes.string,  renderActions: PropTypes.func,  renderCell: PropTypes.func,  itemsPerPage: PropTypes.number,  searchFields: PropTypes.arrayOf(PropTypes.string)};
+EnhancedCRUDTable.propTypes = {
+  data: PropTypes.arrayOf(PropTypes.object),
+  columns: PropTypes.arrayOf(PropTypes.shape({
+    key: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    sortable: PropTypes.bool,
+    render: PropTypes.func
+  })).isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  loading: PropTypes.bool,
+  error: PropTypes.string,
+  emptyMessage: PropTypes.string,
+  renderActions: PropTypes.func,
+  renderCell: PropTypes.func,
+  itemsPerPage: PropTypes.number,
+  searchFields: PropTypes.arrayOf(PropTypes.string)
+};
 
 export default EnhancedCRUDTable;
