@@ -1,96 +1,45 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import { Container, Tabs, Tab } from 'react-bootstrap'
+import { Container } from 'react-bootstrap'
 import { FaUsers, FaChartLine, FaClipboardList, FaBook } from 'react-icons/fa'
-import { PageHeader } from '../components/ui'
+import { PageHeader, TabLayout } from '../components/ui'
 import { useSettings } from '../hooks/useSettings'
 
-// Import tab components
 import UsersTab from './tabs/UsersTab'
 import UserActivityTab from './tabs/UserActivityTab'
 import UserRequestsTab from './tabs/UserRequestsTab'
 import UserManualTab from './tabs/UserManualTab'
 
+const USER_TABS = [
+  { key: 'users', icon: FaUsers, component: UsersTab },
+  { key: 'activity', icon: FaChartLine, component: UserActivityTab, lazy: true },
+  { key: 'requests', icon: FaClipboardList, component: UserRequestsTab },
+  { key: 'manual', icon: FaBook, component: UserManualTab },
+]
+
 function UserManagement() {
   const { user: currentUser } = useSelector(state => state.auth)
   const { settings } = useSettings()
-  const [activeTab, setActiveTab] = useState('users')
 
   const userTabs = settings?.pages?.users?.tabs || {}
-  const canSeeTab = (tabKey) => {
-    const tabCfg = userTabs[tabKey]
-    if (!tabCfg) return currentUser?.role === 'superadmin'
-    return tabCfg.roles?.includes(currentUser?.role)
-  }
+
+  const visibleTabs = useMemo(() => {
+    return USER_TABS
+      .filter(t => {
+        const tabCfg = userTabs[t.key]
+        if (!tabCfg) return currentUser?.role === 'superadmin'
+        return tabCfg.roles?.includes(currentUser?.role)
+      })
+      .map(t => ({
+        ...t,
+        label: userTabs[t.key]?.label || t.key.charAt(0).toUpperCase() + t.key.slice(1),
+      }))
+  }, [userTabs, currentUser?.role])
 
   return (
-    <Container fluid className="p-3 p-md-4">
-      <PageHeader
-        icon={FaUsers}
-        title="User Management"
-      />
-
-      <Tabs
-        activeKey={activeTab}
-        onSelect={(k) => setActiveTab(k)}
-        className="mb-3 tabs-theme"
-      >
-        {canSeeTab('users') && (
-          <Tab
-            eventKey="users"
-            title={
-              <span>
-                <FaUsers className="me-2" />
-                {userTabs.users?.label || 'Users'}
-              </span>
-            }
-          >
-            <UsersTab />
-          </Tab>
-        )}
-
-        {canSeeTab('activity') && (
-          <Tab
-            eventKey="activity"
-            title={
-              <span>
-                <FaChartLine className="me-2" />
-                {userTabs.activity?.label || 'Activity'}
-              </span>
-            }
-          >
-            {activeTab === 'activity' && <UserActivityTab />}
-          </Tab>
-        )}
-
-        {canSeeTab('requests') && (
-          <Tab
-            eventKey="requests"
-            title={
-              <span>
-                <FaClipboardList className="me-2" />
-                {userTabs.requests?.label || 'Requests'}
-              </span>
-            }
-          >
-            <UserRequestsTab />
-          </Tab>
-        )}
-
-        {canSeeTab('manual') && (
-          <Tab
-            eventKey="manual"
-            title={
-              <span>
-                <FaBook className="me-2" />
-                {userTabs.manual?.label || 'User Manual'}
-              </span>
-            }
-          >
-            <UserManualTab />
-          </Tab>
-        )}
-      </Tabs>
+    <Container fluid className="p-3 p-md-4 d-flex flex-column" style={{ height: 'calc(100vh - 52px)' }}>
+      <PageHeader icon={FaUsers} title="User Management" />
+      <TabLayout tabs={visibleTabs} defaultTab="users" />
     </Container>
   )
 }

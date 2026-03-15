@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { Row, Col, Card, Table, Badge, Pagination, Form, Button, ButtonGroup, Tab, Nav } from 'react-bootstrap'
+import { Row, Col, Card, Table, Badge, Pagination, Form, Button, ButtonGroup } from 'react-bootstrap'
 import {
   FaCalendarAlt, FaBug, FaTrash, FaSortAmountDown, FaSortAmountUp, FaSync,
   FaChartBar, FaUserInjured, FaClipboardCheck, FaFlask, FaPills, FaUsers,
@@ -533,8 +533,8 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
   }
 
   return (
-    <div className="p-3 p-md-4">
-      <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div className="p-3 p-md-4 d-flex flex-column" style={{ height: 'calc(100vh - 52px)' }}>
+      <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2 flex-shrink-0">
         <PageHeader
           title="System Maintenance"
           subtitle="Daily reports and error logs"
@@ -582,28 +582,37 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
         </div>
       </div>
 
-      <Tab.Container activeKey={activeTab} onSelect={setActiveTab}>
-        <Nav variant="tabs" className="mb-3">
-          <Nav.Item>
-            <Nav.Link eventKey="daily-report">
-              <FaChartBar className="me-1" /> Daily Report
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="complaints">
-              <FaCommentDots className="me-1" /> Complaints
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="error-logs">
-              <FaBug className="me-1" /> Error Logs
-            </Nav.Link>
-          </Nav.Item>
-        </Nav>
+      {/* Tab Bar */}
+      <div className="flex-shrink-0 border-bottom mb-0" style={{ backgroundColor: '#fff' }}>
+        <div className="d-flex gap-0">
+          {[
+            { key: 'daily-report', label: 'Daily Report', icon: FaChartBar },
+            { key: 'complaints', label: 'Complaints', icon: FaCommentDots },
+            { key: 'error-logs', label: 'Error Logs', icon: FaBug },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              className={`btn btn-link text-decoration-none px-3 py-2 flex-shrink-0 ${activeTab === tab.key ? 'fw-semibold' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                fontSize: '0.8rem',
+                color: activeTab === tab.key ? '#0891B2' : '#64748b',
+                borderRadius: 0,
+                borderBottom: activeTab === tab.key ? '2px solid #0891B2' : '2px solid transparent',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <tab.icon className="me-1" size={13} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <Tab.Content>
+      {/* Scrollable Content */}
+      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0, paddingTop: '12px' }}>
           {/* ===== DAILY REPORT TAB ===== */}
-          <Tab.Pane eventKey="daily-report">
+          {activeTab === 'daily-report' && (<>
             {/* Time Range Filter */}
             <Row className="mb-3">
               <Col>
@@ -755,10 +764,10 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                 })}
               </div>
             )}
-          </Tab.Pane>
+          </>)}
 
           {/* ===== COMPLAINTS TAB ===== */}
-          <Tab.Pane eventKey="complaints">
+          {activeTab === 'complaints' && (<>
             {/* Filter */}
             <Row className="mb-3">
               <Col>
@@ -992,10 +1001,10 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                 })}
               </div>
             )}
-          </Tab.Pane>
+          </>)}
 
           {/* ===== ERROR LOGS TAB ===== */}
-          <Tab.Pane eventKey="error-logs">
+          {activeTab === 'error-logs' && (<>
             {/* Filters */}
             <Row className="mb-3">
               <Col>
@@ -1284,9 +1293,8 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                 )}
               </Card>
             )}
-          </Tab.Pane>
-        </Tab.Content>
-      </Tab.Container>
+          </>)}
+      </div>
     </div>
   )
 }
