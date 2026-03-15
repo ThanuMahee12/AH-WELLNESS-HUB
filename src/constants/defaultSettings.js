@@ -50,7 +50,7 @@ export const ICON_MAP = {
   FaBug,
 }
 
-// Options for the icon dropdown in PagesSettingsTab
+// Options for the icon dropdown in PageControlTab
 export const ICON_OPTIONS = Object.keys(ICON_MAP).map(name => ({
   value: name,
   label: name.replace(/^Fa/, '').replace(/([A-Z])/g, ' $1').trim(),

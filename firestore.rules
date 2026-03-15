@@ -126,7 +126,7 @@ service cloud.firestore {
     // ============================================
     match /settings/{docId} {
       allow read: if isAuthenticated();
-      allow write: if isSuperAdmin();
+      allow write: if isEditorOrAbove();
     }
 
     // ============================================

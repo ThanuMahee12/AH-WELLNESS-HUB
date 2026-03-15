@@ -30,8 +30,6 @@ const UserManagement = lazy(() => import('./pages/UserManagement'))
 const UserDetail = lazy(() => import('./pages/UserDetail'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 const Settings = lazy(() => import('./pages/Settings'))
-const FieldSettingDetail = lazy(() => import('./pages/FieldSettingDetail'))
-const ColumnSettingDetail = lazy(() => import('./pages/ColumnSettingDetail'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const SystemMaintenance = lazy(() => import('./pages/SystemMaintenance'))
 
@@ -246,22 +244,6 @@ function AppContent() {
                 element={
                   <ProtectedRoute roles={['superadmin']}>
                     <Settings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings/forms/:entity/:fieldKey"
-                element={
-                  <ProtectedRoute roles={['superadmin']}>
-                    <FieldSettingDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings/tables/:entity/:columnKey"
-                element={
-                  <ProtectedRoute roles={['superadmin']}>
-                    <ColumnSettingDetail />
                   </ProtectedRoute>
                 }
               />
