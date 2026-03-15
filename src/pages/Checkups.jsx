@@ -8,6 +8,7 @@ import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { EnhancedCRUDTable } from '../components/crud'
+import { usePermission } from '../components/auth/PermissionGate'
 import { PageHeader } from '../components/ui'
 import { useSettings } from '../hooks'
 
@@ -21,7 +22,8 @@ function Checkups() {
   const { loading: patientsLoading } = useSelector(state => state.patients)
   const { loading: testsLoading } = useSelector(state => state.tests)
 
-  const { getEntityColumns, getItemsPerPage, getSearchFields, checkPermission } = useSettings()
+  const { getEntityColumns, getItemsPerPage, getSearchFields } = useSettings()
+  const { checkPermission } = usePermission()
   const loading = checkupsLoading || patientsLoading || testsLoading
 
   useEffect(() => {
