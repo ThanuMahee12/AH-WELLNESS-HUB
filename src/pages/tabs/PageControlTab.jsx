@@ -65,6 +65,7 @@ function PageControlTab() {
           colSize: ff.colSize || 6,
           placeholder: ff.placeholder || '',
           roles: tc.roles || ff.roles || [...ROLES],
+          perms: ff.perms || {},
           searchable: tc.searchable || false,
           inForm: !!formFields[fk],
           inTable: !!tableColumns[fk],
@@ -110,6 +111,10 @@ function PageControlTab() {
     if (ff[fieldKey] || updates.inForm) {
       ff[fieldKey] = { ...ff[fieldKey], ...updates }
       delete ff[fieldKey].inForm; delete ff[fieldKey].inTable; delete ff[fieldKey].tableVisible; delete ff[fieldKey].searchable
+      // Sync roles from perms: role has view (4+) = visible to that role
+      if (updates.perms) {
+        ff[fieldKey].roles = ROLES.filter(r => (updates.perms[r] ?? 6) >= 4)
+      }
     }
     if (tc[fieldKey] || updates.inTable) {
       tc[fieldKey] = { ...tc[fieldKey] }
@@ -117,16 +122,13 @@ function PageControlTab() {
       if (updates.roles !== undefined) tc[fieldKey].roles = updates.roles
       if (updates.searchable !== undefined) tc[fieldKey].searchable = updates.searchable
       if (updates.tableVisible !== undefined) tc[fieldKey].visible = updates.tableVisible
+      // Sync roles from perms
+      if (updates.perms) tc[fieldKey].roles = ROLES.filter(r => (updates.perms[r] ?? 6) >= 4)
     }
     const u = {}
     if (Object.keys(ff).length) u.forms = { ...forms, [entity]: { ...forms[entity], fields: ff } }
     if (Object.keys(tc).length) u.tables = { ...tables, [entity]: { ...tables[entity], columns: tc } }
     if (Object.keys(u).length) save(u)
-  }
-
-  const toggleFieldRole = (entity, fieldKey, role, currentField) => {
-    const roles = currentField.roles || [...ROLES]
-    updateField(entity, fieldKey, { roles: roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role] })
   }
 
   const addField = (entity) => {
@@ -211,15 +213,15 @@ function PageControlTab() {
                     </div>
 
                     {/* Column headers */}
-                    <div className="d-flex align-items-center gap-1 py-1 px-1" style={{ fontSize: '0.58rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                    <div className="d-flex align-items-center gap-1 py-1 px-1" style={{ fontSize: '0.55rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
                       <span style={{ width: 14 }}></span>
                       <span style={{ width: 18 }}>Vis</span>
                       <span style={{ flex: 1 }}>Field</span>
-                      <span style={{ width: 35 }}>Type</span>
+                      <span style={{ width: 30 }}>Type</span>
                       <span style={{ width: 18, textAlign: 'center' }}>Tbl</span>
                       <span style={{ width: 14, textAlign: 'center' }}>🔍</span>
-                      <span style={{ width: 60, textAlign: 'center' }}>Roles</span>
-                      <span style={{ width: 16 }}></span>
+                      {ROLES.map(r => <span key={r} style={{ width: 32, textAlign: 'center', color: RC[r], fontWeight: 700 }}>{RS[r]}</span>)}
+                      <span style={{ width: 14 }}></span>
                     </div>
 
                     {Object.entries(item.fields).map(([fk, f]) => {
@@ -235,15 +237,22 @@ function PageControlTab() {
                             <span style={{ flex: 1, color: f.visible ? '#334155' : '#94a3b8', fontWeight: 500 }}>
                               {f.label}{f.required && <span className="text-danger">*</span>}
                             </span>
-                            <span style={{ width: 35, fontSize: '0.55rem', color: '#94a3b8' }}>{f.type}</span>
+                            <span style={{ width: 30, fontSize: '0.52rem', color: '#94a3b8' }}>{f.type}</span>
                             <span style={{ width: 18, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                               {f.inTable && <Form.Check type="checkbox" checked={f.tableVisible} onChange={() => updateField(item.key, fk, { tableVisible: !f.tableVisible })} disabled={saving} />}
                             </span>
                             <span style={{ width: 14, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                              {f.inTable && <Form.Check type="checkbox" checked={f.searchable} onChange={() => updateField(item.key, fk, { searchable: !f.searchable })} disabled={saving} style={{ fontSize: '0.5rem' }} />}
+                              {f.inTable && <Form.Check type="checkbox" checked={f.searchable} onChange={() => updateField(item.key, fk, { searchable: !f.searchable })} disabled={saving} />}
                             </span>
-                            <div className="d-flex gap-0" style={{ width: 60 }} onClick={e => e.stopPropagation()}>
-                              {ROLES.map(r => <RoleBtn key={r} role={r} active={f.roles.includes(r)} onClick={() => toggleFieldRole(item.key, fk, r, f)} disabled={saving || !f.visible} />)}
+                            <div className="d-flex gap-1" onClick={e => e.stopPropagation()}>
+                              {ROLES.map(r => {
+                                const fieldPerms = f.perms || {}
+                                const rp = fieldPerms[r] ?? (f.roles.includes(r) ? 6 : 0)
+                                return (
+                                  <PermNum key={r} role={r} value={rp} disabled={saving || !f.visible}
+                                    onChange={(v) => updateField(item.key, fk, { perms: { ...fieldPerms, [r]: v } })} />
+                                )
+                              })}
                             </div>
                             <span style={{ width: 16 }} onClick={e => e.stopPropagation()}>
                               <button type="button" className="btn p-0" onClick={() => removeField(item.key, fk)} style={{ fontSize: '0.5rem', color: '#dc2626', lineHeight: 1 }} title="Remove"><FaTrash size={7} /></button>
