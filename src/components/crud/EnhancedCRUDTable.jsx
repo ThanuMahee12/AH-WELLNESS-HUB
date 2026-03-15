@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Table, Button, Card, Form, Pagination, Dropdown } from 'react-bootstrap';
+import { Table, Card, Form, Pagination, Dropdown } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaSearch, FaSortUp, FaSortDown, FaSort, FaSortAmountDown, FaTimes } from 'react-icons/fa';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
@@ -22,7 +22,6 @@ const EnhancedCRUDTable = React.memo(({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
-  // Filter
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return data;
     const searchLower = searchTerm.toLowerCase();
@@ -35,7 +34,6 @@ const EnhancedCRUDTable = React.memo(({
     });
   }, [data, searchTerm, searchFields, columns]);
 
-  // Sort
   const sortedData = useMemo(() => {
     if (!sortConfig.key) return filteredData;
     return [...filteredData].sort((a, b) => {
@@ -54,7 +52,6 @@ const EnhancedCRUDTable = React.memo(({
     });
   }, [filteredData, sortConfig]);
 
-  // Pagination
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
@@ -79,13 +76,14 @@ const EnhancedCRUDTable = React.memo(({
   };
 
   const sortableColumns = columns.filter(col => col.sortable !== false);
-
   const getCurrentSortLabel = () => {
     if (!sortConfig.key) return 'Sort by...';
     const column = columns.find(c => c.key === sortConfig.key);
-    const dir = sortConfig.direction === 'asc' ? '↑' : '↓';
-    return `${column?.label || sortConfig.key} ${dir}`;
+    return `${column?.label || sortConfig.key} ${sortConfig.direction === 'asc' ? '↑' : '↓'}`;
   };
+
+  const hasActions = onEdit || onDelete || renderActions;
+  const colCount = columns.length + (hasActions ? 1 : 0);
 
   const defaultRenderActions = (item) => (
     <div className="d-flex gap-1 justify-content-center">
@@ -110,10 +108,24 @@ const EnhancedCRUDTable = React.memo(({
   if (loading && data.length === 0) return <LoadingSpinner text="Loading data..." />;
   if (error) return <ErrorAlert message={error} />;
 
+  const thStyle = {
+    padding: '8px 12px',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: '#334155',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+    borderBottom: '2px solid #e2e8f0',
+    backgroundColor: '#f8f9fa',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
+  };
+
   return (
-    <Card className="shadow-sm border-0">
-      {/* Search + Info */}
-      <Card.Body className="py-2 px-3 border-bottom">
+    <Card className="shadow-sm border-0 d-flex flex-column" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+      {/* Fixed Search Header */}
+      <div className="py-2 px-3 border-bottom flex-shrink-0">
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
           <div className="position-relative" style={{ minWidth: '200px', maxWidth: '320px', flex: 1 }}>
             <FaSearch className="position-absolute text-muted" size={12} style={{ left: 10, top: '50%', transform: 'translateY(-50%)' }} />
@@ -158,16 +170,10 @@ const EnhancedCRUDTable = React.memo(({
                 )}
                 {sortableColumns.map(col => (
                   <React.Fragment key={col.key}>
-                    <Dropdown.Item
-                      onClick={() => setSortConfig({ key: col.key, direction: 'asc' })}
-                      active={sortConfig.key === col.key && sortConfig.direction === 'asc'}
-                    >
+                    <Dropdown.Item onClick={() => setSortConfig({ key: col.key, direction: 'asc' })} active={sortConfig.key === col.key && sortConfig.direction === 'asc'}>
                       {col.label} ↑
                     </Dropdown.Item>
-                    <Dropdown.Item
-                      onClick={() => setSortConfig({ key: col.key, direction: 'desc' })}
-                      active={sortConfig.key === col.key && sortConfig.direction === 'desc'}
-                    >
+                    <Dropdown.Item onClick={() => setSortConfig({ key: col.key, direction: 'desc' })} active={sortConfig.key === col.key && sortConfig.direction === 'desc'}>
                       {col.label} ↓
                     </Dropdown.Item>
                   </React.Fragment>
@@ -176,45 +182,33 @@ const EnhancedCRUDTable = React.memo(({
             </Dropdown>
           </div>
         )}
-      </Card.Body>
+      </div>
 
-      {/* Table */}
-      <div className="table-responsive">
+      {/* Scrollable Table Body with Sticky Header */}
+      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0 }}>
         <Table hover className="mb-0 table-mobile-responsive" style={{ fontSize: '0.82rem' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f8f9fa' }}>
+            <tr>
               {columns.map(col => (
                 <th
                   key={col.key}
                   className={col.headerClassName || ''}
                   onClick={() => col.sortable !== false && handleSort(col.key)}
-                  style={{
-                    cursor: col.sortable !== false ? 'pointer' : 'default',
-                    userSelect: 'none',
-                    padding: '8px 12px',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#334155',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                    borderBottom: '1px solid #e2e8f0',
-                  }}
+                  style={{ ...thStyle, cursor: col.sortable !== false ? 'pointer' : 'default', userSelect: 'none' }}
                 >
                   {col.label}
                   {col.sortable !== false && getSortIcon(col.key)}
                 </th>
               ))}
-              {(onEdit || onDelete || renderActions) && (
-                <th style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>
-                  Actions
-                </th>
+              {hasActions && (
+                <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
               )}
             </tr>
           </thead>
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + 1} className="text-center py-4 text-muted" style={{ fontSize: '0.82rem' }}>
+                <td colSpan={colCount} className="text-center py-4 text-muted" style={{ fontSize: '0.82rem' }}>
                   {searchTerm ? 'No results found' : emptyMessage}
                 </td>
               </tr>
@@ -222,16 +216,11 @@ const EnhancedCRUDTable = React.memo(({
               paginatedData.map(item => (
                 <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   {columns.map(col => (
-                    <td
-                      key={col.key}
-                      data-label={col.label}
-                      className={col.cellClassName || ''}
-                      style={{ padding: '8px 12px', verticalAlign: 'middle' }}
-                    >
+                    <td key={col.key} data-label={col.label} className={col.cellClassName || ''} style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
                       {renderCell ? renderCell(item, col) : defaultRenderCell(item, col)}
                     </td>
                   ))}
-                  {(onEdit || onDelete || renderActions) && (
+                  {hasActions && (
                     <td data-label="Actions" style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
                       {renderActions ? renderActions(item) : defaultRenderActions(item)}
                     </td>
@@ -243,9 +232,9 @@ const EnhancedCRUDTable = React.memo(({
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Fixed Pagination Footer */}
       {totalPages > 1 && (
-        <Card.Footer className="py-2 px-3 bg-white border-top">
+        <div className="py-2 px-3 border-top bg-white flex-shrink-0">
           <div className="d-flex justify-content-between align-items-center">
             <small className="text-muted" style={{ fontSize: '0.7rem' }}>
               Page {currentPage} of {totalPages}
@@ -267,7 +256,7 @@ const EnhancedCRUDTable = React.memo(({
               <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
             </Pagination>
           </div>
-        </Card.Footer>
+        </div>
       )}
     </Card>
   );
