@@ -68,169 +68,111 @@
 .bg-theme-light-blue { background-color: var(--theme-bg-light-blue) !important; }
 
 /* --- Buttons --- */
-/* Base button styles */
+/* Clean, flat button styles */
 .btn-theme-base {
-  border-radius: 50px;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease;
   border: none;
+  font-size: 0.82rem;
 }
 
 .btn-theme-base:disabled,
 .btn-theme-base.disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Primary gradient button */
-.btn-theme-gradient {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.35);
-}
-
-.btn-theme-gradient:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--theme-cyan-dark) 0%, var(--theme-primary) 100%);
-  color: #ffffff;
-  box-shadow: 0 14px 40px rgba(6, 182, 212, 0.45);
-  transform: translateY(-2px);
-}
-
-/* Secondary outline button */
-.btn-theme-secondary {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--theme-primary);
-  border: 2px solid var(--theme-primary);
-  box-shadow: 0 4px 15px rgba(8, 145, 178, 0.2);
-}
-
-.btn-theme-secondary:hover:not(:disabled) {
-  background: var(--theme-primary);
-  color: #ffffff;
-  box-shadow: 0 6px 20px rgba(8, 145, 178, 0.3);
-}
-
-/* Success gradient button */
-.btn-theme-success-gradient {
-  background: linear-gradient(135deg, var(--theme-secondary) 0%, #0D9488 100%);
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 10px 30px rgba(20, 184, 166, 0.35);
-}
-
-.btn-theme-success-gradient:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0D9488 0%, var(--theme-green) 100%);
-  color: #ffffff;
-  box-shadow: 0 14px 40px rgba(20, 184, 166, 0.45);
-  transform: translateY(-2px);
-}
-
-/* Danger gradient button */
-.btn-theme-danger-gradient {
-  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.35);
-}
-
-.btn-theme-danger-gradient:hover:not(:disabled) {
-  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
-  color: #ffffff;
-  box-shadow: 0 14px 40px rgba(239, 68, 68, 0.45);
-  transform: translateY(-2px);
-}
-
-/* Button sizes */
-.btn-theme-sm {
-  padding: 0.5rem 1.5rem;
-  font-size: 0.875rem;
-}
-
-.btn-theme-md {
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-}
-
-.btn-theme-lg {
-  padding: clamp(0.9rem, 3vw, 1.3rem) clamp(2rem, 5vw, 3rem);
-  font-size: clamp(1rem, 3.5vw, 1.4rem);
-}
-
-/* Legacy button classes (for backward compatibility) */
+.btn-theme-gradient,
+.btn-theme-primary,
 .btn-theme {
-  background-color: var(--theme-primary-light);
+  background-color: #0891B2;
+  color: #fff;
   border: none;
-  color: white;
+}
+.btn-theme-gradient:hover:not(:disabled),
+.btn-theme-primary:hover:not(:disabled),
+.btn-theme:hover:not(:disabled) {
+  background-color: #0e7490;
+  color: #fff;
 }
 
-.btn-theme:hover {
-  background-color: var(--theme-primary);
-  color: white;
+.btn-theme-secondary {
+  background: #fff;
+  color: #0891B2;
+  border: 1px solid #0891B2;
+}
+.btn-theme-secondary:hover:not(:disabled) {
+  background: #f0fdfa;
+  color: #0e7490;
 }
 
-.btn-theme-primary {
-  background-color: var(--theme-primary);
+.btn-theme-success,
+.btn-theme-success-gradient {
+  background-color: #14B8A6;
+  color: #fff;
   border: none;
-  color: white;
+}
+.btn-theme-success:hover:not(:disabled),
+.btn-theme-success-gradient:hover:not(:disabled) {
+  background-color: #0d9488;
+  color: #fff;
 }
 
-.btn-theme-primary:hover {
-  background-color: var(--theme-cyan-dark);
-  color: white;
-}
-
-.btn-theme-success {
-  background-color: var(--theme-emerald);
+.btn-theme-danger-gradient {
+  background-color: #ef4444;
+  color: #fff;
   border: none;
-  color: white;
 }
-
-.btn-theme-success:hover {
-  background-color: var(--theme-green);
-  color: white;
+.btn-theme-danger-gradient:hover:not(:disabled) {
+  background-color: #dc2626;
+  color: #fff;
 }
 
 .btn-theme-outline {
-  background-color: transparent;
-  border: 2px solid var(--theme-primary);
-  color: var(--theme-primary);
+  background: transparent;
+  border: 1px solid #0891B2;
+  color: #0891B2;
 }
-
 .btn-theme-outline:hover {
-  background-color: var(--theme-primary);
-  color: white;
+  background: #f0fdfa;
+  color: #0e7490;
 }
 
 .btn-theme-outline-light {
-  background-color: transparent;
-  border: 2px solid #0aa2c0;
-  color: #0aa2c0;
+  background: transparent;
+  border: 1px solid #94a3b8;
+  color: #64748b;
+}
+.btn-theme-outline-light:hover {
+  background: #f1f5f9;
+  color: #475569;
 }
 
-.btn-theme-outline-light:hover {
-  background-color: #0aa2c0;
-  color: white;
-}
+.btn-theme-sm { padding: 0.3rem 0.75rem; font-size: 0.78rem; }
+.btn-theme-md { padding: 0.4rem 1rem; font-size: 0.82rem; }
+.btn-theme-lg { padding: 0.5rem 1.25rem; font-size: 0.9rem; }
 
 .btn-theme-add {
-  background-color: var(--theme-primary-light);
+  background-color: #0891B2;
   border: none;
-  color: white;
-  padding: 0.5rem 1.5rem;
-  border-radius: 0.375rem;
+  color: #fff;
+  padding: 0.3rem 0.85rem;
+  border-radius: 6px;
   font-weight: 500;
+  font-size: 0.8rem;
 }
 .btn-theme-add:hover {
-  background-color: var(--theme-primary);
-  color: white;
+  background-color: #0e7490;
+  color: #fff;
 }
 
 /* --- Card Header --- */
 .card-header-theme {
-  background: var(--theme-gradient) !important;
-  color: white !important;
-  padding: 0.75rem 1.25rem;
+  background: #f8f9fa !important;
+  color: #334155 !important;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
 }
 
 /* --- Section Heading --- */
@@ -1280,26 +1222,27 @@
 
 /* --- Dashboard Filter Buttons --- */
 .btn-filter {
-  background-color: transparent;
-  border-color: white;
-  color: white;
-  font-weight: normal;
-  font-size: 0.75rem;
-  transition: all 0.2s ease;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.72rem;
+  transition: all 0.15s ease;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 .btn-filter:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: white;
-  color: white;
+  background: #f1f5f9;
+  color: #475569;
 }
 .btn-filter.active {
-  background-color: white;
-  border-color: white;
-  color: var(--theme-primary);
+  background: #0891B2;
+  border-color: #0891B2;
+  color: #fff;
   font-weight: 600;
 }
 .btn-filter-lg {
-  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  font-size: 0.78rem;
 }
 
 /* --- Main Content Layout --- */
