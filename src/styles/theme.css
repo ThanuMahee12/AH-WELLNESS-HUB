@@ -1245,6 +1245,39 @@
   font-size: 0.78rem;
 }
 
+/* --- Pagination --- */
+.pagination {
+  gap: 2px;
+}
+.pagination .page-link {
+  border: none;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  min-width: 30px;
+  text-align: center;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+.pagination .page-link:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+.pagination .page-link:focus {
+  box-shadow: none;
+}
+.pagination .page-item.active .page-link {
+  background: #0891B2;
+  color: #fff;
+  border: none;
+}
+.pagination .page-item.disabled .page-link {
+  background: transparent;
+  color: #cbd5e1;
+}
+
 /* --- Mobile FAB (Floating Action Button) --- */
 .page-header-fab {
   position: fixed;
