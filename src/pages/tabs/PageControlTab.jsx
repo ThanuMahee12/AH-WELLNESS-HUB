@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useDispatch } from 'react-redux'
-import { Badge, Form, Accordion } from 'react-bootstrap'
-import { FaShieldAlt, FaWpforms, FaTable, FaSearch } from 'react-icons/fa'
+import { Badge, Form, Accordion, Row, Col } from 'react-bootstrap'
+import { FaShieldAlt, FaWpforms, FaTable, FaSearch, FaChevronDown, FaChevronRight } from 'react-icons/fa'
 import { useSettings } from '../../hooks/useSettings'
 import { updateSettings } from '../../store/settingsSlice'
 import { useNotification } from '../../context'
@@ -47,6 +47,7 @@ function PageControlTab() {
   const { settings } = useSettings()
   const { error: showError } = useNotification()
   const [saving, setSaving] = useState(false)
+  const [expandedField, setExpandedField] = useState(null) // 'entity:fieldKey' or 'entity:col:colKey'
 
   const pages = settings?.pages || {}
   const permissions = settings?.permissions || {}
@@ -155,6 +156,20 @@ function PageControlTab() {
     save({ tables: { ...tables, [entity]: { ...tables[entity], itemsPerPage: parseInt(value) || 10 } } })
   }
 
+  const updateFormFieldProp = (entity, fieldKey, prop, value) => {
+    const fields = { ...forms[entity]?.fields }
+    fields[fieldKey] = { ...fields[fieldKey], [prop]: value }
+    save({ forms: { ...forms, [entity]: { ...forms[entity], fields } } })
+  }
+
+  const updateTableColumnProp = (entity, colKey, prop, value) => {
+    const columns = { ...tables[entity]?.columns }
+    columns[colKey] = { ...columns[colKey], [prop]: value }
+    save({ tables: { ...tables, [entity]: { ...tables[entity], columns } } })
+  }
+
+  const toggleExpand = (id) => setExpandedField(prev => prev === id ? null : id)
+
   const getCode = (perms, pageRoles, hasPerms) => ROLES.map(role => {
     const r = hasPerms ? (perms.view || []).includes(role) : pageRoles.includes(role)
     const w = hasPerms && ((perms.create || []).includes(role) || (perms.edit || []).includes(role))
@@ -242,27 +257,71 @@ function PageControlTab() {
                     {Object.entries(item.formFields).map(([fk, fc]) => {
                       const vis = fc.visible !== false
                       const roles = fc.roles || [...ROLES]
+                      const isExp = expandedField === `${item.key}:${fk}`
                       return (
-                        <div key={fk} className="d-flex align-items-center gap-2 py-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem' }}>
-                          <Form.Check type="checkbox" checked={vis} onChange={() => toggleFormField(item.key, fk, 'visible')} disabled={saving} />
-                          <span style={{ minWidth: 85, color: vis ? '#334155' : '#94a3b8', fontWeight: 500 }}>
-                            {fc.label || fk}{fc.required && <span className="text-danger">*</span>}
-                          </span>
-                          <div className="d-flex gap-0 ms-auto">
-                            {ROLES.map(role => {
-                              const has = roles.includes(role)
-                              return (
-                                <button key={role} type="button" onClick={() => toggleFieldRole(item.key, fk, role)} disabled={saving || !vis}
-                                  style={{
-                                    fontSize: '0.5rem', padding: '0 3px', border: `1px solid ${has ? ROLE_COLORS[role] : '#e2e8f0'}`,
-                                    borderRadius: 2, backgroundColor: has ? ROLE_COLORS[role] : 'transparent',
-                                    color: has ? '#fff' : '#cbd5e1', fontWeight: 700, opacity: vis ? 1 : 0.3,
-                                  }}>
-                                  {ROLE_SHORT[role]}
-                                </button>
-                              )
-                            })}
+                        <div key={fk}>
+                          <div className="d-flex align-items-center gap-2 py-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem', cursor: 'pointer' }}
+                            onClick={() => toggleExpand(`${item.key}:${fk}`)}>
+                            {isExp ? <FaChevronDown size={7} className="text-muted" /> : <FaChevronRight size={7} className="text-muted" />}
+                            <Form.Check type="checkbox" checked={vis} onChange={(e) => { e.stopPropagation(); toggleFormField(item.key, fk, 'visible') }} disabled={saving} />
+                            <span style={{ minWidth: 85, color: vis ? '#334155' : '#94a3b8', fontWeight: 500 }}>
+                              {fc.label || fk}{fc.required && <span className="text-danger">*</span>}
+                            </span>
+                            <small className="text-muted" style={{ fontSize: '0.58rem' }}>{fc.type || 'text'}</small>
+                            <div className="d-flex gap-0 ms-auto" onClick={(e) => e.stopPropagation()}>
+                              {ROLES.map(role => {
+                                const has = roles.includes(role)
+                                return (
+                                  <button key={role} type="button" onClick={() => toggleFieldRole(item.key, fk, role)} disabled={saving || !vis}
+                                    style={{
+                                      fontSize: '0.5rem', padding: '0 3px', border: `1px solid ${has ? ROLE_COLORS[role] : '#e2e8f0'}`,
+                                      borderRadius: 2, backgroundColor: has ? ROLE_COLORS[role] : 'transparent',
+                                      color: has ? '#fff' : '#cbd5e1', fontWeight: 700, opacity: vis ? 1 : 0.3,
+                                    }}>
+                                    {ROLE_SHORT[role]}
+                                  </button>
+                                )
+                              })}
+                            </div>
                           </div>
+                          {isExp && (
+                            <div className="ps-4 py-1 mb-1" style={{ backgroundColor: '#f8f9fa', borderRadius: 4, fontSize: '0.7rem' }}>
+                              <Row className="g-1">
+                                <Col xs={4}>
+                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Label</label>
+                                  <Form.Control size="sm" value={fc.label || ''} onChange={(e) => updateFormFieldProp(item.key, fk, 'label', e.target.value)}
+                                    style={{ fontSize: '0.72rem', height: 24 }} />
+                                </Col>
+                                <Col xs={3}>
+                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Type</label>
+                                  <Form.Select size="sm" value={fc.type || 'text'} onChange={(e) => updateFormFieldProp(item.key, fk, 'type', e.target.value)}
+                                    style={{ fontSize: '0.68rem', height: 24 }}>
+                                    {['text','number','email','tel','textarea','select','password','checkbox','date','richtext','custom'].map(t => <option key={t} value={t}>{t}</option>)}
+                                  </Form.Select>
+                                </Col>
+                                <Col xs={2}>
+                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Width</label>
+                                  <Form.Select size="sm" value={fc.colSize || 6} onChange={(e) => updateFormFieldProp(item.key, fk, 'colSize', parseInt(e.target.value))}
+                                    style={{ fontSize: '0.68rem', height: 24 }}>
+                                    <option value={6}>Half</option>
+                                    <option value={12}>Full</option>
+                                  </Form.Select>
+                                </Col>
+                                <Col xs={3} className="d-flex align-items-end gap-2 pb-1">
+                                  <Form.Check type="checkbox" id={`req-${item.key}-${fk}`} checked={fc.required || false}
+                                    onChange={() => updateFormFieldProp(item.key, fk, 'required', !fc.required)}
+                                    label={<span style={{ fontSize: '0.62rem' }}>Required</span>} />
+                                </Col>
+                              </Row>
+                              {fc.placeholder !== undefined && (
+                                <div className="mt-1">
+                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Placeholder</label>
+                                  <Form.Control size="sm" value={fc.placeholder || ''} onChange={(e) => updateFormFieldProp(item.key, fk, 'placeholder', e.target.value)}
+                                    style={{ fontSize: '0.72rem', height: 24 }} />
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )
                     })}
@@ -281,28 +340,49 @@ function PageControlTab() {
                     {Object.entries(item.tableColumns).map(([ck, cc]) => {
                       const vis = cc.visible !== false
                       const roles = cc.roles || [...ROLES]
+                      const isExp = expandedField === `${item.key}:col:${ck}`
                       return (
-                        <div key={ck} className="d-flex align-items-center gap-2 py-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem' }}>
-                          <Form.Check type="checkbox" checked={vis} onChange={() => toggleTableColumn(item.key, ck, 'visible')} disabled={saving} />
-                          <span style={{ minWidth: 85, color: vis ? '#334155' : '#94a3b8', fontWeight: 500 }}>
-                            {cc.label || ck}
-                          </span>
-                          <div className="d-flex align-items-center gap-0 ms-auto">
-                            {cc.searchable && <FaSearch size={7} className="text-muted me-1" />}
-                            {ROLES.map(role => {
-                              const has = roles.includes(role)
-                              return (
-                                <button key={role} type="button" onClick={() => toggleColumnRole(item.key, ck, role)} disabled={saving || !vis}
-                                  style={{
-                                    fontSize: '0.5rem', padding: '0 3px', border: `1px solid ${has ? ROLE_COLORS[role] : '#e2e8f0'}`,
-                                    borderRadius: 2, backgroundColor: has ? ROLE_COLORS[role] : 'transparent',
-                                    color: has ? '#fff' : '#cbd5e1', fontWeight: 700, opacity: vis ? 1 : 0.3,
-                                  }}>
-                                  {ROLE_SHORT[role]}
-                                </button>
-                              )
-                            })}
+                        <div key={ck}>
+                          <div className="d-flex align-items-center gap-2 py-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem', cursor: 'pointer' }}
+                            onClick={() => toggleExpand(`${item.key}:col:${ck}`)}>
+                            {isExp ? <FaChevronDown size={7} className="text-muted" /> : <FaChevronRight size={7} className="text-muted" />}
+                            <Form.Check type="checkbox" checked={vis} onChange={(e) => { e.stopPropagation(); toggleTableColumn(item.key, ck, 'visible') }} disabled={saving} />
+                            <span style={{ minWidth: 85, color: vis ? '#334155' : '#94a3b8', fontWeight: 500 }}>
+                              {cc.label || ck}
+                            </span>
+                            <div className="d-flex align-items-center gap-0 ms-auto" onClick={(e) => e.stopPropagation()}>
+                              {cc.searchable && <FaSearch size={7} className="text-muted me-1" />}
+                              {ROLES.map(role => {
+                                const has = roles.includes(role)
+                                return (
+                                  <button key={role} type="button" onClick={() => toggleColumnRole(item.key, ck, role)} disabled={saving || !vis}
+                                    style={{
+                                      fontSize: '0.5rem', padding: '0 3px', border: `1px solid ${has ? ROLE_COLORS[role] : '#e2e8f0'}`,
+                                      borderRadius: 2, backgroundColor: has ? ROLE_COLORS[role] : 'transparent',
+                                      color: has ? '#fff' : '#cbd5e1', fontWeight: 700, opacity: vis ? 1 : 0.3,
+                                    }}>
+                                    {ROLE_SHORT[role]}
+                                  </button>
+                                )
+                              })}
+                            </div>
                           </div>
+                          {isExp && (
+                            <div className="ps-4 py-1 mb-1" style={{ backgroundColor: '#f8f9fa', borderRadius: 4, fontSize: '0.7rem' }}>
+                              <Row className="g-1">
+                                <Col xs={5}>
+                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Display Label</label>
+                                  <Form.Control size="sm" value={cc.label || ''} onChange={(e) => updateTableColumnProp(item.key, ck, 'label', e.target.value)}
+                                    style={{ fontSize: '0.72rem', height: 24 }} />
+                                </Col>
+                                <Col xs={4} className="d-flex align-items-end gap-2 pb-1">
+                                  <Form.Check type="checkbox" id={`search-${item.key}-${ck}`} checked={cc.searchable || false}
+                                    onChange={() => updateTableColumnProp(item.key, ck, 'searchable', !cc.searchable)}
+                                    label={<span style={{ fontSize: '0.62rem' }}><FaSearch size={7} className="me-1" />Searchable</span>} />
+                                </Col>
+                              </Row>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
