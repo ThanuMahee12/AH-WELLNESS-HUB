@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button, Tabs, Tab } from 'react-bootstrap'
+import { Container, Row, Col, Card, Button } from 'react-bootstrap'
 import { FaFilePdf, FaPrint, FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaPrescriptionBottleAlt, FaArrowLeft } from 'react-icons/fa'
 import { Breadcrumb } from '../components/ui'
 import { selectAllCheckups, fetchCheckups } from '../store/checkupsSlice'
@@ -623,86 +623,55 @@ function CheckupDetail() {
   const prescriptionNotes = checkup.prescriptionNotes || ''
 
   return (
-    <Container fluid className="p-3 p-md-4">
-      <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
+    <Container fluid className="p-3 p-md-4 d-flex flex-column" style={{ height: 'calc(100vh - 52px)' }}>
+      <div className="flex-shrink-0">
         <Breadcrumb
           items={[{ label: 'Checkups', path: '/checkups' }]}
           current={checkup?.billNo || 'Checkup Details'}
         />
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          onClick={() => navigate(`/checkups/${id}`)}
-          className="no-print"
-        >
-          <FaArrowLeft className="me-1" />
-          Back to Edit
-        </Button>
+
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-center mb-2 no-print">
+          <div>
+            <h6 className="mb-0 fw-bold" style={{ fontSize: '1rem' }}>
+              <FaFilePdf className="me-2 text-theme" size={16} />
+              {checkup?.billNo || 'Invoice / Prescription'}
+            </h6>
+            <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+              {patient?.name} &middot; {patient?.age}yr &middot; {patient?.gender} &middot; {new Date(checkup?.timestamp).toLocaleDateString()}
+            </small>
+          </div>
+          <div className="d-flex gap-1">
+            <Button size="sm" variant="outline-secondary" onClick={() => navigate(`/checkups/${id}`)} style={{ fontSize: '0.72rem' }}>
+              <FaArrowLeft className="me-1" size={10} /> Edit
+            </Button>
+            <Button size="sm" onClick={activeTab === 'details' ? handlePrint : handlePrintPrescription} style={{ fontSize: '0.72rem', backgroundColor: '#14B8A6', borderColor: '#14B8A6' }}>
+              <FaPrint className="me-1" size={10} /> Print
+            </Button>
+            <Button size="sm" onClick={activeTab === 'details' ? handleGeneratePDF : handleGeneratePrescriptionPDF} disabled={isGenerating} style={{ fontSize: '0.72rem', backgroundColor: '#0891B2', borderColor: '#0891B2' }}>
+              <FaFilePdf className="me-1" size={10} /> {isGenerating ? 'Generating...' : 'PDF'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Tab Bar */}
+        <div className="border-bottom no-print" style={{ backgroundColor: '#fff' }}>
+          <div className="d-flex gap-0">
+            {[
+              { key: 'details', label: 'Invoice', icon: FaFilePdf },
+              { key: 'prescription', label: 'Prescription', icon: FaPrescriptionBottleAlt },
+            ].map(tab => (
+              <button key={tab.key} className={`btn btn-link text-decoration-none px-3 py-2 flex-shrink-0 ${activeTab === tab.key ? 'fw-semibold' : ''}`} onClick={() => setActiveTab(tab.key)}
+                style={{ fontSize: '0.8rem', color: activeTab === tab.key ? '#0891B2' : '#64748b', borderRadius: 0, borderBottom: activeTab === tab.key ? '2px solid #0891B2' : '2px solid transparent' }}>
+                <tab.icon className="me-1" size={13} />{tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Patient Details */}
-      <Card className="shadow-sm mb-3">
-        <Card.Body className="py-2 px-3">
-          <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3" style={{ fontSize: 'clamp(0.8rem, 2vw, 0.95rem)' }}>
-            <span><strong>Patient:</strong> <a href={`/patients/${patient.id}`} onClick={(e) => { e.preventDefault(); navigate(`/patients/${patient.id}`) }} style={{ color: '#0891B2', textDecoration: 'none' }}>{patient.name}</a></span>
-            <span><strong>Age:</strong> {patient.age}yr</span>
-            <span><strong>Gender:</strong> {patient.gender}</span>
-            <span><strong>Mobile:</strong> {patient.mobile}</span>
-            <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
-            <span><strong>Date:</strong> {new Date(checkup.timestamp).toLocaleDateString()}</span>
-          </div>
-        </Card.Body>
-      </Card>
-
-      {/* Action Buttons */}
-      <Row className="mb-3 no-print">
-        <Col>
-          <div className="d-flex gap-2 flex-wrap align-items-center">
-            {activeTab === 'details' && (
-              <>
-                <Button
-                  onClick={handlePrint}
-                  size="sm"
-                  className="no-print btn-theme-success"
-                >
-                  <FaPrint className="me-2" />
-                  Print
-                </Button>
-                <Button
-                  onClick={handleGeneratePDF}
-                  disabled={isGenerating}
-                  size="sm"
-                  className="no-print btn-theme-primary"
-                >
-                  <FaFilePdf className="me-2" />
-                  {isGenerating ? 'Generating PDF...' : 'Download PDF'}
-                </Button>
-              </>
-            )}
-            {activeTab === 'prescription' && (
-              <>
-                <Button
-                  onClick={handlePrintPrescription}
-                  size="sm"
-                  className="no-print btn-theme-success"
-                >
-                  <FaPrint className="me-2" />
-                  Print
-                </Button>
-                <Button
-                  onClick={handleGeneratePrescriptionPDF}
-                  disabled={isGenerating}
-                  size="sm"
-                  className="no-print btn-theme-primary"
-                >
-                  <FaFilePdf className="me-2" />
-                  {isGenerating ? 'Generating...' : 'Download PDF'}
-                </Button>
-              </>
-            )}
-          </div>
-        </Col>
-      </Row>
+      {/* Scrollable Content */}
+      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0, paddingTop: 12 }}>
 
 
       {/* Shared template styles for both invoice & prescription */}
@@ -997,39 +966,6 @@ function CheckupDetail() {
         }
       `}</style>
 
-      {/* Tabbed Interface */}
-      <Row>
-        <Col>
-          <Tabs
-            activeKey={activeTab}
-            onSelect={(k) => setActiveTab(k)}
-            className="mb-3 no-print tabs-theme"
-          >
-            <Tab
-              eventKey="details"
-              title={
-                <span>
-                  <FaFilePdf className="me-2" />
-                  Invoice
-                </span>
-              }
-            >
-              {/* Invoice Tab Content */}
-            </Tab>
-            <Tab
-              eventKey="prescription"
-              title={
-                <span>
-                  <FaPrescriptionBottleAlt className="me-2" />
-                  Prescription
-                </span>
-              }
-            >
-              {/* Prescription Tab Content */}
-            </Tab>
-          </Tabs>
-        </Col>
-      </Row>
 
       {/* Invoice Preview */}
       {activeTab === 'details' && (
@@ -1353,6 +1289,7 @@ function CheckupDetail() {
         </Row>
       )}
 
+      </div>
     </Container>
   )
 }
