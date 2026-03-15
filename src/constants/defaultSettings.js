@@ -314,8 +314,8 @@ export const DEFAULT_SETTINGS = {
     patients: {
       itemsPerPage: 10,
       columns: {
-        gender: { visible: true, label: '', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         name: { visible: true, label: 'Name', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
+        gender: { visible: true, label: 'Gender', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         age: { visible: true, label: 'Age', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         mobile: { visible: true, label: 'Mobile', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
         address: { visible: true, label: 'Address', roles: ['superadmin', 'maintainer', 'editor', 'user'], searchable: true },
