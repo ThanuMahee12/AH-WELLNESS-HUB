@@ -105,7 +105,7 @@ function Checkups() {
         icon={FaClipboardCheck}
         title="Checkups / Billing"
         addButtonText="New Checkup"
-        onAddClick={checkPermission('checkups', 'create') && patients.length > 0 && !loading ? () => navigate('/checkups/new') : undefined}
+        onAddClick={checkPermission('checkups', 'create') ? () => navigate('/checkups/new') : undefined}
       />
 
       {patients.length === 0 && !patientsLoading && (
