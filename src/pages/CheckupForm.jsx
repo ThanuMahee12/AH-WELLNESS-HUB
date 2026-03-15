@@ -20,6 +20,8 @@ function CheckupForm() {
   const dispatch = useDispatch()
   const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
+  const { user } = useSelector(state => state.auth)
+  const isEditorOrAbove = ['superadmin', 'admin', 'maintainer', 'editor'].includes(user?.role)
   const { settings, isFieldVisible, isFieldRequired, getFieldLabel, getLabResultFields, getGeneralTestFields } = useSettings()
   const labResultFields = getLabResultFields()
   const generalTestFields = getGeneralTestFields()
@@ -322,10 +324,12 @@ function CheckupForm() {
 
   const TABS = [
     { key: 'patient', label: 'Patient', icon: FaUserInjured },
-    { key: 'tests', label: 'Tests', icon: FaFlask },
-    ...(!isNew && checkup ? [
+    ...(isEditorOrAbove ? [{ key: 'tests', label: 'Tests', icon: FaFlask }] : []),
+    ...(!isNew && checkup && isEditorOrAbove ? [
       { key: 'extra', label: 'Extra', icon: FaCog },
       { key: 'medicine', label: 'Medicine', icon: FaPills },
+    ] : []),
+    ...(!isNew && checkup ? [
       { key: 'summary', label: 'Summary', icon: FaListAlt },
     ] : []),
   ]
@@ -467,7 +471,7 @@ function CheckupForm() {
               {/* Payment & Total */}
               <div className="mt-3 p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
                 <Row className="align-items-center">
-                  {isFieldVisible('checkups', 'paid') && (
+                  {isFieldVisible('checkups', 'paid') && isEditorOrAbove && (
                     <Col xs={6}>
                       <Form.Check type="switch" id="paid-patient" label={<span style={{ fontSize: '0.82rem', fontWeight: 500 }}>Paid</span>}
                         checked={formData.paid} onChange={(e) => setFormData({ ...formData, paid: e.target.checked })} />
