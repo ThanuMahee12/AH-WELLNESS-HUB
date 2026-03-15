@@ -55,7 +55,7 @@ const TabLayout = React.memo(({ tabs = [], defaultTab, className = '' }) => {
       </div>
 
       {/* Scrollable Content */}
-      <div className="tab-layout-content flex-grow-1" style={{ overflow: 'auto', minHeight: 0, padding: '12px 0 0' }}>
+      <div className="tab-layout-content flex-grow-1" style={{ overflowY: 'auto', overflowX: 'hidden', minHeight: 0, padding: '12px 0 0' }}>
         {ActiveComponent && (
           activeTabConfig.lazy
             ? (activeTab === activeTabConfig.key && <ActiveComponent />)

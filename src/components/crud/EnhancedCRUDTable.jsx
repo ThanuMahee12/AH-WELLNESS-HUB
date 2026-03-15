@@ -209,7 +209,7 @@ const EnhancedCRUDTable = React.memo(({
       </div>
 
       {/* Scrollable Table Body */}
-      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0 }}>
+      <div className="flex-grow-1" style={{ overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
         <table className="table table-hover mb-0 table-mobile-responsive" style={{ fontSize: '0.82rem', tableLayout: 'fixed', width: '100%' }}>
           <tbody>
             {paginatedData.length === 0 ? (

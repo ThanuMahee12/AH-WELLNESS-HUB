@@ -410,7 +410,7 @@ function CheckupForm() {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0, paddingTop: 12 }}>
+      <div className="flex-grow-1" style={{ overflowY: 'auto', overflowX: 'hidden', minHeight: 0, paddingTop: 12 }}>
         <Form id="checkup-form" onSubmit={handleSubmit}>
 
           {/* ===== PATIENT TAB ===== */}

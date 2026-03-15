@@ -610,7 +610,7 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0, paddingTop: '12px' }}>
+      <div className="flex-grow-1" style={{ overflowY: 'auto', overflowX: 'hidden', minHeight: 0, paddingTop: '12px' }}>
           {/* ===== DAILY REPORT TAB ===== */}
           {activeTab === 'daily-report' && (<>
             {/* Time Range Filter */}
