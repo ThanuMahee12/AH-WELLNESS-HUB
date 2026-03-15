@@ -26,8 +26,7 @@ function Medicines() {
       render: (value, item) => (
         <strong
           onClick={() => navigate(`/medicines/${item.id}`)}
-          className="clickable-link text-theme"
-          style={{ whiteSpace: 'nowrap', fontSize: '0.875rem' }}
+          style={{ cursor: 'pointer', color: '#0891B2' }}
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
         >
@@ -35,51 +34,13 @@ function Medicines() {
         </strong>
       )
     },
-    name: {
-      render: (value) => (
-        <strong style={{
-          whiteSpace: 'pre-wrap',
-          wordWrap: 'break-word',
-          maxWidth: window.innerWidth < 768 ? '120px' : '200px',
-          display: 'inline-block',
-          fontSize: '0.875rem'
-        }}>
-          {value}
-        </strong>
-      )
-    },
-    brand: {
-      render: (value) => (
-        <span style={{ whiteSpace: 'nowrap', fontSize: '0.875rem' }}>
-          {value}
-        </span>
-      )
-    },
     dosage: {
       render: (value) => {
         const dosages = Array.isArray(value) ? value : (value ? [value] : [])
-        return <span style={{ fontSize: '0.875rem' }}>{dosages.length > 0 ? dosages.join(', ') : '-'}</span>
+        return dosages.length > 0
+          ? <div className="d-flex flex-wrap gap-1">{dosages.map((d, i) => <span key={i} className="tag-item">{d}</span>)}</div>
+          : <span className="text-muted">-</span>
       }
-    },
-    unit: {
-      render: (value) => (
-        <span style={{ whiteSpace: 'nowrap', fontSize: '0.875rem' }}>
-          {value}
-        </span>
-      )
-    },
-    description: {
-      render: (value) => (
-        <div style={{
-          whiteSpace: 'pre-wrap',
-          wordWrap: 'break-word',
-          maxWidth: window.innerWidth < 768 ? '120px' : '250px',
-          fontSize: '0.85rem',
-          lineHeight: '1.4'
-        }}>
-          {value || '-'}
-        </div>
-      )
     },
   }), [navigate]);
 
