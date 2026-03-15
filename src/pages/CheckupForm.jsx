@@ -381,7 +381,7 @@ function CheckupForm() {
           <div className="d-flex gap-2">
             {!isNew && (
               <Button size="sm" variant="outline-secondary" onClick={() => navigate(`/checkups/${id}/details`)} style={{ fontSize: '0.72rem' }}>
-                <FaFileInvoice className="me-1" size={10} /> Invoice
+                <FaFileInvoice className="me-1" size={10} /> Invoice / Rx
               </Button>
             )}
             {canDelete && (
