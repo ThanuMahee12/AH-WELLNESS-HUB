@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Table, Card, Form, Pagination, Dropdown } from 'react-bootstrap';
+import { Card, Form, Pagination, Dropdown } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaSearch, FaSortUp, FaSortDown, FaSort, FaSortAmountDown, FaTimes } from 'react-icons/fa';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
@@ -184,9 +184,9 @@ const EnhancedCRUDTable = React.memo(({
         )}
       </div>
 
-      {/* Scrollable Table Body with Sticky Header */}
-      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0 }}>
-        <Table hover className="mb-0 table-mobile-responsive" style={{ fontSize: '0.82rem' }}>
+      {/* Fixed Table Header */}
+      <div className="flex-shrink-0" style={{ overflowX: 'auto' }}>
+        <table className="table mb-0" style={{ fontSize: '0.82rem', tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
               {columns.map(col => (
@@ -201,10 +201,16 @@ const EnhancedCRUDTable = React.memo(({
                 </th>
               ))}
               {hasActions && (
-                <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
+                <th style={{ ...thStyle, textAlign: 'center', width: '80px' }}>Actions</th>
               )}
             </tr>
           </thead>
+        </table>
+      </div>
+
+      {/* Scrollable Table Body */}
+      <div className="flex-grow-1" style={{ overflow: 'auto', minHeight: 0 }}>
+        <table className="table table-hover mb-0 table-mobile-responsive" style={{ fontSize: '0.82rem', tableLayout: 'fixed', width: '100%' }}>
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
@@ -221,7 +227,7 @@ const EnhancedCRUDTable = React.memo(({
                     </td>
                   ))}
                   {hasActions && (
-                    <td data-label="Actions" style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
+                    <td data-label="Actions" style={{ padding: '8px 12px', verticalAlign: 'middle', width: '80px' }}>
                       {renderActions ? renderActions(item) : defaultRenderActions(item)}
                     </td>
                   )}
@@ -229,16 +235,16 @@ const EnhancedCRUDTable = React.memo(({
               ))
             )}
           </tbody>
-        </Table>
+        </table>
       </div>
 
-      {/* Fixed Pagination Footer */}
-      {totalPages > 1 && (
-        <div className="py-2 px-3 border-top bg-white flex-shrink-0">
-          <div className="d-flex justify-content-between align-items-center">
-            <small className="text-muted" style={{ fontSize: '0.7rem' }}>
-              Page {currentPage} of {totalPages}
-            </small>
+      {/* Fixed Pagination Footer — always rendered to prevent layout shift */}
+      <div className="py-2 px-3 border-top bg-white flex-shrink-0">
+        <div className="d-flex justify-content-between align-items-center">
+          <small className="text-muted" style={{ fontSize: '0.7rem' }}>
+            {totalPages > 0 ? `Page ${currentPage} of ${totalPages}` : `${sortedData.length} items`}
+          </small>
+          {totalPages > 1 ? (
             <Pagination className="mb-0" size="sm">
               <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
               <Pagination.Prev onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} />
@@ -255,9 +261,13 @@ const EnhancedCRUDTable = React.memo(({
               <Pagination.Next onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} />
               <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
             </Pagination>
-          </div>
+          ) : (
+            <small className="text-muted" style={{ fontSize: '0.7rem' }}>
+              {sortedData.length} of {data.length}
+            </small>
+          )}
         </div>
-      )}
+      </div>
     </Card>
   );
 });
