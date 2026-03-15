@@ -194,7 +194,7 @@ const EnhancedCRUDTable = React.memo(({
                     padding: '8px 12px',
                     fontSize: '0.75rem',
                     fontWeight: 600,
-                    color: '#64748b',
+                    color: '#334155',
                     textTransform: 'uppercase',
                     letterSpacing: '0.03em',
                     borderBottom: '1px solid #e2e8f0',
@@ -205,7 +205,7 @@ const EnhancedCRUDTable = React.memo(({
                 </th>
               ))}
               {(onEdit || onDelete || renderActions) && (
-                <th style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>
+                <th style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>
                   Actions
                 </th>
               )}
