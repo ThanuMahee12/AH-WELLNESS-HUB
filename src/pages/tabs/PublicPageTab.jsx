@@ -94,6 +94,10 @@ function PublicPageTab() {
       heroImageUrl: homeContent.heroImageUrl || '',
       ctaText: homeContent.ctaText || '',
       ctaAuthText: homeContent.ctaAuthText || '',
+      ctaLink: homeContent.ctaLink || '/login',
+      ctaAuthLink: homeContent.ctaAuthLink || '/dashboard',
+      ctaVisible: homeContent.ctaVisible !== false,
+      ctaAuthVisible: homeContent.ctaAuthVisible !== false,
       aboutTitle: homeContent.aboutTitle || '',
       aboutDescription: homeContent.aboutDescription || '',
       aboutImageUrl: homeContent.aboutImageUrl || '',
@@ -214,82 +218,95 @@ function PublicPageTab() {
 
   return (
     <>
-      {/* Hero Section Settings */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme">
-          <h5 className="mb-0 fs-responsive-md">Home Page — Hero Section</h5>
-        </Card.Header>
-        <Card.Body>
-          <Row className="g-3">
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Hero Title</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.heroTitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, heroTitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('heroTitle')}
-                  placeholder="e.g., AH WELLNESS HUB"
-                />
-              </Form.Group>
+      {/* Hero Section */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <small className="fw-bold text-muted d-block mb-2">HERO SECTION</small>
+          <Row className="g-2">
+            {/* Left: fields */}
+            <Col xs={12} md={localContent.heroImageUrl ? 8 : 12}>
+              <Row className="g-2">
+                <Col xs={12}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
+                    <Form.Control size="sm" value={localContent.heroTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroTitle: e.target.value }))} onBlur={() => handleContentBlur('heroTitle')} placeholder="e.g., AH WELLNESS HUB" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
+                <Col xs={12}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Subtitle</Form.Label>
+                    <Form.Control size="sm" as="textarea" rows={2} value={localContent.heroSubtitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroSubtitle: e.target.value }))} onBlur={() => handleContentBlur('heroSubtitle')} placeholder="Description below title" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
+                <Col xs={12}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Hero Image URL</Form.Label>
+                    <Form.Control size="sm" value={localContent.heroImageUrl || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroImageUrl: e.target.value }))} onBlur={() => handleContentBlur('heroImageUrl')} placeholder="Google Drive or direct image URL" style={{ fontSize: '0.8rem' }} />
+                    <Form.Text style={{ fontSize: '0.62rem' }} className="text-muted">Google Drive: File → Share → Copy link. Replace /view with /preview or use direct URL.</Form.Text>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* CTA Buttons */}
+              <div className="mt-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+                <small className="fw-bold text-muted d-block mb-1" style={{ fontSize: '0.62rem' }}>CTA BUTTONS</small>
+                <Row className="g-2">
+                  <Col xs={12} md={6}>
+                    <div className="d-flex align-items-center gap-2">
+                      <Form.Check type="switch" id="cta-visible" checked={localContent.ctaVisible !== false}
+                        onChange={(e) => { setLocalContent(p => ({ ...p, ctaVisible: e.target.checked })); setTimeout(() => handleContentBlur('ctaVisible'), 100) }} />
+                      <div style={{ flex: 1 }}>
+                        <Form.Label style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: 0 }}>Logged Out Text</Form.Label>
+                        <Form.Control size="sm" value={localContent.ctaText || ''} onChange={(e) => setLocalContent(p => ({ ...p, ctaText: e.target.value }))} onBlur={() => handleContentBlur('ctaText')} placeholder="Get Started" style={{ fontSize: '0.78rem' }} />
+                      </div>
+                    </div>
+                    <Form.Group className="mt-1">
+                      <Form.Label style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Link (logged out)</Form.Label>
+                      <Form.Control size="sm" value={localContent.ctaLink || '/login'} onChange={(e) => setLocalContent(p => ({ ...p, ctaLink: e.target.value }))} onBlur={() => handleContentBlur('ctaLink')} placeholder="/login" style={{ fontSize: '0.72rem' }} />
+                    </Form.Group>
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <div className="d-flex align-items-center gap-2">
+                      <Form.Check type="switch" id="cta-auth-visible" checked={localContent.ctaAuthVisible !== false}
+                        onChange={(e) => { setLocalContent(p => ({ ...p, ctaAuthVisible: e.target.checked })); setTimeout(() => handleContentBlur('ctaAuthVisible'), 100) }} />
+                      <div style={{ flex: 1 }}>
+                        <Form.Label style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: 0 }}>Logged In Text</Form.Label>
+                        <Form.Control size="sm" value={localContent.ctaAuthText || ''} onChange={(e) => setLocalContent(p => ({ ...p, ctaAuthText: e.target.value }))} onBlur={() => handleContentBlur('ctaAuthText')} placeholder="Go to Dashboard" style={{ fontSize: '0.78rem' }} />
+                      </div>
+                    </div>
+                    <Form.Group className="mt-1">
+                      <Form.Label style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Link (logged in)</Form.Label>
+                      <Form.Control size="sm" value={localContent.ctaAuthLink || '/dashboard'} onChange={(e) => setLocalContent(p => ({ ...p, ctaAuthLink: e.target.value }))} onBlur={() => handleContentBlur('ctaAuthLink')} placeholder="/dashboard" style={{ fontSize: '0.72rem' }} />
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
             </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Hero Image URL</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.heroImageUrl || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, heroImageUrl: e.target.value }))}
-                  onBlur={() => handleContentBlur('heroImageUrl')}
-                  placeholder="Paste Google Drive or image URL"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Hero Subtitle</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={localContent.heroSubtitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, heroSubtitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('heroSubtitle')}
-                  placeholder="Short description shown below the title"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">CTA Text (Logged Out)</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.ctaText || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, ctaText: e.target.value }))}
-                  onBlur={() => handleContentBlur('ctaText')}
-                  placeholder="e.g., Get Started"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">CTA Text (Logged In)</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.ctaAuthText || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, ctaAuthText: e.target.value }))}
-                  onBlur={() => handleContentBlur('ctaAuthText')}
-                  placeholder="e.g., Go to Dashboard"
-                />
-              </Form.Group>
-            </Col>
+
+            {/* Right: image preview */}
+            {localContent.heroImageUrl && (
+              <Col xs={12} md={4}>
+                <div className="text-center">
+                  <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Preview</Form.Label>
+                  <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                    <img
+                      src={localContent.heroImageUrl}
+                      alt="Hero preview"
+                      style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
+                      onError={(e) => { e.target.style.display = 'none' }}
+                    />
+                  </div>
+                </div>
+              </Col>
+            )}
           </Row>
         </Card.Body>
       </Card>
 
       {/* Features Table */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">Features</h5>
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
+          <small className="fw-bold text-muted">Features</small>
           <Button
             size="sm"
             variant="light"
@@ -352,9 +369,9 @@ function PublicPageTab() {
       </Card>
 
       {/* About Us Section Settings */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">About Us Section</h5>
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
+          <small className="fw-bold text-muted">About Us Section</small>
           <Form.Check
             type="switch"
             id="aboutVisible"
@@ -413,9 +430,9 @@ function PublicPageTab() {
       </Card>
 
       {/* Contact Section Settings */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">Contact Section</h5>
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
+          <small className="fw-bold text-muted">Contact Section</small>
           <Form.Check
             type="switch"
             id="contactVisible"
@@ -468,9 +485,9 @@ function PublicPageTab() {
       </Card>
 
       {/* Contact Fields — Inline Edit */}
-      <Card className="shadow-sm mb-4">
-        <Card.Header className="card-header-theme d-flex align-items-center justify-content-between">
-          <h5 className="mb-0 fs-responsive-md">Contact Details</h5>
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
+          <small className="fw-bold text-muted">Contact Details</small>
           <Button
             size="sm"
             variant="light"
