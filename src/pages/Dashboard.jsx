@@ -381,7 +381,7 @@ function Dashboard() {
                 <div className="text-center py-3 text-muted"><small>No checkups yet</small></div>
               ) : (
                 <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
-                  {checkups.slice(-10).reverse().map(checkup => {
+                  {[...checkups].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 10).map(checkup => {
                     const patient = patients.find(p => p.id === checkup.patientId)
                     const isToday = new Date(checkup.timestamp).toDateString() === new Date().toDateString()
                     return (
