@@ -383,63 +383,41 @@ function PublicPageTab() {
         </Card.Body>
       </Card>
 
-      {/* About Us Section Settings */}
+      {/* About Us Section */}
       <Card className="shadow-sm border-0 mb-3">
-        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
-          <small className="fw-bold text-muted">About Us Section</small>
-          <Form.Check
-            type="switch"
-            id="aboutVisible"
-            label="Visible"
-            checked={localContent.aboutVisible || false}
-            onChange={(e) => {
-              setLocalContent(prev => ({ ...prev, aboutVisible: e.target.checked }))
-              dispatch(updateSettings({
-                data: { pages: { home: { content: { aboutVisible: e.target.checked } } } },
-                user,
-              }))
-            }}
-          />
-        </Card.Header>
-        <Card.Body>
-          <Row className="g-3">
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Title</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.aboutTitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, aboutTitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('aboutTitle')}
-                  placeholder="e.g., About Us"
-                />
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <small className="fw-bold text-muted">ABOUT US</small>
+            <Form.Check type="switch" id="aboutVisible" label={<span style={{ fontSize: '0.68rem' }}>Visible</span>}
+              checked={localContent.aboutVisible || false}
+              onChange={(e) => { setLocalContent(p => ({ ...p, aboutVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { aboutVisible: e.target.checked } } } }, user })) }} />
+          </div>
+          <Row className="g-2">
+            <Col xs={12} md={localContent.aboutImageUrl ? 8 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
+                <Form.Control size="sm" value={localContent.aboutTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutTitle: e.target.value }))} onBlur={() => handleContentBlur('aboutTitle')} placeholder="e.g., About Us" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Description</Form.Label>
+                <Form.Control size="sm" as="textarea" rows={3} value={localContent.aboutDescription || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutDescription: e.target.value }))} onBlur={() => handleContentBlur('aboutDescription')} placeholder="Write about your organization..." style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Image URL</Form.Label>
+                <Form.Control size="sm" value={localContent.aboutImageUrl || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutImageUrl: e.target.value }))} onBlur={() => handleContentBlur('aboutImageUrl')} placeholder="Google Drive or direct image URL" style={{ fontSize: '0.8rem' }} />
               </Form.Group>
             </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Image URL</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.aboutImageUrl || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, aboutImageUrl: e.target.value }))}
-                  onBlur={() => handleContentBlur('aboutImageUrl')}
-                  placeholder="Paste Google Drive or image URL (optional)"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={4}
-                  value={localContent.aboutDescription || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, aboutDescription: e.target.value }))}
-                  onBlur={() => handleContentBlur('aboutDescription')}
-                  placeholder="Write about your organization..."
-                />
-              </Form.Group>
-            </Col>
+            {localContent.aboutImageUrl && (
+              <Col xs={12} md={4}>
+                <div className="text-center">
+                  <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Preview</Form.Label>
+                  <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                    <img src={toDirectImageUrl(localContent.aboutImageUrl)} alt="About preview" style={{ width: '100%', maxHeight: 180, objectFit: 'cover' }}
+                      onError={(e) => { e.target.parentElement.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:0.72rem">Image failed to load.</div>' }} />
+                  </div>
+                </div>
+              </Col>
+            )}
           </Row>
         </Card.Body>
       </Card>
