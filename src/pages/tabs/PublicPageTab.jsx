@@ -178,9 +178,39 @@ function PublicPageTab() {
     }
   }
 
-  // Inline contact field edit
+  // Auto-generate URL based on icon type and value
+  const autoUrl = (icon, value) => {
+    if (!value) return ''
+    const clean = value.replace(/\s+/g, '').replace(/-/g, '')
+    if (icon === 'FaWhatsapp') return `https://wa.me/${clean.replace(/^\+/, '')}`
+    if (icon === 'FaPhone') return `tel:${clean}`
+    if (icon === 'FaEnvelope') return `mailto:${value.trim()}`
+    if (icon === 'FaFacebook') return value.startsWith('http') ? value : `https://facebook.com/${value.trim()}`
+    if (icon === 'FaInstagram') return value.startsWith('http') ? value : `https://instagram.com/${value.trim()}`
+    if (icon === 'FaTwitter') return value.startsWith('http') ? value : `https://twitter.com/${value.trim()}`
+    if (icon === 'FaLinkedin') return value.startsWith('http') ? value : `https://linkedin.com/in/${value.trim()}`
+    if (icon === 'FaYoutube') return value.startsWith('http') ? value : `https://youtube.com/@${value.trim()}`
+    if (icon === 'FaTiktok') return value.startsWith('http') ? value : `https://tiktok.com/@${value.trim()}`
+    return ''
+  }
+
   const updateContactField = (idx, key, value) => {
-    setContactFields(prev => prev.map((f, i) => i === idx ? { ...f, [key]: value } : f))
+    setContactFields(prev => prev.map((f, i) => {
+      if (i !== idx) return f
+      const updated = { ...f, [key]: value }
+      // Auto-generate URL when value or icon changes
+      if (key === 'value' || key === 'icon') {
+        const icon = key === 'icon' ? value : f.icon
+        const val = key === 'value' ? value : f.value
+        updated.url = autoUrl(icon, val)
+        // Default label from icon if empty
+        if (!updated.label) {
+          const opt = CONTACT_ICON_OPTIONS.find(o => o.value === icon)
+          if (opt) updated.label = opt.label
+        }
+      }
+      return updated
+    }))
   }
   const saveContactFields = async () => {
     await saveList('contactFields', contactFields)
@@ -477,114 +507,78 @@ function PublicPageTab() {
         </Card.Body>
       </Card>
 
-      {/* Contact Fields — Inline Edit */}
+      {/* Contact Details */}
       <Card className="shadow-sm border-0 mb-3">
-        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
-          <small className="fw-bold text-muted">Contact Details</small>
-          <Button
-            size="sm"
-            variant="light"
-            className="d-flex align-items-center gap-1"
-            onClick={addContactField}
-          >
-            <FaPlus /> Add
-          </Button>
-        </Card.Header>
-        <Card.Body>
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <small className="fw-bold text-muted">CONTACT DETAILS</small>
+            <button type="button" onClick={addContactField} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+              <FaPlus size={8} className="me-1" />Add
+            </button>
+          </div>
+
           {contactFields.length === 0 ? (
-            <p className="text-muted text-center py-3 mb-0">No contact details yet. Click &quot;Add&quot; to create one.</p>
+            <div className="text-center text-muted py-3" style={{ fontSize: '0.78rem' }}>No contact details yet</div>
           ) : (
-            <div className="d-flex flex-column gap-2">
+            <div>
+              {/* Header */}
+              <div className="d-none d-md-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.58rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                <span style={{ width: 28 }}>Vis</span>
+                <span style={{ width: 30 }}>Icon</span>
+                <span style={{ width: 55 }}>Type</span>
+                <span style={{ flex: 1 }}>Value *</span>
+                <span style={{ flex: 1 }}>Label</span>
+                <span style={{ flex: 1 }}>URL (auto)</span>
+                <span style={{ width: 24 }}></span>
+              </div>
+
               {contactFields.map((field, idx) => {
                 const Icon = CONTACT_ICON_MAP[field.icon] || FaInfoCircle
                 return (
-                  <div key={idx} className="border rounded p-2" style={{ background: 'rgba(8,145,178,0.02)' }}>
-                    <Row className="g-2 align-items-center">
-                      {/* Icon dropdown — shows actual icon */}
-                      <Col xs="auto">
-                        <div className="position-relative">
-                          <div className="d-flex align-items-center justify-content-center" style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(8,145,178,0.1), rgba(6,182,212,0.15))' }}>
-                            <Icon style={{ fontSize: '1rem', color: 'var(--theme-primary)' }} />
-                          </div>
-                          <Form.Select
-                            size="sm"
-                            value={field.icon || 'FaPhone'}
-                            onChange={(e) => updateContactField(idx, 'icon', e.target.value)}
-                            onBlur={saveContactFields}
-                            className="position-absolute top-0 start-0 opacity-0"
-                            style={{ width: 36, height: 36, cursor: 'pointer' }}
-                          >
-                            {CONTACT_ICON_OPTIONS.map(opt => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </Form.Select>
-                        </div>
-                      </Col>
-                      <Col xs={4} md={2}>
-                        <Form.Select
-                          size="sm"
-                          value={field.type || 'detail'}
-                          onChange={(e) => updateContactField(idx, 'type', e.target.value)}
-                          onBlur={saveContactFields}
-                        >
-                          <option value="detail">Detail</option>
-                          <option value="social">Social</option>
-                        </Form.Select>
-                      </Col>
-                      <Col>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="Label"
-                          value={field.label || ''}
-                          onChange={(e) => updateContactField(idx, 'label', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                      <Col>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="Value"
-                          value={field.value || ''}
-                          onChange={(e) => updateContactField(idx, 'value', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                      <Col className="d-none d-md-block">
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="URL (optional)"
-                          value={field.url || ''}
-                          onChange={(e) => updateContactField(idx, 'url', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                      <Col xs="auto">
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleDelete('contact', idx)}
-                          title="Delete"
-                        >
-                          <FaTrash />
-                        </Button>
-                      </Col>
-                    </Row>
-                    {/* URL on mobile — second row */}
-                    <Row className="g-2 d-md-none mt-1">
-                      <Col>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          placeholder="URL (optional)"
-                          value={field.url || ''}
-                          onChange={(e) => updateContactField(idx, 'url', e.target.value)}
-                          onBlur={saveContactFields}
-                        />
-                      </Col>
-                    </Row>
+                  <div key={idx} className="d-flex flex-wrap align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.75rem' }}>
+                    {/* Visible */}
+                    <span style={{ width: 28 }}>
+                      <Form.Check type="checkbox" checked={field.visible !== false}
+                        onChange={(e) => { updateContactField(idx, 'visible', e.target.checked); setTimeout(saveContactFields, 100) }} />
+                    </span>
+                    {/* Icon */}
+                    <span style={{ width: 30, position: 'relative' }}>
+                      <Icon size={14} style={{ color: '#0891B2' }} />
+                      <Form.Select size="sm" value={field.icon || 'FaPhone'}
+                        onChange={(e) => updateContactField(idx, 'icon', e.target.value)} onBlur={saveContactFields}
+                        className="position-absolute top-0 start-0 opacity-0" style={{ width: 30, height: 24, cursor: 'pointer' }}>
+                        {CONTACT_ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </Form.Select>
+                    </span>
+                    {/* Type */}
+                    <span style={{ width: 55 }}>
+                      <Form.Select size="sm" value={field.type || 'detail'} onChange={(e) => updateContactField(idx, 'type', e.target.value)} onBlur={saveContactFields}
+                        style={{ fontSize: '0.65rem', height: 24, padding: '0 4px' }}>
+                        <option value="detail">Detail</option>
+                        <option value="social">Social</option>
+                      </Form.Select>
+                    </span>
+                    {/* Value (required) */}
+                    <span style={{ flex: 1 }}>
+                      <Form.Control size="sm" value={field.value || ''} onChange={(e) => updateContactField(idx, 'value', e.target.value)} onBlur={saveContactFields}
+                        placeholder="+94 77 123 4567" style={{ fontSize: '0.72rem', height: 24 }} />
+                    </span>
+                    {/* Label (optional, defaults to icon name) */}
+                    <span style={{ flex: 1 }}>
+                      <Form.Control size="sm" value={field.label || ''} onChange={(e) => updateContactField(idx, 'label', e.target.value)} onBlur={saveContactFields}
+                        placeholder={CONTACT_ICON_OPTIONS.find(o => o.value === field.icon)?.label || 'Label'} style={{ fontSize: '0.72rem', height: 24, color: field.label ? '#334155' : '#94a3b8' }} />
+                    </span>
+                    {/* URL (auto-generated, editable) */}
+                    <span style={{ flex: 1 }} className="d-none d-md-block">
+                      <Form.Control size="sm" value={field.url || ''} onChange={(e) => updateContactField(idx, 'url', e.target.value)} onBlur={saveContactFields}
+                        placeholder="auto" style={{ fontSize: '0.65rem', height: 24, color: '#94a3b8' }} />
+                    </span>
+                    {/* Delete */}
+                    <span style={{ width: 24 }}>
+                      <button type="button" onClick={() => handleDelete('contact', idx)} style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }}>
+                        <FaTrash size={9} />
+                      </button>
+                    </span>
                   </div>
                 )
               })}
