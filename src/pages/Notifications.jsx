@@ -78,42 +78,26 @@ function Notifications() {
       <Card className="shadow-sm border-0 d-flex flex-column flex-grow-1" style={{ minHeight: 0 }}>
         {/* Fixed Filter Bar */}
         <div className="py-2 px-3 border-bottom flex-shrink-0">
-          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div className="d-flex align-items-center gap-2 flex-wrap">
-              <div className="d-flex gap-1">
-                {['all', 'unread', 'read'].map(f => (
-                  <button
-                    key={f}
-                    className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline-secondary'}`}
-                    onClick={() => { setFilter(f); setPage(1) }}
-                    style={{
-                      fontSize: '0.72rem',
-                      padding: '2px 10px',
-                      borderRadius: '12px',
-                      ...(filter === f ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : {}),
-                    }}
-                  >
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                    {f === 'unread' && unreadCount > 0 && (
-                      <Badge pill bg="danger" className="ms-1" style={{ fontSize: '0.6rem' }}>{unreadCount}</Badge>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <DateRangePicker
-                value={timeRange}
-                onChange={(range, dates) => {
-                  setTimeRange(range)
-                  if (range === 'custom') setCustomDates(dates)
-                  setPage(1)
-                }}
-                presets={[
-                  { key: 'all', label: 'All' },
-                  { key: 7, label: '7d' },
-                  { key: 30, label: '30d' },
-                ]}
-                compact
-              />
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex gap-1">
+              {['all', 'unread', 'read'].map(f => (
+                <button
+                  key={f}
+                  className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => { setFilter(f); setPage(1) }}
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '2px 10px',
+                    borderRadius: '12px',
+                    ...(filter === f ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : {}),
+                  }}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                  {f === 'unread' && unreadCount > 0 && (
+                    <Badge pill bg="danger" className="ms-1" style={{ fontSize: '0.6rem' }}>{unreadCount}</Badge>
+                  )}
+                </button>
+              ))}
             </div>
             {unreadCount > 0 && (
               <button
@@ -125,6 +109,22 @@ function Notifications() {
                 Mark all read
               </button>
             )}
+          </div>
+          <div className="d-flex align-items-center">
+            <DateRangePicker
+              value={timeRange}
+              onChange={(range, dates) => {
+                setTimeRange(range)
+                if (range === 'custom') setCustomDates(dates)
+                setPage(1)
+              }}
+              presets={[
+                { key: 'all', label: 'All' },
+                { key: 7, label: '7d' },
+                { key: 30, label: '30d' },
+              ]}
+              compact
+            />
           </div>
         </div>
 
