@@ -148,6 +148,21 @@ export const filterCheckupsByPerformanceRange = (checkups = [], range = 'today')
 };
 
 /**
+ * Filter checkups by custom date range
+ */
+export const filterCheckupsByCustomRange = (checkups = [], startDate, endDate) => {
+  if (!startDate || !endDate) return checkups;
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  return checkups.filter(c => {
+    const date = new Date(c.timestamp);
+    return date >= start && date <= end;
+  });
+};
+
+/**
  * Get chart data for date range
  * @param {Array} checkups - Array of checkup objects
  * @param {Array} testsData - Array of all test definitions
@@ -245,10 +260,18 @@ export const getTestDistribution = (checkups = [], testsData = [], limit = 5) =>
     });
   });
 
-  return Object.entries(testCounts)
+  const sorted = Object.entries(testCounts)
     .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, limit);
+    .sort((a, b) => b.value - a.value);
+
+  if (sorted.length <= limit) return sorted;
+
+  const top = sorted.slice(0, limit);
+  const othersValue = sorted.slice(limit).reduce((sum, t) => sum + t.value, 0);
+  if (othersValue > 0) {
+    top.push({ name: 'Others', value: othersValue });
+  }
+  return top;
 };
 
 /**
@@ -350,6 +373,7 @@ export default {
   getHighestBill,
   filterCheckupsByDateRange,
   filterCheckupsByPerformanceRange,
+  filterCheckupsByCustomRange,
   getComparisonCheckups,
   getDateRangeChartData,
   getMonthlyRevenueData,

@@ -9,6 +9,7 @@ import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchUsers, selectAllUsers } from '../store/usersSlice'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import DateRangePicker from '../components/ui/DateRangePicker'
 import { useResponsive } from '../hooks'
 import {
   calculateTotalRevenue,
@@ -17,6 +18,7 @@ import {
   getHighestBill,
   filterCheckupsByDateRange,
   filterCheckupsByPerformanceRange,
+  filterCheckupsByCustomRange,
   getComparisonCheckups,
   getDateRangeChartData,
   getMonthlyRevenueData,
@@ -39,7 +41,9 @@ function Dashboard() {
   const { isMobile, isTablet } = useResponsive()
 
   const [dateRange, setDateRange] = useState(7) // Default: Past 7 days
-  const [performanceRange, setPerformanceRange] = useState('today') // today, yesterday, week, month, year
+  const [performanceRange, setPerformanceRange] = useState('month')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()) // Default: Current year
 
   useEffect(() => {
@@ -73,12 +77,15 @@ function Dashboard() {
   const totalIncome = useMemo(() => totalCommission + totalDoctorFees, [totalCommission, totalDoctorFees])
 
   // Performance stats using utility functions
-  const performanceCheckups = useMemo(
-    () => filterCheckupsByPerformanceRange(checkups, performanceRange),
-    [checkups, performanceRange]
-  )
+  const performanceCheckups = useMemo(() => {
+    if (performanceRange === 'custom') {
+      return filterCheckupsByCustomRange(checkups, customStart, customEnd)
+    }
+    return filterCheckupsByPerformanceRange(checkups, performanceRange)
+  }, [checkups, performanceRange, customStart, customEnd])
+
   const comparisonCheckups = useMemo(
-    () => getComparisonCheckups(checkups, performanceRange),
+    () => performanceRange !== 'custom' ? getComparisonCheckups(checkups, performanceRange) : [],
     [checkups, performanceRange]
   )
   const performanceRevenue = useMemo(
@@ -102,7 +109,7 @@ function Dashboard() {
     return <LoadingSpinner text="Loading dashboard..." />
   }
 
-  const COLORS = ['#0891B2', '#06B6D4', '#22D3EE', '#F59E0B', '#14B8A6']
+  const COLORS = ['#0891B2', '#06B6D4', '#22D3EE', '#F59E0B', '#14B8A6', '#94a3b8']
 
   const StatCard = ({ icon, title, value, color, bgColor }) => {
     const IconComponent = icon;
@@ -222,19 +229,17 @@ function Dashboard() {
             <Card.Body className="py-2 px-3">
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <small className="fw-bold text-muted">REVENUE & INCOME TREND</small>
-                <ButtonGroup size="sm">
-                  {[7, 30, 60, 90].map(d => (
-                    <Button
-                      key={d}
-                      size="sm"
-                      variant={dateRange === d ? 'primary' : 'outline-secondary'}
-                      onClick={() => setDateRange(d)}
-                      style={dateRange === d ? { backgroundColor: '#0891B2', borderColor: '#0891B2', fontSize: '0.72rem' } : { fontSize: '0.72rem' }}
-                    >
-                      {d}d
-                    </Button>
-                  ))}
-                </ButtonGroup>
+                <DateRangePicker
+                  value={dateRange}
+                  onChange={(range) => setDateRange(range === 'custom' ? dateRange : range)}
+                  presets={[
+                    { key: 7, label: '7d' },
+                    { key: 30, label: '30d' },
+                    { key: 60, label: '60d' },
+                    { key: 90, label: '90d' },
+                  ]}
+                  compact
+                />
               </div>
               {checkups.length === 0 ? (
                 <div className="text-center py-4 text-muted"><small>No data yet</small></div>
@@ -361,104 +366,91 @@ function Dashboard() {
         <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm border-0">
             <Card.Body className="py-2 px-3">
-              <div className="d-flex justify-content-between align-items-center mb-2">
+              <div className="d-flex justify-content-between align-items-start mb-2">
                 <small className="fw-bold text-muted">PERFORMANCE</small>
-                <ButtonGroup size="sm">
-                  {['today', 'yesterday', 'week', 'month', 'year'].map(r => (
-                    <Button
-                      key={r}
-                      size="sm"
-                      variant={performanceRange === r ? 'primary' : 'outline-secondary'}
-                      onClick={() => setPerformanceRange(r)}
-                      style={performanceRange === r
-                        ? { backgroundColor: '#0891B2', borderColor: '#0891B2', fontSize: '0.68rem', padding: '2px 6px' }
-                        : { fontSize: '0.68rem', padding: '2px 6px' }}
-                    >
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </Button>
-                  ))}
-                </ButtonGroup>
               </div>
-              <div className="p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <tbody>
-                    {/* Checkups */}
-                    <tr className="border-left-primary">
-                      <td className="py-3 px-4">
-                        <div className="d-flex align-items-center">
-                          <div className="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
-                            <FaClipboardCheck className="text-primary" size={20} />
-                          </div>
-                          <div>
-                            <div className="text-muted small">Checkups</div>
-                            <strong className="fs-5 text-theme">
-                              {performanceCheckups.length}
-                            </strong>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-end">
-                        <div className="small text-muted">
-                          vs {getComparisonLabel(performanceRange)}
-                        </div>
-                        <div className={`badge ${performanceCheckups.length - comparisonCheckups.length >= 0 ? 'bg-success' : 'bg-danger'}`}>
-                          {(() => {
-                            const diff = performanceCheckups.length - comparisonCheckups.length;
-                            return diff >= 0 ? `+${diff}` : diff;
-                          })()}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Revenue */}
-                    <tr className="border-left-success">
-                      <td className="py-3 px-4">
-                        <div className="d-flex align-items-center">
-                          <div className="rounded-circle bg-success bg-opacity-10 p-2 me-3">
-                            <FaRupeeSign className="text-success" size={20} />
-                          </div>
-                          <div>
-                            <div className="text-muted small">Revenue</div>
-                            <strong className="fs-5 text-success">
-                              Rs. {performanceRevenue.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </strong>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-end">
-                        <div className="small text-muted">Commission</div>
-                        <div className="fw-bold text-warning">
-                          Rs. {performanceCommission.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Average Bill */}
-                    <tr className="border-left-light">
-                      <td className="py-3 px-4">
-                        <div className="d-flex align-items-center">
-                          <div className="rounded-circle bg-info bg-opacity-10 p-2 me-3">
-                            <FaChartLine className="text-info" size={20} />
-                          </div>
-                          <div>
-                            <div className="text-muted small">Avg. Bill Amount</div>
-                            <strong className="fs-5 text-info">
-                              Rs. {avgBillAmount.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </strong>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-end">
-                        <div className="small text-muted">Highest Bill</div>
-                        <div className="fw-bold text-theme-amber">
-                          Rs. {highestBill.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="mb-2">
+                <DateRangePicker
+                  value={performanceRange}
+                  onChange={(range, dates) => {
+                    setPerformanceRange(range)
+                    if (range === 'custom') {
+                      setCustomStart(dates.startDate)
+                      setCustomEnd(dates.endDate)
+                    }
+                  }}
+                  showAll={false}
+                  compact
+                />
               </div>
+
+              {/* Stats rows */}
+              <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div className="d-flex align-items-center gap-2">
+                  <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }}>
+                    <FaClipboardCheck className="text-primary" size={12} />
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.68rem' }}>Checkups</div>
+                    <strong style={{ fontSize: '0.95rem' }}>{performanceCheckups.length}</strong>
+                  </div>
+                </div>
+                {performanceRange !== 'custom' && (
+                  <div className="text-end">
+                    <div className="text-muted" style={{ fontSize: '0.62rem' }}>vs {getComparisonLabel(performanceRange)}</div>
+                    <span className={`badge ${performanceCheckups.length - comparisonCheckups.length >= 0 ? 'bg-success' : 'bg-danger'}`} style={{ fontSize: '0.65rem' }}>
+                      {(() => { const d = performanceCheckups.length - comparisonCheckups.length; return d >= 0 ? `+${d}` : d; })()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div className="d-flex align-items-center gap-2">
+                  <div className="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }}>
+                    <FaRupeeSign className="text-success" size={12} />
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.68rem' }}>Revenue</div>
+                    <strong style={{ fontSize: '0.95rem' }}>Rs. {performanceRevenue.toLocaleString('en-LK', { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                </div>
+                <div className="text-end">
+                  <div className="text-muted" style={{ fontSize: '0.62rem' }}>Commission</div>
+                  <strong style={{ fontSize: '0.78rem', color: '#F59E0B' }}>Rs. {performanceCommission.toLocaleString('en-LK', { minimumFractionDigits: 2 })}</strong>
+                </div>
+              </div>
+
+              <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div className="d-flex align-items-center gap-2">
+                  <div className="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }}>
+                    <FaChartLine className="text-info" size={12} />
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.68rem' }}>Avg. Bill</div>
+                    <strong style={{ fontSize: '0.95rem' }}>Rs. {avgBillAmount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                </div>
+                <div className="text-end">
+                  <div className="text-muted" style={{ fontSize: '0.62rem' }}>Highest</div>
+                  <strong style={{ fontSize: '0.78rem', color: '#0891B2' }}>Rs. {highestBill.toLocaleString('en-LK', { minimumFractionDigits: 2 })}</strong>
+                </div>
+              </div>
+
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <div className="d-flex align-items-center gap-2">
+                  <div className="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }}>
+                    <FaFileMedical className="text-danger" size={12} />
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.68rem' }}>Prescriptions</div>
+                    <strong style={{ fontSize: '0.95rem' }}>{performanceCheckups.filter(c => c.prescriptionMedicines?.length > 0).length}</strong>
+                  </div>
+                </div>
+                <div className="text-end">
+                  <div className="text-muted" style={{ fontSize: '0.62rem' }}>Doctor Fees</div>
+                  <strong style={{ fontSize: '0.78rem', color: '#ec4899' }}>Rs. {performanceCheckups.reduce((s, c) => s + (parseFloat(c.doctorFees) || 0), 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</strong>
+                </div>
               </div>
             </Card.Body>
           </Card>

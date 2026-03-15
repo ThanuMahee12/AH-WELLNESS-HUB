@@ -15,6 +15,7 @@ import { encrypt, decrypt } from '../utils/crypto'
 import { useNotification } from '../context'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import PageHeader from '../components/ui/PageHeader'
+import DateRangePicker from '../components/ui/DateRangePicker'
 
 const GITHUB_REPO = 'ThanuMahee12/AH-WELLNESS-HUB'
 
@@ -61,6 +62,7 @@ function SystemMaintenance() {
   const [logsLoading, setLogsLoading] = useState(false)
   const [logs, setLogs] = useState([])
   const [logsTimeRange, setLogsTimeRange] = useState('all')
+  const [logsCustomDates, setLogsCustomDates] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const [logsPerPage, setLogsPerPage] = useState(20)
   const [sortField, setSortField] = useState('timestamp')
@@ -71,6 +73,7 @@ function SystemMaintenance() {
   const [reportLoading, setReportLoading] = useState(false)
   const [dailyReports, setDailyReports] = useState([])
   const [reportDays, setReportDays] = useState(7)
+  const [reportCustomDates, setReportCustomDates] = useState({})
   const [expandedDay, setExpandedDay] = useState(null)
 
   // Complaints state
@@ -103,12 +106,12 @@ function SystemMaintenance() {
   // Load error logs
   useEffect(() => {
     if (activeTab === 'error-logs') loadLogs()
-  }, [logsTimeRange, activeTab])
+  }, [logsTimeRange, logsCustomDates, activeTab])
 
   // Load daily report
   useEffect(() => {
     if (activeTab === 'daily-report') loadDailyReport()
-  }, [reportDays, activeTab])
+  }, [reportDays, reportCustomDates, activeTab])
 
   // Load complaints
   useEffect(() => {
@@ -122,9 +125,21 @@ function SystemMaintenance() {
   const loadLogs = async () => {
     setLogsLoading(true)
     try {
-      const result = await getErrorLogs(logsTimeRange)
+      const days = logsTimeRange === 'custom' ? 'all' : logsTimeRange
+      const result = await getErrorLogs(days)
       if (result.success) {
-        setLogs(result.data)
+        let data = result.data
+        if (logsTimeRange === 'custom' && logsCustomDates.startDate && logsCustomDates.endDate) {
+          const start = new Date(logsCustomDates.startDate)
+          start.setHours(0, 0, 0, 0)
+          const end = new Date(logsCustomDates.endDate)
+          end.setHours(23, 59, 59, 999)
+          data = data.filter(l => {
+            const d = new Date(l.timestamp)
+            return d >= start && d <= end
+          })
+        }
+        setLogs(data)
       } else {
         showError('Failed to load error logs')
       }
@@ -138,15 +153,28 @@ function SystemMaintenance() {
   const loadDailyReport = async () => {
     setReportLoading(true)
     try {
-      const result = await getUserActivities({ days: reportDays })
+      const days = reportDays === 'custom' ? 'all' : reportDays
+      const result = await getUserActivities({ days })
       if (!result.success) {
         showError('Failed to load activity data')
         return
       }
 
+      let activities = result.data
+      if (reportDays === 'custom' && reportCustomDates.startDate && reportCustomDates.endDate) {
+        const start = new Date(reportCustomDates.startDate)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(reportCustomDates.endDate)
+        end.setHours(23, 59, 59, 999)
+        activities = activities.filter(a => {
+          const d = new Date(a.timestamp)
+          return d >= start && d <= end
+        })
+      }
+
       // Group activities by date
       const grouped = {}
-      result.data.forEach(activity => {
+      activities.forEach(activity => {
         const date = activity.timestamp instanceof Date ? activity.timestamp : new Date(activity.timestamp)
         const dateKey = date.toISOString().split('T')[0]
 
@@ -582,31 +610,19 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                 <Card className="shadow-sm">
                   <Card.Body className="py-2 px-3">
                     <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                      <div className="d-flex align-items-center gap-3 flex-wrap">
-                        <div>
-                          <FaCalendarAlt className="me-2 text-theme" />
-                          <strong style={{ fontSize: '0.85rem' }}>Period:</strong>
-                        </div>
-                        <ButtonGroup size="sm">
-                          {[
-                            { value: 7, label: '7 Days' },
-                            { value: 14, label: '14 Days' },
-                            { value: 30, label: '30 Days' },
-                            { value: 'all', label: 'All' },
-                          ].map(opt => (
-                            <Button
-                              key={opt.value}
-                              variant={reportDays === opt.value ? 'primary' : 'outline-primary'}
-                              onClick={() => setReportDays(opt.value)}
-                              style={reportDays === opt.value
-                                ? { backgroundColor: '#0891B2', borderColor: '#0891B2' }
-                                : { color: '#0891B2', borderColor: '#0891B2' }}
-                            >
-                              {opt.label}
-                            </Button>
-                          ))}
-                        </ButtonGroup>
-                      </div>
+                      <DateRangePicker
+                        value={reportDays}
+                        onChange={(range, dates) => {
+                          setReportDays(range)
+                          if (range === 'custom') setReportCustomDates(dates)
+                        }}
+                        presets={[
+                          { key: 7, label: '7 Days' },
+                          { key: 14, label: '14 Days' },
+                          { key: 30, label: '30 Days' },
+                          { key: 'all', label: 'All' },
+                        ]}
+                      />
                       <Button size="sm" variant="outline-secondary" onClick={loadDailyReport} title="Refresh">
                         <FaSync />
                       </Button>
@@ -986,31 +1002,19 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                 <Card className="shadow-sm">
                   <Card.Body className="py-2 px-3">
                     <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                      <div className="d-flex align-items-center gap-3 flex-wrap">
-                        <div>
-                          <FaCalendarAlt className="me-2 text-theme" />
-                          <strong style={{ fontSize: '0.85rem' }}>Time Range:</strong>
-                        </div>
-                        <ButtonGroup size="sm">
-                          {[
-                            { value: 'all', label: 'All' },
-                            { value: 1, label: '24h' },
-                            { value: 7, label: '7 Days' },
-                            { value: 30, label: '30 Days' },
-                          ].map(opt => (
-                            <Button
-                              key={opt.value}
-                              variant={logsTimeRange === opt.value ? 'primary' : 'outline-primary'}
-                              onClick={() => setLogsTimeRange(opt.value)}
-                              style={logsTimeRange === opt.value
-                                ? { backgroundColor: '#0891B2', borderColor: '#0891B2' }
-                                : { color: '#0891B2', borderColor: '#0891B2' }}
-                            >
-                              {opt.label}
-                            </Button>
-                          ))}
-                        </ButtonGroup>
-                      </div>
+                      <DateRangePicker
+                        value={logsTimeRange}
+                        onChange={(range, dates) => {
+                          setLogsTimeRange(range)
+                          if (range === 'custom') setLogsCustomDates(dates)
+                        }}
+                        presets={[
+                          { key: 'all', label: 'All' },
+                          { key: 1, label: '24h' },
+                          { key: 7, label: '7 Days' },
+                          { key: 30, label: '30 Days' },
+                        ]}
+                      />
 
                       <div className="d-flex align-items-center gap-2">
                         <Form.Select
