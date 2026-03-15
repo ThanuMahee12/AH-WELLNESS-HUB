@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Container, Tabs, Tab } from 'react-bootstrap'
-import { FaUsers, FaChartLine, FaClipboardList } from 'react-icons/fa'
+import { FaUsers, FaChartLine, FaClipboardList, FaBook } from 'react-icons/fa'
 import { PageHeader } from '../components/ui'
 import { useSettings } from '../hooks/useSettings'
 
@@ -9,6 +9,7 @@ import { useSettings } from '../hooks/useSettings'
 import UsersTab from './tabs/UsersTab'
 import UserActivityTab from './tabs/UserActivityTab'
 import UserRequestsTab from './tabs/UserRequestsTab'
+import UserManualTab from './tabs/UserManualTab'
 
 function UserManagement() {
   const { user: currentUser } = useSelector(state => state.auth)
@@ -73,6 +74,20 @@ function UserManagement() {
             }
           >
             <UserRequestsTab />
+          </Tab>
+        )}
+
+        {canSeeTab('manual') && (
+          <Tab
+            eventKey="manual"
+            title={
+              <span>
+                <FaBook className="me-2" />
+                {userTabs.manual?.label || 'User Manual'}
+              </span>
+            }
+          >
+            <UserManualTab />
           </Tab>
         )}
       </Tabs>

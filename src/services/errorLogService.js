@@ -13,7 +13,7 @@ export const logError = async (errorData) => {
       stack: errorData.stack || '',
       source: errorData.source || 'unknown',
       componentStack: errorData.componentStack || '',
-      url: errorData.url || window.location.href,
+      url: errorData.url || window.location.pathname,
       userId: errorData.userId || '',
       username: errorData.username || '',
       userRole: errorData.userRole || '',

@@ -201,6 +201,7 @@ export const DEFAULT_SETTINGS = {
         users:    { label: 'Users',    roles: ['superadmin', 'maintainer'] },
         activity: { label: 'Activity', roles: ['superadmin'] },
         requests: { label: 'Requests', roles: ['superadmin'] },
+        manual: { label: 'User Manual', roles: ['superadmin', 'maintainer', 'editor', 'user'] },
       },
     },
     settings: {
