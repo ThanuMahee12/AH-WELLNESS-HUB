@@ -139,6 +139,26 @@ function PublicPageTab() {
     }
   }
 
+  const saveSection = async (fields) => {
+    setSaving(true)
+    try {
+      const contentUpdates = {}
+      fields.forEach(f => { contentUpdates[f] = localContent[f] })
+      await dispatch(updateSettings({ data: { pages: { home: { content: contentUpdates } } }, user })).unwrap()
+    } catch (err) {
+      showError('Failed to save: ' + (err || 'Unknown error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const SaveBtn = ({ onClick }) => (
+    <button type="button" onClick={onClick} disabled={saving}
+      style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3, opacity: saving ? 0.5 : 1 }}>
+      {saving ? 'Saving...' : 'Save'}
+    </button>
+  )
+
   const saveList = async (key, list) => {
     setSaving(true)
     try {
@@ -266,7 +286,10 @@ function PublicPageTab() {
       {/* Hero Section */}
       <Card className="shadow-sm border-0 mb-3">
         <Card.Body className="py-2 px-3">
-          <small className="fw-bold text-muted d-block mb-2">HERO SECTION</small>
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <small className="fw-bold text-muted">HERO SECTION</small>
+            <SaveBtn onClick={() => saveSection(['heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
+          </div>
           <Row className="g-2">
             {/* Left: fields */}
             <Col xs={12} md={localContent.heroImageUrl ? 8 : 12}>
@@ -417,10 +440,13 @@ function PublicPageTab() {
       <Card className="shadow-sm border-0 mb-3">
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
-            <small className="fw-bold text-muted">ABOUT US</small>
-            <Form.Check type="switch" id="aboutVisible" label={<span style={{ fontSize: '0.68rem' }}>Visible</span>}
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">ABOUT US</small>
+              <Form.Check type="switch" id="aboutVisible" label={<span style={{ fontSize: '0.68rem' }}>Visible</span>}
               checked={localContent.aboutVisible || false}
               onChange={(e) => { setLocalContent(p => ({ ...p, aboutVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { aboutVisible: e.target.checked } } } }, user })) }} />
+            </div>
+            <SaveBtn onClick={() => saveSection(['aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
           </div>
           <Row className="g-2">
             <Col xs={12} md={localContent.aboutImageUrl ? 8 : 12}>
@@ -452,57 +478,49 @@ function PublicPageTab() {
         </Card.Body>
       </Card>
 
-      {/* Contact Section Settings */}
+      {/* Contact Section */}
       <Card className="shadow-sm border-0 mb-3">
-        <Card.Header className="py-2 px-3 d-flex align-items-center justify-content-between">
-          <small className="fw-bold text-muted">Contact Section</small>
-          <Form.Check
-            type="switch"
-            id="contactVisible"
-            label="Visible"
-            checked={localContent.contactVisible || false}
-            onChange={(e) => {
-              setLocalContent(prev => ({ ...prev, contactVisible: e.target.checked }))
-              dispatch(updateSettings({
-                data: { pages: { home: { content: { contactVisible: e.target.checked } } } },
-                user,
-              }))
-            }}
-          />
-        </Card.Header>
-        <Card.Body>
-          <Row className="g-3">
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Section Title</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={localContent.contactTitle || ''}
-                  onChange={(e) => setLocalContent(prev => ({ ...prev, contactTitle: e.target.value }))}
-                  onBlur={() => handleContentBlur('contactTitle')}
-                  placeholder="e.g., Contact Us"
-                />
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">CONTACT SECTION</small>
+              <Form.Check type="switch" id="contactVisible" label={<span style={{ fontSize: '0.68rem' }}>Visible</span>}
+                checked={localContent.contactVisible || false}
+                onChange={(e) => { setLocalContent(p => ({ ...p, contactVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { contactVisible: e.target.checked } } } }, user })) }} />
+            </div>
+            <SaveBtn onClick={() => saveSection(['contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
+          </div>
+          <Row className="g-2">
+            <Col xs={12} md={localContent.contactMapEmbedUrl ? 6 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Title</Form.Label>
+                <Form.Control size="sm" value={localContent.contactTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, contactTitle: e.target.value }))} placeholder="e.g., Contact Us" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Google Maps Embed</Form.Label>
+                <Form.Control size="sm" as="textarea" rows={2} value={localContent.contactMapEmbedUrl || ''}
+                  onChange={(e) => { setLocalContent(p => ({ ...p, contactMapEmbedUrl: extractMapSrc(e.target.value) })) }}
+                  placeholder="Paste <iframe> tag or embed URL from Google Maps" style={{ fontSize: '0.75rem' }} />
+                <Form.Text style={{ fontSize: '0.6rem' }} className="text-muted">Maps → Share → Embed → copy iframe code. URL auto-extracted.</Form.Text>
               </Form.Group>
             </Col>
-            <Col xs={12} md={6}>
-              <Form.Group>
-                <Form.Label className="fw-semibold">Google Maps Embed</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={localContent.contactMapEmbedUrl || ''}
-                  onChange={(e) => {
-                    const extracted = extractMapSrc(e.target.value)
-                    setLocalContent(prev => ({ ...prev, contactMapEmbedUrl: extracted }))
-                  }}
-                  onBlur={() => handleContentBlur('contactMapEmbedUrl')}
-                  placeholder='Paste full <iframe> tag or URL from Google Maps'
-                />
-                <Form.Text className="text-muted">
-                  Google Maps → Share → Embed a map → Paste iframe code. URL is extracted automatically.
-                </Form.Text>
-              </Form.Group>
-            </Col>
+            {localContent.contactMapEmbedUrl && (
+              <Col xs={12} md={6}>
+                <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Map Preview</Form.Label>
+                <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                  <iframe
+                    src={localContent.contactMapEmbedUrl}
+                    width="100%"
+                    height="160"
+                    style={{ border: 0 }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Map preview"
+                  />
+                </div>
+              </Col>
+            )}
           </Row>
         </Card.Body>
       </Card>
@@ -511,7 +529,10 @@ function PublicPageTab() {
       <Card className="shadow-sm border-0 mb-3">
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
-            <small className="fw-bold text-muted">CONTACT DETAILS</small>
+            <div className="d-flex align-items-center gap-2">
+              <small className="fw-bold text-muted">CONTACT DETAILS</small>
+              <SaveBtn onClick={saveContactFields} />
+            </div>
             <button type="button" onClick={addContactField} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
               <FaPlus size={8} className="me-1" />Add
             </button>
