@@ -1,43 +1,33 @@
 import { useState, useMemo } from 'react'
 import { useDispatch } from 'react-redux'
-import { Badge, Form, Accordion, Row, Col } from 'react-bootstrap'
-import { FaShieldAlt, FaWpforms, FaTable, FaSearch, FaChevronDown, FaChevronRight } from 'react-icons/fa'
+import { Form, Accordion, Row, Col, Button } from 'react-bootstrap'
+import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaSearch } from 'react-icons/fa'
 import { useSettings } from '../../hooks/useSettings'
 import { updateSettings } from '../../store/settingsSlice'
 import { useNotification } from '../../context'
 import { ICON_MAP, ENTITY_LABELS } from '../../constants/defaultSettings'
 
 const ROLES = ['superadmin', 'maintainer', 'editor', 'user']
-const ROLE_SHORT = { superadmin: 'S', maintainer: 'M', editor: 'E', user: 'U' }
-const ROLE_COLORS = { superadmin: '#ef4444', maintainer: '#f59e0b', editor: '#0891B2', user: '#64748b' }
+const RS = { superadmin: 'S', maintainer: 'M', editor: 'E', user: 'U' }
+const RC = { superadmin: '#ef4444', maintainer: '#f59e0b', editor: '#0891B2', user: '#64748b' }
 
-const getStr = (n) => `${n & 4 ? 'r' : '-'}${n & 2 ? 'w' : '-'}${n & 1 ? 'x' : '-'}`
+const RoleBtn = ({ role, active, onClick, disabled }) => (
+  <button type="button" onClick={onClick} disabled={disabled}
+    style={{ fontSize: '0.5rem', padding: '0 3px', border: `1px solid ${active ? RC[role] : '#e2e8f0'}`,
+      borderRadius: 2, backgroundColor: active ? RC[role] : 'transparent',
+      color: active ? '#fff' : '#cbd5e1', fontWeight: 700, opacity: disabled ? 0.3 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}>
+    {RS[role]}
+  </button>
+)
 
-// Compact number input (0-7) with role label
 const PermNum = ({ role, value, onChange, disabled }) => {
   const color = value === 7 ? '#16a34a' : value >= 4 ? '#d97706' : value > 0 ? '#dc2626' : '#94a3b8'
   return (
-    <div className="d-flex align-items-center gap-0" title={`${role}: ${getStr(value)} (${value})`}>
-      <span style={{ fontSize: '0.58rem', color: ROLE_COLORS[role], fontWeight: 700, width: 10 }}>{ROLE_SHORT[role]}</span>
-      <input
-        type="number" min="0" max="7"
-        value={value}
-        onChange={(e) => {
-          const v = Math.max(0, Math.min(7, parseInt(e.target.value) || 0))
-          onChange(v)
-        }}
-        disabled={disabled}
-        style={{
-          width: 22, height: 18,
-          fontSize: '0.65rem', fontWeight: 700, fontFamily: 'monospace',
-          textAlign: 'center', padding: 0,
-          border: `1px solid ${color}22`,
-          borderRadius: 3,
-          backgroundColor: `${color}11`,
-          color,
-          outline: 'none',
-        }}
-      />
+    <div className="d-flex align-items-center" title={`${role}: ${value}`}>
+      <span style={{ fontSize: '0.55rem', color: RC[role], fontWeight: 700, width: 10 }}>{RS[role]}</span>
+      <input type="number" min="0" max="7" value={value} onChange={(e) => onChange(Math.max(0, Math.min(7, parseInt(e.target.value) || 0)))}
+        disabled={disabled} style={{ width: 22, height: 18, fontSize: '0.65rem', fontWeight: 700, fontFamily: 'monospace',
+          textAlign: 'center', padding: 0, border: `1px solid ${color}22`, borderRadius: 3, backgroundColor: `${color}11`, color, outline: 'none' }} />
     </div>
   )
 }
@@ -47,148 +37,129 @@ function PageControlTab() {
   const { settings } = useSettings()
   const { error: showError } = useNotification()
   const [saving, setSaving] = useState(false)
-  const [expandedField, setExpandedField] = useState(null) // 'entity:fieldKey' or 'entity:col:colKey'
+  const [expandedField, setExpandedField] = useState(null)
+  const [newFieldKey, setNewFieldKey] = useState('')
 
   const pages = settings?.pages || {}
   const permissions = settings?.permissions || {}
   const forms = settings?.forms || {}
   const tables = settings?.tables || {}
 
+  // Merge all resources
   const items = useMemo(() => {
-    const allKeys = new Set([
-      ...Object.keys(pages).filter(k => k !== 'login' && k !== 'home'),
-      ...Object.keys(permissions),
-    ])
-    return [...allKeys].map(key => ({
-      key,
-      label: pages[key]?.label || ENTITY_LABELS[key] || key.charAt(0).toUpperCase() + key.slice(1),
-      icon: pages[key]?.icon,
-      path: pages[key]?.path,
-      order: pages[key]?.order ?? 99,
-      sidebar: pages[key]?.sidebar,
-      pageRoles: pages[key]?.roles || [],
-      tabs: pages[key]?.tabs || null,
-      hasPerms: !!permissions[key],
-      perms: permissions[key] || {},
-      hasForm: !!forms[key],
-      formFields: forms[key]?.fields || {},
-      hasTable: !!tables[key],
-      tableColumns: tables[key]?.columns || {},
-      itemsPerPage: tables[key]?.itemsPerPage || 10,
-    })).sort((a, b) => a.order - b.order)
+    const allKeys = new Set([...Object.keys(pages).filter(k => k !== 'login' && k !== 'home'), ...Object.keys(permissions)])
+    return [...allKeys].map(key => {
+      // Merge form fields + table columns into unified fields
+      const formFields = forms[key]?.fields || {}
+      const tableColumns = tables[key]?.columns || {}
+      const allFieldKeys = new Set([...Object.keys(formFields), ...Object.keys(tableColumns)])
+      const fields = {}
+      allFieldKeys.forEach(fk => {
+        const ff = formFields[fk] || {}
+        const tc = tableColumns[fk] || {}
+        fields[fk] = {
+          label: ff.label || tc.label || fk,
+          type: ff.type || 'text',
+          visible: ff.visible !== false,
+          required: ff.required || false,
+          colSize: ff.colSize || 6,
+          placeholder: ff.placeholder || '',
+          roles: tc.roles || ff.roles || [...ROLES],
+          searchable: tc.searchable || false,
+          inForm: !!formFields[fk],
+          inTable: !!tableColumns[fk],
+          tableVisible: tc.visible !== false,
+        }
+      })
+      return {
+        key, fields,
+        label: pages[key]?.label || ENTITY_LABELS[key] || key.charAt(0).toUpperCase() + key.slice(1),
+        icon: pages[key]?.icon, path: pages[key]?.path, order: pages[key]?.order ?? 99,
+        sidebar: pages[key]?.sidebar, pageRoles: pages[key]?.roles || [],
+        tabs: pages[key]?.tabs || null, hasPerms: !!permissions[key], perms: permissions[key] || {},
+        hasFields: allFieldKeys.size > 0,
+      }
+    }).sort((a, b) => a.order - b.order)
   }, [pages, permissions, forms, tables])
 
-  const save = async (updates) => {
-    setSaving(true)
-    try { await dispatch(updateSettings(updates)) }
-    catch { showError('Failed to save') }
-    finally { setSaving(false) }
-  }
+  const save = async (u) => { setSaving(true); try { await dispatch(updateSettings(u)) } catch { showError('Failed') } finally { setSaving(false) } }
 
-  // Apply a number (0-7) to a resource+role
   const applyPermNum = (resource, role, num) => {
-    const perm = { ...permissions[resource] }
-    const setRole = (action, has) => {
-      const arr = perm[action] || []
-      perm[action] = has ? (arr.includes(role) ? arr : [...arr, role]) : arr.filter(r => r !== role)
+    const p = { ...permissions[resource] }
+    const set = (a, has) => { const arr = p[a] || []; p[a] = has ? (arr.includes(role) ? arr : [...arr, role]) : arr.filter(r => r !== role) }
+    set('view', num & 4); set('create', num & 2); set('edit', num & 2); set('delete', num & 1)
+    save({ permissions: { ...permissions, [resource]: p } })
+  }
+
+  const applyPageNum = (pk, role, num) => {
+    const pg = pages[pk] || {}; const roles = pg.roles || []
+    const nr = num >= 4 ? (roles.includes(role) ? roles : [...roles, role]) : roles.filter(r => r !== role)
+    save({ pages: { ...pages, [pk]: { ...pg, roles: nr } } })
+  }
+
+  const toggleTabRole = (pk, tk, role) => {
+    const pg = pages[pk] || {}; const tabs = pg.tabs || {}; const tab = tabs[tk] || {}; const roles = tab.roles || []
+    save({ pages: { ...pages, [pk]: { ...pg, tabs: { ...tabs, [tk]: { ...tab, roles: roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role] } } } } })
+  }
+
+  const toggleSidebar = (pk) => { const pg = pages[pk] || {}; save({ pages: { ...pages, [pk]: { ...pg, sidebar: pg.sidebar === false ? true : false } } }) }
+
+  // Unified field update — syncs both form + table
+  const updateField = (entity, fieldKey, updates) => {
+    const ff = { ...forms[entity]?.fields }; const tc = { ...tables[entity]?.columns }
+    if (ff[fieldKey] || updates.inForm) {
+      ff[fieldKey] = { ...ff[fieldKey], ...updates }
+      delete ff[fieldKey].inForm; delete ff[fieldKey].inTable; delete ff[fieldKey].tableVisible; delete ff[fieldKey].searchable
     }
-    setRole('view', num & 4)
-    setRole('create', num & 2)
-    setRole('edit', num & 2)
-    setRole('delete', num & 1)
-    save({ permissions: { ...permissions, [resource]: perm } })
+    if (tc[fieldKey] || updates.inTable) {
+      tc[fieldKey] = { ...tc[fieldKey] }
+      if (updates.label !== undefined) tc[fieldKey].label = updates.label
+      if (updates.roles !== undefined) tc[fieldKey].roles = updates.roles
+      if (updates.searchable !== undefined) tc[fieldKey].searchable = updates.searchable
+      if (updates.tableVisible !== undefined) tc[fieldKey].visible = updates.tableVisible
+    }
+    const u = {}
+    if (Object.keys(ff).length) u.forms = { ...forms, [entity]: { ...forms[entity], fields: ff } }
+    if (Object.keys(tc).length) u.tables = { ...tables, [entity]: { ...tables[entity], columns: tc } }
+    if (Object.keys(u).length) save(u)
   }
 
-  // Apply view-only (0 or 4) for page roles
-  const applyPageNum = (pageKey, role, num) => {
-    const page = pages[pageKey] || {}
-    const hasView = num >= 4
-    const roles = page.roles || []
-    const newRoles = hasView ? (roles.includes(role) ? roles : [...roles, role]) : roles.filter(r => r !== role)
-    save({ pages: { ...pages, [pageKey]: { ...page, roles: newRoles } } })
+  const toggleFieldRole = (entity, fieldKey, role, currentField) => {
+    const roles = currentField.roles || [...ROLES]
+    updateField(entity, fieldKey, { roles: roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role] })
   }
 
-  const toggleTabRole = (pageKey, tabKey, role) => {
-    const page = pages[pageKey] || {}
-    const tabs = page.tabs || {}
-    const tab = tabs[tabKey] || {}
-    const roles = tab.roles || []
-    const newRoles = roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role]
-    save({ pages: { ...pages, [pageKey]: { ...page, tabs: { ...tabs, [tabKey]: { ...tab, roles: newRoles } } } } })
+  const addField = (entity) => {
+    if (!newFieldKey.trim()) return
+    const key = newFieldKey.trim().toLowerCase().replace(/\s+/g, '_')
+    const ff = { ...forms[entity]?.fields }; const tc = { ...tables[entity]?.columns }
+    if (ff[key] || tc[key]) { showError('Field already exists'); return }
+    ff[key] = { label: key.charAt(0).toUpperCase() + key.slice(1), type: 'text', visible: true, required: false, colSize: 6 }
+    tc[key] = { label: ff[key].label, visible: true, roles: [...ROLES], searchable: false }
+    save({ forms: { ...forms, [entity]: { ...forms[entity], fields: ff } }, tables: { ...tables, [entity]: { ...tables[entity], columns: tc } } })
+    setNewFieldKey('')
   }
 
-  const toggleSidebar = (pageKey) => {
-    const page = pages[pageKey] || {}
-    save({ pages: { ...pages, [pageKey]: { ...page, sidebar: page.sidebar === false ? true : false } } })
+  const removeField = (entity, fieldKey) => {
+    const ff = { ...forms[entity]?.fields }; const tc = { ...tables[entity]?.columns }
+    delete ff[fieldKey]; delete tc[fieldKey]
+    save({ forms: { ...forms, [entity]: { ...forms[entity], fields: ff } }, tables: { ...tables, [entity]: { ...tables[entity], columns: tc } } })
   }
 
-  const toggleFormField = (entity, fieldKey, prop) => {
-    const fields = { ...forms[entity]?.fields }
-    fields[fieldKey] = { ...fields[fieldKey], [prop]: !fields[fieldKey]?.[prop] }
-    save({ forms: { ...forms, [entity]: { ...forms[entity], fields } } })
-  }
-
-  const toggleFieldRole = (entity, fieldKey, role) => {
-    const fields = { ...forms[entity]?.fields }
-    const field = { ...fields[fieldKey] }
-    const roles = field.roles || [...ROLES]
-    field.roles = roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role]
-    fields[fieldKey] = field
-    save({ forms: { ...forms, [entity]: { ...forms[entity], fields } } })
-  }
-
-  const toggleTableColumn = (entity, colKey, prop) => {
-    const columns = { ...tables[entity]?.columns }
-    columns[colKey] = { ...columns[colKey], [prop]: !columns[colKey]?.[prop] }
-    save({ tables: { ...tables, [entity]: { ...tables[entity], columns } } })
-  }
-
-  const toggleColumnRole = (entity, colKey, role) => {
-    const columns = { ...tables[entity]?.columns }
-    const col = { ...columns[colKey] }
-    const roles = col.roles || [...ROLES]
-    col.roles = roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role]
-    columns[colKey] = col
-    save({ tables: { ...tables, [entity]: { ...tables[entity], columns } } })
-  }
-
-  const updateItemsPerPage = (entity, value) => {
-    save({ tables: { ...tables, [entity]: { ...tables[entity], itemsPerPage: parseInt(value) || 10 } } })
-  }
-
-  const updateFormFieldProp = (entity, fieldKey, prop, value) => {
-    const fields = { ...forms[entity]?.fields }
-    fields[fieldKey] = { ...fields[fieldKey], [prop]: value }
-    save({ forms: { ...forms, [entity]: { ...forms[entity], fields } } })
-  }
-
-  const updateTableColumnProp = (entity, colKey, prop, value) => {
-    const columns = { ...tables[entity]?.columns }
-    columns[colKey] = { ...columns[colKey], [prop]: value }
-    save({ tables: { ...tables, [entity]: { ...tables[entity], columns } } })
-  }
-
-  const toggleExpand = (id) => setExpandedField(prev => prev === id ? null : id)
-
-  const getCode = (perms, pageRoles, hasPerms) => ROLES.map(role => {
-    const r = hasPerms ? (perms.view || []).includes(role) : pageRoles.includes(role)
-    const w = hasPerms && ((perms.create || []).includes(role) || (perms.edit || []).includes(role))
-    const x = hasPerms && (perms.delete || []).includes(role)
-    return (r ? 4 : 0) + (w ? 2 : 0) + (x ? 1 : 0)
+  const getCode = (perms, pr, hp) => ROLES.map(r => {
+    const v = hp ? (perms.view || []).includes(r) : pr.includes(r)
+    const w = hp && ((perms.create || []).includes(r) || (perms.edit || []).includes(r))
+    const x = hp && (perms.delete || []).includes(r)
+    return (v ? 4 : 0) + (w ? 2 : 0) + (x ? 1 : 0)
   })
 
   return (
     <>
-      {/* Legend */}
-      <div className="d-flex align-items-center gap-2 flex-wrap mb-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa', fontSize: '0.68rem' }}>
-        <FaShieldAlt className="text-theme" size={10} />
-        <code style={{ color: '#16a34a' }}>4</code>=view
-        <code style={{ color: '#2563eb' }}>2</code>=write
-        <code style={{ color: '#dc2626' }}>1</code>=delete
+      <div className="d-flex align-items-center gap-2 flex-wrap mb-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa', fontSize: '0.65rem' }}>
+        <FaShieldAlt className="text-theme" size={9} />
+        <code style={{ color: '#16a34a' }}>4</code>=view <code style={{ color: '#2563eb' }}>2</code>=write <code style={{ color: '#dc2626' }}>1</code>=delete
         <span className="text-muted">| 7=rwx 6=rw- 4=r-- 0=---</span>
-        <span className="text-muted ms-1">
-          {ROLES.map(r => <span key={r} className="me-1"><span style={{ color: ROLE_COLORS[r], fontWeight: 700 }}>{ROLE_SHORT[r]}</span>={r}</span>)}
-        </span>
+        {ROLES.map(r => <span key={r} style={{ color: RC[r], fontWeight: 700 }}>{RS[r]}</span>)}
       </div>
 
       <Accordion>
@@ -196,199 +167,134 @@ function PageControlTab() {
           const Icon = ICON_MAP[item.icon]
           const hasTabs = item.tabs && Object.keys(item.tabs).length > 0
           const code = getCode(item.perms, item.pageRoles, item.hasPerms)
-          const codeStr = code.join('')
 
           return (
             <Accordion.Item key={item.key} eventKey={item.key}>
               <Accordion.Header>
-                <div className="d-flex align-items-center gap-2 w-100 pe-3" style={{ fontSize: '0.8rem' }}>
-                  {Icon && <Icon size={12} className="text-theme" />}
+                <div className="d-flex align-items-center gap-2 w-100 pe-3" style={{ fontSize: '0.78rem' }}>
+                  {Icon && <Icon size={11} className="text-theme" />}
                   <strong>{item.label}</strong>
-                  <code className="ms-auto" style={{ fontSize: '0.72rem', color: '#475569', letterSpacing: 2, fontWeight: 700 }}>{codeStr}</code>
+                  <code className="ms-auto" style={{ fontSize: '0.7rem', color: '#475569', letterSpacing: 2, fontWeight: 700 }}>{code.join('')}</code>
                 </div>
               </Accordion.Header>
               <Accordion.Body className="py-2 px-3">
 
-                {/* PERMISSIONS */}
+                {/* PERMS */}
                 <div className="d-flex align-items-center gap-3 flex-wrap mb-2">
-                  <small className="fw-bold text-muted" style={{ fontSize: '0.62rem' }}>PERMS</small>
+                  <small className="fw-bold text-muted" style={{ fontSize: '0.6rem' }}>PERMS</small>
                   {ROLES.map((role, i) => (
-                    <PermNum key={role} role={role} value={code[i]}
-                      onChange={(v) => item.hasPerms ? applyPermNum(item.key, role, v) : applyPageNum(item.key, role, v)}
-                      disabled={saving} />
+                    <PermNum key={role} role={role} value={code[i]} onChange={(v) => item.hasPerms ? applyPermNum(item.key, role, v) : applyPageNum(item.key, role, v)} disabled={saving} />
                   ))}
-                  {item.path && (
-                    <label className="d-flex align-items-center gap-1" style={{ fontSize: '0.62rem', color: '#64748b', cursor: 'pointer' }}>
-                      <Form.Check type="checkbox" checked={item.sidebar !== false} onChange={() => toggleSidebar(item.key)} disabled={saving} style={{ marginBottom: 0 }} />
-                      sidebar
-                    </label>
-                  )}
+                  {item.path && <label className="d-flex align-items-center gap-1" style={{ fontSize: '0.6rem', color: '#64748b' }}>
+                    <Form.Check type="checkbox" checked={item.sidebar !== false} onChange={() => toggleSidebar(item.key)} disabled={saving} /> sidebar
+                  </label>}
                 </div>
 
                 {/* TABS */}
                 {hasTabs && (
                   <div className="mb-2">
-                    <small className="fw-bold text-muted" style={{ fontSize: '0.62rem' }}>TABS</small>
-                    {Object.entries(item.tabs).map(([tabKey, tabCfg]) => (
-                      <div key={tabKey} className="d-flex align-items-center gap-2 mt-1 ps-2" style={{ borderLeft: '2px solid #e2e8f0', fontSize: '0.7rem' }}>
-                        <span style={{ fontWeight: 500, minWidth: 75 }}>{tabCfg.label || tabKey}</span>
-                        {ROLES.map(role => {
-                          const has = (tabCfg.roles || []).includes(role)
-                          return (
-                            <button key={role} type="button" onClick={() => toggleTabRole(item.key, tabKey, role)} disabled={saving}
-                              style={{
-                                fontSize: '0.55rem', padding: '0 4px', border: `1px solid ${has ? ROLE_COLORS[role] : '#e2e8f0'}`,
-                                borderRadius: 3, backgroundColor: has ? ROLE_COLORS[role] : 'transparent',
-                                color: has ? '#fff' : '#94a3b8', cursor: 'pointer', fontWeight: 600,
-                              }}>
-                              {ROLE_SHORT[role]}
-                            </button>
-                          )
-                        })}
+                    <small className="fw-bold text-muted" style={{ fontSize: '0.6rem' }}>TABS</small>
+                    {Object.entries(item.tabs).map(([tk, tc]) => (
+                      <div key={tk} className="d-flex align-items-center gap-2 mt-1 ps-2" style={{ borderLeft: '2px solid #e2e8f0', fontSize: '0.7rem' }}>
+                        <span style={{ fontWeight: 500, minWidth: 70 }}>{tc.label || tk}</span>
+                        {ROLES.map(r => <RoleBtn key={r} role={r} active={(tc.roles || []).includes(r)} onClick={() => toggleTabRole(item.key, tk, r)} disabled={saving} />)}
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* FORM FIELDS */}
-                {item.hasForm && (
-                  <div className="mb-2">
-                    <small className="fw-bold text-muted" style={{ fontSize: '0.62rem' }}><FaWpforms size={8} className="me-1" />FORM</small>
-                    {Object.entries(item.formFields).map(([fk, fc]) => {
-                      const vis = fc.visible !== false
-                      const roles = fc.roles || [...ROLES]
+                {/* FIELDS (unified form + table) */}
+                {item.hasFields && (
+                  <div>
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <small className="fw-bold text-muted" style={{ fontSize: '0.6rem' }}>FIELDS</small>
+                    </div>
+
+                    {/* Column headers */}
+                    <div className="d-flex align-items-center gap-1 py-1 px-1" style={{ fontSize: '0.58rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                      <span style={{ width: 14 }}></span>
+                      <span style={{ width: 18 }}>Vis</span>
+                      <span style={{ flex: 1 }}>Field</span>
+                      <span style={{ width: 35 }}>Type</span>
+                      <span style={{ width: 18, textAlign: 'center' }}>Tbl</span>
+                      <span style={{ width: 14, textAlign: 'center' }}>🔍</span>
+                      <span style={{ width: 60, textAlign: 'center' }}>Roles</span>
+                      <span style={{ width: 16 }}></span>
+                    </div>
+
+                    {Object.entries(item.fields).map(([fk, f]) => {
                       const isExp = expandedField === `${item.key}:${fk}`
                       return (
                         <div key={fk}>
-                          <div className="d-flex align-items-center gap-2 py-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem', cursor: 'pointer' }}
-                            onClick={() => toggleExpand(`${item.key}:${fk}`)}>
-                            {isExp ? <FaChevronDown size={7} className="text-muted" /> : <FaChevronRight size={7} className="text-muted" />}
-                            <Form.Check type="checkbox" checked={vis} onChange={(e) => { e.stopPropagation(); toggleFormField(item.key, fk, 'visible') }} disabled={saving} />
-                            <span style={{ minWidth: 85, color: vis ? '#334155' : '#94a3b8', fontWeight: 500 }}>
-                              {fc.label || fk}{fc.required && <span className="text-danger">*</span>}
+                          <div className="d-flex align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.68rem', cursor: 'pointer' }}
+                            onClick={() => setExpandedField(isExp ? null : `${item.key}:${fk}`)}>
+                            <span style={{ width: 14 }}>{isExp ? <FaChevronDown size={6} className="text-muted" /> : <FaChevronRight size={6} className="text-muted" />}</span>
+                            <span style={{ width: 18 }} onClick={e => e.stopPropagation()}>
+                              <Form.Check type="checkbox" checked={f.visible} onChange={() => updateField(item.key, fk, { visible: !f.visible })} disabled={saving} />
                             </span>
-                            <small className="text-muted" style={{ fontSize: '0.58rem' }}>{fc.type || 'text'}</small>
-                            <div className="d-flex gap-0 ms-auto" onClick={(e) => e.stopPropagation()}>
-                              {ROLES.map(role => {
-                                const has = roles.includes(role)
-                                return (
-                                  <button key={role} type="button" onClick={() => toggleFieldRole(item.key, fk, role)} disabled={saving || !vis}
-                                    style={{
-                                      fontSize: '0.5rem', padding: '0 3px', border: `1px solid ${has ? ROLE_COLORS[role] : '#e2e8f0'}`,
-                                      borderRadius: 2, backgroundColor: has ? ROLE_COLORS[role] : 'transparent',
-                                      color: has ? '#fff' : '#cbd5e1', fontWeight: 700, opacity: vis ? 1 : 0.3,
-                                    }}>
-                                    {ROLE_SHORT[role]}
-                                  </button>
-                                )
-                              })}
+                            <span style={{ flex: 1, color: f.visible ? '#334155' : '#94a3b8', fontWeight: 500 }}>
+                              {f.label}{f.required && <span className="text-danger">*</span>}
+                            </span>
+                            <span style={{ width: 35, fontSize: '0.55rem', color: '#94a3b8' }}>{f.type}</span>
+                            <span style={{ width: 18, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                              {f.inTable && <Form.Check type="checkbox" checked={f.tableVisible} onChange={() => updateField(item.key, fk, { tableVisible: !f.tableVisible })} disabled={saving} />}
+                            </span>
+                            <span style={{ width: 14, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                              {f.inTable && <Form.Check type="checkbox" checked={f.searchable} onChange={() => updateField(item.key, fk, { searchable: !f.searchable })} disabled={saving} style={{ fontSize: '0.5rem' }} />}
+                            </span>
+                            <div className="d-flex gap-0" style={{ width: 60 }} onClick={e => e.stopPropagation()}>
+                              {ROLES.map(r => <RoleBtn key={r} role={r} active={f.roles.includes(r)} onClick={() => toggleFieldRole(item.key, fk, r, f)} disabled={saving || !f.visible} />)}
                             </div>
+                            <span style={{ width: 16 }} onClick={e => e.stopPropagation()}>
+                              <button type="button" className="btn p-0" onClick={() => removeField(item.key, fk)} style={{ fontSize: '0.5rem', color: '#dc2626', lineHeight: 1 }} title="Remove"><FaTrash size={7} /></button>
+                            </span>
                           </div>
+
                           {isExp && (
-                            <div className="ps-4 py-1 mb-1" style={{ backgroundColor: '#f8f9fa', borderRadius: 4, fontSize: '0.7rem' }}>
+                            <div className="ps-4 py-1 mb-1" style={{ backgroundColor: '#f8f9fa', borderRadius: 3, fontSize: '0.68rem' }}>
                               <Row className="g-1">
-                                <Col xs={4}>
-                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Label</label>
-                                  <Form.Control size="sm" value={fc.label || ''} onChange={(e) => updateFormFieldProp(item.key, fk, 'label', e.target.value)}
-                                    style={{ fontSize: '0.72rem', height: 24 }} />
-                                </Col>
-                                <Col xs={3}>
-                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Type</label>
-                                  <Form.Select size="sm" value={fc.type || 'text'} onChange={(e) => updateFormFieldProp(item.key, fk, 'type', e.target.value)}
-                                    style={{ fontSize: '0.68rem', height: 24 }}>
-                                    {['text','number','email','tel','textarea','select','password','checkbox','date','richtext','custom'].map(t => <option key={t} value={t}>{t}</option>)}
-                                  </Form.Select>
-                                </Col>
-                                <Col xs={2}>
-                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Width</label>
-                                  <Form.Select size="sm" value={fc.colSize || 6} onChange={(e) => updateFormFieldProp(item.key, fk, 'colSize', parseInt(e.target.value))}
-                                    style={{ fontSize: '0.68rem', height: 24 }}>
-                                    <option value={6}>Half</option>
-                                    <option value={12}>Full</option>
-                                  </Form.Select>
-                                </Col>
-                                <Col xs={3} className="d-flex align-items-end gap-2 pb-1">
-                                  <Form.Check type="checkbox" id={`req-${item.key}-${fk}`} checked={fc.required || false}
-                                    onChange={() => updateFormFieldProp(item.key, fk, 'required', !fc.required)}
-                                    label={<span style={{ fontSize: '0.62rem' }}>Required</span>} />
-                                </Col>
+                                <Col xs={4}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Label</label>
+                                  <Form.Control size="sm" value={f.label} onChange={e => updateField(item.key, fk, { label: e.target.value })} style={{ fontSize: '0.7rem', height: 22 }} /></Col>
+                                <Col xs={3}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Type</label>
+                                  <Form.Select size="sm" value={f.type} onChange={e => updateField(item.key, fk, { type: e.target.value })} style={{ fontSize: '0.65rem', height: 22 }}>
+                                    {['text','number','email','tel','textarea','select','password','checkbox','date','richtext','custom','list'].map(t => <option key={t}>{t}</option>)}
+                                  </Form.Select></Col>
+                                <Col xs={2}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Width</label>
+                                  <Form.Select size="sm" value={f.colSize} onChange={e => updateField(item.key, fk, { colSize: parseInt(e.target.value) })} style={{ fontSize: '0.65rem', height: 22 }}>
+                                    <option value={6}>Half</option><option value={12}>Full</option>
+                                  </Form.Select></Col>
+                                <Col xs={3} className="d-flex align-items-end pb-1">
+                                  <Form.Check type="checkbox" checked={f.required} onChange={() => updateField(item.key, fk, { required: !f.required })}
+                                    label={<span style={{ fontSize: '0.6rem' }}>Req</span>} /></Col>
                               </Row>
-                              {fc.placeholder !== undefined && (
-                                <div className="mt-1">
-                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Placeholder</label>
-                                  <Form.Control size="sm" value={fc.placeholder || ''} onChange={(e) => updateFormFieldProp(item.key, fk, 'placeholder', e.target.value)}
-                                    style={{ fontSize: '0.72rem', height: 24 }} />
-                                </div>
-                              )}
+                              <Row className="g-1 mt-1">
+                                <Col xs={6}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Placeholder</label>
+                                  <Form.Control size="sm" value={f.placeholder} onChange={e => updateField(item.key, fk, { placeholder: e.target.value })} style={{ fontSize: '0.7rem', height: 22 }} /></Col>
+                                <Col xs={3} className="d-flex align-items-end pb-1">
+                                  <Form.Check type="checkbox" checked={f.inTable} onChange={() => updateField(item.key, fk, { inTable: !f.inTable, tableVisible: true })}
+                                    label={<span style={{ fontSize: '0.6rem' }}>Show in Table</span>} /></Col>
+                                <Col xs={3} className="d-flex align-items-end pb-1">
+                                  <Form.Check type="checkbox" checked={f.inForm} onChange={() => updateField(item.key, fk, { inForm: !f.inForm })}
+                                    label={<span style={{ fontSize: '0.6rem' }}>Show in Form</span>} /></Col>
+                              </Row>
                             </div>
                           )}
                         </div>
                       )
                     })}
-                  </div>
-                )}
 
-                {/* TABLE COLUMNS */}
-                {item.hasTable && (
-                  <div>
-                    <div className="d-flex align-items-center gap-1">
-                      <small className="fw-bold text-muted" style={{ fontSize: '0.62rem' }}><FaTable size={8} className="me-1" />TABLE</small>
-                      <input type="number" value={item.itemsPerPage} onChange={(e) => updateItemsPerPage(item.key, e.target.value)}
-                        style={{ width: 35, height: 16, fontSize: '0.6rem', textAlign: 'center', border: '1px solid #e2e8f0', borderRadius: 2, padding: 0 }} />
-                      <span style={{ fontSize: '0.55rem', color: '#94a3b8' }}>/pg</span>
+                    {/* Add new field */}
+                    <div className="d-flex align-items-center gap-1 mt-1 pt-1" style={{ borderTop: '1px solid #e2e8f0' }}>
+                      <Form.Control size="sm" value={newFieldKey} onChange={e => setNewFieldKey(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addField(item.key) } }}
+                        placeholder="new_field_key" style={{ fontSize: '0.68rem', height: 22, maxWidth: 150 }} />
+                      <button type="button" className="btn btn-sm" onClick={() => addField(item.key)}
+                        style={{ fontSize: '0.6rem', padding: '1px 6px', backgroundColor: '#0891B2', color: '#fff', borderRadius: 3 }}>
+                        <FaPlus size={8} /> Add
+                      </button>
                     </div>
-                    {Object.entries(item.tableColumns).map(([ck, cc]) => {
-                      const vis = cc.visible !== false
-                      const roles = cc.roles || [...ROLES]
-                      const isExp = expandedField === `${item.key}:col:${ck}`
-                      return (
-                        <div key={ck}>
-                          <div className="d-flex align-items-center gap-2 py-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem', cursor: 'pointer' }}
-                            onClick={() => toggleExpand(`${item.key}:col:${ck}`)}>
-                            {isExp ? <FaChevronDown size={7} className="text-muted" /> : <FaChevronRight size={7} className="text-muted" />}
-                            <Form.Check type="checkbox" checked={vis} onChange={(e) => { e.stopPropagation(); toggleTableColumn(item.key, ck, 'visible') }} disabled={saving} />
-                            <span style={{ minWidth: 85, color: vis ? '#334155' : '#94a3b8', fontWeight: 500 }}>
-                              {cc.label || ck}
-                            </span>
-                            <div className="d-flex align-items-center gap-0 ms-auto" onClick={(e) => e.stopPropagation()}>
-                              {cc.searchable && <FaSearch size={7} className="text-muted me-1" />}
-                              {ROLES.map(role => {
-                                const has = roles.includes(role)
-                                return (
-                                  <button key={role} type="button" onClick={() => toggleColumnRole(item.key, ck, role)} disabled={saving || !vis}
-                                    style={{
-                                      fontSize: '0.5rem', padding: '0 3px', border: `1px solid ${has ? ROLE_COLORS[role] : '#e2e8f0'}`,
-                                      borderRadius: 2, backgroundColor: has ? ROLE_COLORS[role] : 'transparent',
-                                      color: has ? '#fff' : '#cbd5e1', fontWeight: 700, opacity: vis ? 1 : 0.3,
-                                    }}>
-                                    {ROLE_SHORT[role]}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          </div>
-                          {isExp && (
-                            <div className="ps-4 py-1 mb-1" style={{ backgroundColor: '#f8f9fa', borderRadius: 4, fontSize: '0.7rem' }}>
-                              <Row className="g-1">
-                                <Col xs={5}>
-                                  <label style={{ fontSize: '0.6rem', color: '#64748b' }}>Display Label</label>
-                                  <Form.Control size="sm" value={cc.label || ''} onChange={(e) => updateTableColumnProp(item.key, ck, 'label', e.target.value)}
-                                    style={{ fontSize: '0.72rem', height: 24 }} />
-                                </Col>
-                                <Col xs={4} className="d-flex align-items-end gap-2 pb-1">
-                                  <Form.Check type="checkbox" id={`search-${item.key}-${ck}`} checked={cc.searchable || false}
-                                    onChange={() => updateTableColumnProp(item.key, ck, 'searchable', !cc.searchable)}
-                                    label={<span style={{ fontSize: '0.62rem' }}><FaSearch size={7} className="me-1" />Searchable</span>} />
-                                </Col>
-                              </Row>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
                   </div>
                 )}
-
               </Accordion.Body>
             </Accordion.Item>
           )
