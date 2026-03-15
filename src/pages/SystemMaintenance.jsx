@@ -55,6 +55,7 @@ function SystemMaintenance() {
   const [tokenLoaded, setTokenLoaded] = useState(false)
   const [showTokenInput, setShowTokenInput] = useState(false)
   const [creatingIssue, setCreatingIssue] = useState(null)
+  const [createdIssues, setCreatedIssues] = useState({}) // { id: { number, url } }
 
   // Error logs state
   const [logsLoading, setLogsLoading] = useState(false)
@@ -298,6 +299,7 @@ ${log.componentStack ? `### Component Stack\n\`\`\`\n${log.componentStack}\n\`\`
       if (result.fallback) {
         showInfo('Opening GitHub — add a token for direct creation')
       } else {
+        setCreatedIssues(prev => ({ ...prev, [log.id]: { number: result.number, url: result.html_url } }))
         showSuccess(`Issue #${result.number} created successfully`)
       }
     } catch (err) {
@@ -330,6 +332,7 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
       if (result.fallback) {
         showInfo('Opening GitHub — add a token for direct creation')
       } else {
+        setCreatedIssues(prev => ({ ...prev, [fb.id]: { number: result.number, url: result.html_url } }))
         showSuccess(`Issue #${result.number} created successfully`)
       }
     } catch (err) {
@@ -934,16 +937,29 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                                 </Button>
                               </>
                             )}
-                            <Button
-                              size="sm"
-                              variant="outline-dark"
-                              disabled={creatingIssue === fb.id}
-                              onClick={() => createComplaintIssue(fb)}
-                              style={{ fontSize: '0.75rem' }}
-                            >
-                              <FaGithub className="me-1" size={10} />
-                              {creatingIssue === fb.id ? 'Creating...' : 'Create Issue'}
-                            </Button>
+                            {createdIssues[fb.id] ? (
+                              <a
+                                href={createdIssues[fb.id].url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-success"
+                                style={{ fontSize: '0.75rem' }}
+                              >
+                                <FaGithub className="me-1" size={10} />
+                                Issue #{createdIssues[fb.id].number}
+                              </a>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline-dark"
+                                disabled={creatingIssue === fb.id}
+                                onClick={() => createComplaintIssue(fb)}
+                                style={{ fontSize: '0.75rem' }}
+                              >
+                                <FaGithub className="me-1" size={10} />
+                                {creatingIssue === fb.id ? 'Creating...' : 'Create Issue'}
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline-danger"
@@ -1191,16 +1207,30 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                                         </div>
                                       )}
                                       <div className="mt-2">
-                                        <Button
-                                          size="sm"
-                                          variant="outline-dark"
-                                          disabled={creatingIssue === log.id}
-                                          onClick={(e) => { e.stopPropagation(); createErrorIssue(log) }}
-                                          style={{ fontSize: '0.75rem' }}
-                                        >
-                                          <FaGithub className="me-1" size={12} />
-                                          {creatingIssue === log.id ? 'Creating...' : 'Create Issue'}
-                                        </Button>
+                                        {createdIssues[log.id] ? (
+                                          <a
+                                            href={createdIssues[log.id].url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn btn-sm btn-success"
+                                            style={{ fontSize: '0.75rem' }}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <FaGithub className="me-1" size={12} />
+                                            Issue #{createdIssues[log.id].number}
+                                          </a>
+                                        ) : (
+                                          <Button
+                                            size="sm"
+                                            variant="outline-dark"
+                                            disabled={creatingIssue === log.id}
+                                            onClick={(e) => { e.stopPropagation(); createErrorIssue(log) }}
+                                            style={{ fontSize: '0.75rem' }}
+                                          >
+                                            <FaGithub className="me-1" size={12} />
+                                            {creatingIssue === log.id ? 'Creating...' : 'Create Issue'}
+                                          </Button>
+                                        )}
                                       </div>
                                     </div>
                                   </td>

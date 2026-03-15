@@ -70,7 +70,7 @@ function AppContent() {
         message: event.message || String(event.error),
         stack: event.error?.stack || '',
         source: 'window.onerror',
-        url: event.filename || window.location.href,
+        url: window.location.pathname,
         userId: user?.uid || '',
         username: user?.username || user?.email || '',
         userRole: user?.role || '',
