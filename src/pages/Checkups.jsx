@@ -1,14 +1,14 @@
 import { useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Container, Row, Col, Card, Button } from 'react-bootstrap'
-import { FaPlus, FaClipboardCheck } from 'react-icons/fa'
+import { Container, Row, Col, Card } from 'react-bootstrap'
+import { FaClipboardCheck } from 'react-icons/fa'
 import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { EnhancedCRUDTable } from '../components/crud'
-import { PermissionGate } from '../components/auth/PermissionGate'
+import { PageHeader } from '../components/ui'
 import { useSettings } from '../hooks'
 
 function Checkups() {
@@ -21,7 +21,7 @@ function Checkups() {
   const { loading: patientsLoading } = useSelector(state => state.patients)
   const { loading: testsLoading } = useSelector(state => state.tests)
 
-  const { getEntityColumns, getItemsPerPage, getSearchFields } = useSettings()
+  const { getEntityColumns, getItemsPerPage, getSearchFields, checkPermission } = useSettings()
   const loading = checkupsLoading || patientsLoading || testsLoading
 
   useEffect(() => {
@@ -101,22 +101,12 @@ function Checkups() {
 
   return (
     <Container fluid className="p-3 p-md-4">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center flex-wrap">
-            <h2><FaClipboardCheck className="me-2 text-secondary" />Checkups / Billing</h2>
-            <PermissionGate resource="checkups" action="create">
-              <Button
-                onClick={() => navigate('/checkups/new')}
-                disabled={patients.length === 0 || loading}
-                className="btn-theme-add mt-2 mt-md-0"
-              >
-                <FaPlus className="me-2" />New Checkup
-              </Button>
-            </PermissionGate>
-          </div>
-        </Col>
-      </Row>
+      <PageHeader
+        icon={FaClipboardCheck}
+        title="Checkups / Billing"
+        addButtonText="New Checkup"
+        onAddClick={checkPermission('checkups', 'create') && patients.length > 0 && !loading ? () => navigate('/checkups/new') : undefined}
+      />
 
       {patients.length === 0 && !patientsLoading && (
         <Row className="mb-3">
