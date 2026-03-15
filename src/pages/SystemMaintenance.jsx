@@ -68,6 +68,7 @@ function SystemMaintenance() {
   const [sortField, setSortField] = useState('timestamp')
   const [sortOrder, setSortOrder] = useState('desc')
   const [expandedLog, setExpandedLog] = useState(null)
+  const [resolvedLogs, setResolvedLogs] = useState({}) // { id: true }
 
   // Daily report state
   const [reportLoading, setReportLoading] = useState(false)
@@ -847,14 +848,17 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                         <span style={{ width: 24 }}></span>
                       </div>
 
-                      {paginatedLogs.map(log => (
+                      {paginatedLogs.map(log => {
+                        const isResolved = resolvedLogs[log.id]
+                        return (
                         <React.Fragment key={log.id}>
                           <div className="d-flex flex-wrap align-items-center gap-1 py-1 px-1"
-                            style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.72rem', cursor: 'pointer' }}
+                            style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.72rem', cursor: 'pointer', opacity: isResolved ? 0.4 : 1 }}
                             onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}>
+                            {isResolved && <FaCheck size={8} style={{ color: '#16a34a', flexShrink: 0 }} />}
                             <span style={{ width: 130, color: '#94a3b8', fontSize: '0.65rem' }}>{formatTimestamp(log.timestamp)}</span>
                             <span style={{ width: 90 }}>{getSourceBadge(log.source)}</span>
-                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.message}</span>
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: isResolved ? 'line-through' : 'none' }}>{log.message}</span>
                             <span className="d-none d-md-inline" style={{ width: 80, color: '#64748b', fontSize: '0.65rem' }}>{log.username || '-'}</span>
                             <span style={{ width: 24 }}>
                               <button type="button" onClick={(e) => { e.stopPropagation(); handleDelete(log.id) }}
@@ -864,7 +868,7 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                           </div>
 
                           {expandedLog === log.id && (
-                            <div style={{ padding: '8px 8px 8px 28px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
+                            <div style={{ padding: '8px 8px 8px 28px', background: isResolved ? '#f9fafb' : '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.7rem' }}>
                               <div className="mb-1"><strong>URL:</strong> <span className="text-muted">{log.url || 'N/A'}</span></div>
                               <div className="mb-1"><strong>User:</strong> <span className="text-muted">{log.username || 'N/A'} ({log.userRole || 'N/A'})</span></div>
                               {log.stack && (
@@ -891,19 +895,28 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                                     style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: 3, textDecoration: 'none' }}>
                                     <FaGithub size={9} className="me-1" />#{createdIssues[log.id].number}</a>
                                 ) : (
-                                  <button type="button" disabled={creatingIssue === log.id}
+                                  <button type="button" disabled={creatingIssue === log.id || isResolved}
                                     onClick={(e) => { e.stopPropagation(); createErrorIssue(log) }}
-                                    style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#333', border: '1px solid #e2e8f0', borderRadius: 3, opacity: creatingIssue === log.id ? 0.5 : 1 }}>
+                                    style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: isResolved ? '#cbd5e1' : '#333', border: `1px solid ${isResolved ? '#e2e8f0' : '#e2e8f0'}`, borderRadius: 3, opacity: (creatingIssue === log.id || isResolved) ? 0.5 : 1 }}>
                                     <FaGithub size={9} className="me-1" />{creatingIssue === log.id ? 'Creating...' : 'Create Issue'}</button>
                                 )}
+                                {isResolved ? (
+                                  <span style={{ fontSize: '0.6rem', padding: '2px 8px', color: '#94a3b8' }}>
+                                    <FaCheck size={8} className="me-1" />Resolved</span>
+                                ) : (
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); setResolvedLogs(p => ({ ...p, [log.id]: true })) }}
+                                    style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 3 }}>
+                                    <FaCheck size={8} className="me-1" />Resolve</button>
+                                )}
                                 <button type="button" onClick={(e) => { e.stopPropagation(); handleDelete(log.id) }}
-                                  style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 3 }}>
-                                  <FaCheck size={8} className="me-1" />Resolve</button>
+                                  style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 3 }}>
+                                  <FaTrash size={8} className="me-1" />Delete</button>
                               </div>
                             </div>
                           )}
                         </React.Fragment>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
 
