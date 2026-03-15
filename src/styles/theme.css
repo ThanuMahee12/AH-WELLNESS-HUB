@@ -36,8 +36,8 @@
   --theme-gradient: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-light));
 
   /* Layout - Sidebar & Navbar */
-  --sidebar-width: 250px;
-  --navbar-height: 60px;
+  --sidebar-width: 220px;
+  --navbar-height: 52px;
 
   /* Breakpoints (for reference in JS - actual media queries use px values) */
   --breakpoint-xs: 0;

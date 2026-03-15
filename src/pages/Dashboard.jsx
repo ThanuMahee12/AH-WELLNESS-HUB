@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Container, Row, Col, Card, ButtonGroup, Button } from 'react-bootstrap'
 import { FaUserInjured, FaFlask, FaClipboardCheck, FaUsers, FaChartLine, FaCalendarAlt, FaRupeeSign, FaEye, FaFileMedical, FaWallet } from 'react-icons/fa'
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
@@ -58,7 +58,7 @@ function Dashboard() {
   const chartData = useMemo(() => getDateRangeChartData(checkups, tests, dateRange), [checkups, tests, dateRange])
 
   const testDistribution = useMemo(() => getTestDistribution(checkups, tests), [checkups, tests])
-  const monthlyRevenue = useMemo(() => getMonthlyRevenueData(checkups, selectedYear), [checkups, selectedYear])
+  const monthlyRevenue = useMemo(() => getMonthlyRevenueData(checkups, tests, selectedYear), [checkups, tests, selectedYear])
   const yearOptions = useMemo(() => getYearOptions(), [])
 
   // Prescription count & income (commission + doctor fees)
@@ -215,146 +215,55 @@ function Dashboard() {
         </Row>
       )}
 
-      {/* Charts Section */}
-      <Row className="g-3 g-md-4 mb-4">
-        <Col xs={12} lg={8}>
-          <Card className="h-100 shadow-sm">
-            <Card.Header className="bg-theme-gradient text-white">
-              <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-                <h5 className="mb-0">
-                  <FaChartLine className="me-2" />
-                  Checkups & Revenue Trend
-                </h5>
-                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 w-100 w-lg-auto">
-                  <ButtonGroup size="sm" className="w-100 w-sm-auto chart-btn-group">
+      {/* Revenue & Income Area Chart */}
+      <Row className="g-3 mb-3">
+        <Col xs={12}>
+          <Card className="shadow-sm border-0">
+            <Card.Body className="py-2 px-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <small className="fw-bold text-muted">REVENUE & INCOME TREND</small>
+                <ButtonGroup size="sm">
+                  {[7, 30, 60, 90].map(d => (
                     <Button
-                      onClick={() => setDateRange(7)}
-                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 7 ? ' active' : ''}`}
+                      key={d}
+                      size="sm"
+                      variant={dateRange === d ? 'primary' : 'outline-secondary'}
+                      onClick={() => setDateRange(d)}
+                      style={dateRange === d ? { backgroundColor: '#0891B2', borderColor: '#0891B2', fontSize: '0.72rem' } : { fontSize: '0.72rem' }}
                     >
-                      7d
+                      {d}d
                     </Button>
-                    <Button
-                      onClick={() => setDateRange(30)}
-                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 30 ? ' active' : ''}`}
-                    >
-                      30d
-                    </Button>
-                    <Button
-                      onClick={() => setDateRange(60)}
-                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 60 ? ' active' : ''}`}
-                    >
-                      60d
-                    </Button>
-                    <Button
-                      onClick={() => setDateRange(90)}
-                      className={`flex-grow-1 flex-sm-grow-0 btn-filter btn-filter-lg${dateRange === 90 ? ' active' : ''}`}
-                    >
-                      90d
-                    </Button>
-                  </ButtonGroup>
-                </div>
+                  ))}
+                </ButtonGroup>
               </div>
-            </Card.Header>
-            <Card.Body>
               {checkups.length === 0 ? (
-                <div className="text-center p-5">
-                  <FaChartLine size={50} className="text-muted mb-3" />
-                  <p className="text-muted">No data available yet</p>
-                </div>
+                <div className="text-center py-4 text-muted"><small>No data yet</small></div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="checkups"
-                      stroke="#0891B2"
-                      strokeWidth={2}
-                      name="Checkups"
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="#14B8A6"
-                      strokeWidth={2}
-                      name="Total Revenue (Rs.)"
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="commission"
-                      stroke="#F59E0B"
-                      strokeWidth={2}
-                      name="Commission (Rs.)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col xs={12} lg={4}>
-          <Card className="h-100 shadow-sm">
-            <Card.Header className="bg-theme-gradient text-white">
-              <h5 className="mb-0">
-                <FaFlask className="me-2" />
-                Popular Tests
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              {testDistribution.length === 0 ? (
-                <div className="text-center p-5">
-                  <FaFlask size={50} className="text-muted mb-3" />
-                  <p className="text-muted">No tests performed yet</p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={320}>
-                  <PieChart margin={{ top: 10, right: isMobile ? 10 : 80, bottom: 10, left: isMobile ? 10 : 80 }}>
-                    <Pie
-                      data={testDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={{
-                        stroke: '#666',
-                        strokeWidth: 1,
-                        length: isMobile ? 10 : 20
-                      }}
-                      label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
-                        const RADIAN = Math.PI / 180;
-                        const radius = outerRadius + (isMobile ? 20 : 35);
-                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                        return (
-                          <text
-                            x={x}
-                            y={y}
-                            fill="#333"
-                            textAnchor={x > cx ? 'start' : 'end'}
-                            dominantBaseline="central"
-                            style={{ fontSize: isMobile ? '10px' : '12px', fontWeight: '500' }}
-                          >
-                            {`${name} (${(percent * 100).toFixed(0)}%)`}
-                          </text>
-                        );
-                      }}
-                      outerRadius={isMobile ? 60 : 70}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {testDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0891B2" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#0891B2" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#14B8A6" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#14B8A6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+                    <Tooltip contentStyle={{ fontSize: '0.8rem' }} />
+                    <Legend wrapperStyle={{ fontSize: '0.75rem' }} />
+                    <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#0891B2" strokeWidth={2} fill="url(#gradRevenue)" name="Revenue (Rs.)" />
+                    <Area yAxisId="left" type="monotone" dataKey="income" stroke="#14B8A6" strokeWidth={2} fill="url(#gradIncome)" name="Income (Rs.)" />
+                    <Line yAxisId="left" type="monotone" dataKey="commission" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Commission" />
+                    <Line yAxisId="left" type="monotone" dataKey="doctorFees" stroke="#ec4899" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Doctor Fees" />
+                    <Line yAxisId="right" type="monotone" dataKey="checkups" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} name="Checkups" />
+                    <Line yAxisId="right" type="monotone" dataKey="prescriptions" stroke="#ef4444" strokeWidth={1.5} dot={{ r: 2 }} name="Prescriptions" />
+                  </AreaChart>
                 </ResponsiveContainer>
               )}
             </Card.Body>
@@ -362,42 +271,39 @@ function Dashboard() {
         </Col>
       </Row>
 
-      {/* Monthly Revenue and Quick Stats Row */}
-      <Row className="g-3 g-md-4 mb-4">
+      {/* Monthly Breakdown + Popular Tests */}
+      <Row className="g-3 mb-3">
         <Col xs={12} lg={8}>
-          <Card className="h-100 shadow-sm">
-            <Card.Header className="bg-theme-gradient text-white">
-              <div className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">
-                  <FaRupeeSign className="me-2" />
-                  Monthly Revenue
-                </h5>
+          <Card className="shadow-sm border-0">
+            <Card.Body className="py-2 px-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <small className="fw-bold text-muted">MONTHLY BREAKDOWN</small>
                 <select
-                  className="form-select form-select-sm dashboard-select"
+                  className="form-select form-select-sm"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  style={{ width: 'auto', fontSize: '0.78rem' }}
                 >
                   {yearOptions.map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
               </div>
-            </Card.Header>
-            <Card.Body>
               {monthlyRevenue.length === 0 ? (
-                <div className="text-center p-5">
-                  <FaRupeeSign size={50} className="text-muted mb-3" />
-                  <p className="text-muted">No revenue data available</p>
-                </div>
+                <div className="text-center py-4 text-muted"><small>No data</small></div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={monthlyRevenue}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#0891B2" name="Revenue (Rs.)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+                    <Tooltip contentStyle={{ fontSize: '0.8rem' }} />
+                    <Legend wrapperStyle={{ fontSize: '0.75rem' }} />
+                    <Bar yAxisId="left" dataKey="revenue" fill="#0891B2" name="Revenue" radius={[3, 3, 0, 0]} />
+                    <Bar yAxisId="left" dataKey="commission" fill="#F59E0B" name="Commission" radius={[3, 3, 0, 0]} />
+                    <Bar yAxisId="left" dataKey="income" fill="#14B8A6" name="Income" radius={[3, 3, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="checkups" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} name="Checkups" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -406,45 +312,74 @@ function Dashboard() {
         </Col>
 
         <Col xs={12} lg={4}>
+          <Card className="shadow-sm border-0">
+            <Card.Body className="py-2 px-3">
+              <small className="fw-bold text-muted d-block mb-2">POPULAR TESTS</small>
+              {testDistribution.length === 0 ? (
+                <div className="text-center py-4 text-muted"><small>No tests yet</small></div>
+              ) : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart margin={{ top: 5, right: isMobile ? 5 : 60, bottom: 5, left: isMobile ? 5 : 60 }}>
+                    <Pie
+                      data={testDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={{ stroke: '#94a3b8', strokeWidth: 1, length: isMobile ? 8 : 16 }}
+                      label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
+                        const RADIAN = Math.PI / 180;
+                        const radius = outerRadius + (isMobile ? 16 : 28);
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        return (
+                          <text x={x} y={y} fill="#475569" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central"
+                            style={{ fontSize: isMobile ? '9px' : '11px', fontWeight: '500' }}
+                          >
+                            {`${name} (${(percent * 100).toFixed(0)}%)`}
+                          </text>
+                        );
+                      }}
+                      outerRadius={isMobile ? 55 : 65}
+                      innerRadius={isMobile ? 25 : 30}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {testDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ fontSize: '0.8rem' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Performance Stats + Recent Checkups */}
+      <Row className="g-3 mb-3">
+        <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm border-0">
-            <Card.Header className="bg-theme-gradient text-white">
-              <div className="d-flex flex-column gap-2">
-                <h5 className="mb-0"><FaCalendarAlt className="me-2" />Performance Stats</h5>
-                <ButtonGroup size="sm" className="chart-btn-group">
-                  <Button
-                    onClick={() => setPerformanceRange('today')}
-                    className={`btn-filter${performanceRange === 'today' ? ' active' : ''}`}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    onClick={() => setPerformanceRange('yesterday')}
-                    className={`btn-filter${performanceRange === 'yesterday' ? ' active' : ''}`}
-                  >
-                    Yesterday
-                  </Button>
-                  <Button
-                    onClick={() => setPerformanceRange('week')}
-                    className={`btn-filter${performanceRange === 'week' ? ' active' : ''}`}
-                  >
-                    Week
-                  </Button>
-                  <Button
-                    onClick={() => setPerformanceRange('month')}
-                    className={`btn-filter${performanceRange === 'month' ? ' active' : ''}`}
-                  >
-                    Month
-                  </Button>
-                  <Button
-                    onClick={() => setPerformanceRange('year')}
-                    className={`btn-filter${performanceRange === 'year' ? ' active' : ''}`}
-                  >
-                    Year
-                  </Button>
+            <Card.Body className="py-2 px-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <small className="fw-bold text-muted">PERFORMANCE</small>
+                <ButtonGroup size="sm">
+                  {['today', 'yesterday', 'week', 'month', 'year'].map(r => (
+                    <Button
+                      key={r}
+                      size="sm"
+                      variant={performanceRange === r ? 'primary' : 'outline-secondary'}
+                      onClick={() => setPerformanceRange(r)}
+                      style={performanceRange === r
+                        ? { backgroundColor: '#0891B2', borderColor: '#0891B2', fontSize: '0.68rem', padding: '2px 6px' }
+                        : { fontSize: '0.68rem', padding: '2px 6px' }}
+                    >
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </Button>
+                  ))}
                 </ButtonGroup>
               </div>
-            </Card.Header>
-            <Card.Body className="p-0">
+              <div className="p-0">
               <div className="table-responsive">
                 <table className="table table-hover mb-0">
                   <tbody>
@@ -524,55 +459,37 @@ function Dashboard() {
                   </tbody>
                 </table>
               </div>
+              </div>
             </Card.Body>
           </Card>
         </Col>
-      </Row>
 
-      {/* Recent Checkups Section */}
-      <Row className="g-3 g-md-4">
-        <Col xs={12}>
+        {/* Recent Checkups */}
+        <Col xs={12} lg={8}>
           <Card className="shadow-sm border-0">
-            <Card.Header className="bg-theme-gradient text-white">
-              <h5 className="mb-0"><FaClipboardCheck className="me-2" />Recent Checkups (Last 10)</h5>
-            </Card.Header>
-            <Card.Body>
+            <Card.Body className="py-2 px-3">
+              <small className="fw-bold text-muted d-block mb-2">RECENT CHECKUPS</small>
               {checkups.length === 0 ? (
-                <div className="text-center p-5">
-                  <FaClipboardCheck size={50} className="text-muted mb-3" />
-                  <p className="text-muted">No checkups yet</p>
-                </div>
+                <div className="text-center py-3 text-muted"><small>No checkups yet</small></div>
               ) : (
-                <div className="list-group list-group-flush">
+                <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
                   {checkups.slice(-10).reverse().map(checkup => {
                     const patient = patients.find(p => p.id === checkup.patientId)
                     const isToday = new Date(checkup.timestamp).toDateString() === new Date().toDateString()
                     return (
-                      <div key={checkup.id} className={`list-group-item px-0 ${isToday ? 'bg-light' : ''}`}>
-                        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
-                          <div className="flex-grow-1">
-                            <div className="mb-1">
-                              <strong>{patient?.name || 'Unknown'}</strong>
-                              {isToday && <span className="badge bg-success ms-2">Today</span>}
-                            </div>
-                            <small className="text-muted">
-                              <FaCalendarAlt className="me-1" />
-                              {new Date(checkup.timestamp).toLocaleString('en-LK')}
-                            </small>
+                      <div key={checkup.id} className="d-flex justify-content-between align-items-center py-2 border-bottom" style={{ fontSize: '0.82rem' }}>
+                        <div>
+                          <strong>{patient?.name || 'Unknown'}</strong>
+                          {isToday && <span className="badge bg-success ms-1" style={{ fontSize: '0.6rem' }}>Today</span>}
+                          <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                            {new Date(checkup.timestamp).toLocaleString('en-LK')} &middot; {checkup.tests?.length || 0} tests
                           </div>
-                          <div className="d-flex align-items-center gap-3">
-                            <div className="text-start text-sm-end">
-                              <div className="text-success fw-bold fs-5">Rs. {checkup.total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                              <small className="text-muted">{checkup.tests?.length || 0} tests</small>
-                            </div>
-                            <Link
-                              to={`/checkups/${checkup.id}`}
-                              className="btn btn-sm btn-outline-primary"
-                              title="View Details"
-                            >
-                              <FaEye />
-                            </Link>
-                          </div>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                          <strong className="text-success">Rs. {checkup.total?.toLocaleString('en-LK', { minimumFractionDigits: 2 })}</strong>
+                          <Link to={`/checkups/${checkup.id}`} className="btn btn-sm btn-outline-secondary" style={{ padding: '2px 6px' }}>
+                            <FaEye size={12} />
+                          </Link>
                         </div>
                       </div>
                     )

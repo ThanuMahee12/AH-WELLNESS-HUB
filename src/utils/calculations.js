@@ -168,12 +168,19 @@ export const getDateRangeChartData = (checkups = [], testsData = [], days = 7) =
 
     const dayRevenue = calculateTotalRevenue(dayCheckups);
     const dayCommission = calculateTotalCommission(dayCheckups, testsData);
+    const dayDoctorFees = dayCheckups.reduce((sum, c) => sum + (parseFloat(c.doctorFees) || 0), 0);
+    const dayPrescriptions = dayCheckups.filter(c => c.prescriptionMedicines?.length > 0).length;
+    const dayTests = dayCheckups.reduce((sum, c) => sum + (c.tests?.length || 0), 0);
 
     data.push({
       date: dateStr,
       checkups: dayCheckups.length,
       revenue: dayRevenue,
-      commission: dayCommission
+      commission: dayCommission,
+      doctorFees: dayDoctorFees,
+      income: dayCommission + dayDoctorFees,
+      prescriptions: dayPrescriptions,
+      tests: dayTests,
     });
   }
 
@@ -186,22 +193,36 @@ export const getDateRangeChartData = (checkups = [], testsData = [], days = 7) =
  * @param {number} year - Year to get data for
  * @returns {Array} Monthly revenue data
  */
-export const getMonthlyRevenueData = (checkups = [], year = new Date().getFullYear()) => {
+export const getMonthlyRevenueData = (checkups = [], testsData = [], year = new Date().getFullYear()) => {
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  const monthlyData = monthNames.map(month => ({ month, revenue: 0 }));
+  const monthlyData = monthNames.map(month => ({ month, revenue: 0, commission: 0, doctorFees: 0, checkups: 0 }));
 
   checkups.forEach(checkup => {
     const date = new Date(checkup.timestamp);
     if (date.getFullYear() === year) {
       const monthIndex = date.getMonth();
       monthlyData[monthIndex].revenue += checkup.total || 0;
+      monthlyData[monthIndex].doctorFees += parseFloat(checkup.doctorFees) || 0;
+      monthlyData[monthIndex].checkups += 1;
     }
+  });
+
+  // Calculate commission per month
+  monthNames.forEach((_, idx) => {
+    const monthCheckups = checkups.filter(c => {
+      const d = new Date(c.timestamp);
+      return d.getFullYear() === year && d.getMonth() === idx;
+    });
+    monthlyData[idx].commission = calculateTotalCommission(monthCheckups, testsData);
   });
 
   return monthlyData.map(data => ({
     month: data.month,
-    revenue: Math.round(data.revenue)
+    revenue: Math.round(data.revenue),
+    commission: Math.round(data.commission),
+    income: Math.round(data.commission + data.doctorFees),
+    checkups: data.checkups,
   }));
 };
 

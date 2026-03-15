@@ -57,19 +57,19 @@ function Navbar() {
             src={bloodLabLogo}
             alt="Blood Lab Manager"
             className="brand-logo"
-            style={{ height: '50px', width: 'auto' }}
+            style={{ height: '36px', width: 'auto' }}
           />
-          <span className="brand-text ms-2">AH-WH</span>
+          <span className="brand-text ms-1">AH-WH</span>
         </BSNavbar.Brand>
 
         <div className="d-flex align-items-center ms-auto gap-2">
           {/* Notification bell */}
           {isAuthenticated && (
             <button
-              className="btn btn-link text-decoration-none position-relative text-theme touch-target d-flex align-items-center justify-content-center"
+              className="btn btn-link text-decoration-none position-relative touch-target d-flex align-items-center justify-content-center"
+              style={{ color: '#475569', padding: 'clamp(4px, 1vw, 8px)' }}
               onClick={() => navigate('/notifications')}
               title="Notifications"
-              style={{ padding: 'clamp(4px, 1vw, 8px)' }}
             >
               <FaBell style={{ fontSize: 'clamp(14px, 3vw, 18px)' }} />
               {unreadCount > 0 && (
@@ -95,9 +95,9 @@ function Navbar() {
           {/* User dropdown */}
           <div className="position-relative" ref={dropdownRef}>
             <button
-              className="btn btn-link text-decoration-none d-flex align-items-center gap-1 text-white touch-target"
+              className="btn btn-link text-decoration-none d-flex align-items-center gap-1 touch-target"
+              style={{ color: '#475569', padding: 'clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 10px)' }}
               onClick={handleUserClick}
-              style={{ padding: 'clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 10px)' }}
             >
               <FaUser style={{ fontSize: 'clamp(13px, 2.5vw, 16px)' }} />
               {isAuthenticated ? (
@@ -117,7 +117,7 @@ function Navbar() {
                 style={{
                   position: 'fixed',
                   right: '8px',
-                  top: '56px',
+                  top: '48px',
                   background: '#fff',
                   borderRadius: '8px',
                   minWidth: '180px',

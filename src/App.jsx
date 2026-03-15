@@ -124,7 +124,7 @@ function AppContent() {
   return (
     <div className="d-flex flex-column min-vh-100" style={{ overflow: 'hidden', width: '100%' }}>
       {showNavbar && <Navbar />}
-      <div className="d-flex flex-grow-1" style={{ marginTop: showNavbar ? '60px' : '0', overflow: 'hidden', width: '100%' }}>
+      <div className="d-flex flex-grow-1" style={{ marginTop: showNavbar ? '52px' : '0', overflow: 'hidden', width: '100%' }}>
         {showSidebar && <Sidebar />}
         <div
           className={`flex-grow-1 main-content${showSidebar ? '' : ' no-sidebar'}`}
