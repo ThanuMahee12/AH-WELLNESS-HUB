@@ -24,11 +24,43 @@ const EntityForm = React.memo(({
 
   return (
     <Card className="shadow-sm border-0">
-      <Card.Header className="py-2 px-3" style={{ backgroundColor: '#f8f9fa' }}>
-        <small className="fw-bold" style={{ color: '#334155', fontSize: '0.85rem' }}>{title}</small>
-      </Card.Header>
-
       <Form onSubmit={handleSubmit}>
+        <Card.Header className="py-2 px-3 d-flex justify-content-between align-items-center" style={{ backgroundColor: '#f8f9fa' }}>
+          <small className="fw-bold" style={{ color: '#334155', fontSize: '0.85rem' }}>{title}</small>
+          <div className="d-flex gap-2">
+            {isEditing && onDelete && (
+              <Button
+                size="sm"
+                variant="outline-danger"
+                onClick={onDelete}
+                disabled={loading}
+                style={{ fontSize: '0.75rem', padding: '2px 10px' }}
+              >
+                <FaTrash className="me-1" size={10} />
+                Delete
+              </Button>
+            )}
+            <Button
+              size="sm"
+              type="submit"
+              disabled={loading}
+              style={{ fontSize: '0.75rem', padding: '2px 10px', backgroundColor: '#0891B2', borderColor: '#0891B2' }}
+            >
+              {loading ? (
+                <>
+                  <Spinner size="sm" className="me-1" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <FaSave className="me-1" size={10} />
+                  {isEditing ? 'Update' : 'Save'}
+                </>
+              )}
+            </Button>
+          </div>
+        </Card.Header>
+
         <Card.Body className="entity-form-body">
           {children || (
             <Row className="g-3">
@@ -71,44 +103,9 @@ const EntityForm = React.memo(({
           )}
 
           {formErrors.submit && (
-            <div className="text-danger mt-2">{formErrors.submit}</div>
+            <div className="text-danger mt-2" style={{ fontSize: '0.8rem' }}>{formErrors.submit}</div>
           )}
         </Card.Body>
-
-        <Card.Footer className="entity-form-footer justify-content-end">
-          <div className="entity-form-actions">
-            {isEditing && onDelete && (
-              <Button
-                size="sm"
-                variant="outline-danger"
-                onClick={onDelete}
-                disabled={loading}
-                style={{ fontSize: '0.8rem' }}
-              >
-                <FaTrash className="me-1" size={11} />
-                Delete
-              </Button>
-            )}
-            <Button
-              size="sm"
-              type="submit"
-              disabled={loading}
-              style={{ fontSize: '0.8rem', backgroundColor: '#0891B2', borderColor: '#0891B2' }}
-            >
-              {loading ? (
-                <>
-                  <Spinner size="sm" className="me-1" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <FaSave className="me-1" size={11} />
-                  {isEditing ? 'Update' : 'Save'}
-                </>
-              )}
-            </Button>
-          </div>
-        </Card.Footer>
       </Form>
     </Card>
   );
