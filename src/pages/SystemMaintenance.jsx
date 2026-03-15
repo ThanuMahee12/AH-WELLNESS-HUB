@@ -885,7 +885,7 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                                   </pre>
                                 </div>
                               )}
-                              <div className="mt-1">
+                              <div className="mt-1 d-flex gap-1">
                                 {createdIssues[log.id] ? (
                                   <a href={createdIssues[log.id].url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                                     style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: 3, textDecoration: 'none' }}>
@@ -896,6 +896,9 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
                                     style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#fff', color: '#333', border: '1px solid #e2e8f0', borderRadius: 3, opacity: creatingIssue === log.id ? 0.5 : 1 }}>
                                     <FaGithub size={9} className="me-1" />{creatingIssue === log.id ? 'Creating...' : 'Create Issue'}</button>
                                 )}
+                                <button type="button" onClick={(e) => { e.stopPropagation(); handleDelete(log.id) }}
+                                  style={{ fontSize: '0.6rem', padding: '2px 8px', backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 3 }}>
+                                  <FaCheck size={8} className="me-1" />Resolve</button>
                               </div>
                             </div>
                           )}
