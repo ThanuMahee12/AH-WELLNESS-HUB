@@ -123,7 +123,7 @@ const EnhancedCRUDTable = React.memo(({
   };
 
   return (
-    <Card className="shadow-sm border-0 d-flex flex-column" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+    <Card className="shadow-sm border-0 d-flex flex-column" style={{ height: 'calc(100vh - 130px)' }}>
       {/* Fixed Search Header */}
       <div className="py-2 px-3 border-bottom flex-shrink-0">
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
