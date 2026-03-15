@@ -78,39 +78,7 @@ function Notifications() {
       <Card className="shadow-sm border-0 d-flex flex-column flex-grow-1" style={{ minHeight: 0 }}>
         {/* Fixed Filter Bar */}
         <div className="py-2 px-3 border-bottom flex-shrink-0">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <div className="d-flex gap-1">
-              {['all', 'unread', 'read'].map(f => (
-                <button
-                  key={f}
-                  className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline-secondary'}`}
-                  onClick={() => { setFilter(f); setPage(1) }}
-                  style={{
-                    fontSize: '0.72rem',
-                    padding: '2px 10px',
-                    borderRadius: '12px',
-                    ...(filter === f ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : {}),
-                  }}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                  {f === 'unread' && unreadCount > 0 && (
-                    <Badge pill bg="danger" className="ms-1" style={{ fontSize: '0.6rem' }}>{unreadCount}</Badge>
-                  )}
-                </button>
-              ))}
-            </div>
-            {unreadCount > 0 && (
-              <button
-                className="btn btn-sm btn-link p-0"
-                onClick={handleMarkAllAsRead}
-                style={{ fontSize: '0.75rem', color: '#0891B2', textDecoration: 'none' }}
-              >
-                <FaCheckDouble className="me-1" size={11} />
-                Mark all read
-              </button>
-            )}
-          </div>
-          <div className="d-flex align-items-center">
+          <div className="d-flex justify-content-between align-items-center">
             <DateRangePicker
               value={timeRange}
               onChange={(range, dates) => {
@@ -125,6 +93,28 @@ function Notifications() {
               ]}
               compact
             />
+            <div className="d-flex align-items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  className="btn btn-sm btn-link p-0"
+                  onClick={handleMarkAllAsRead}
+                  style={{ fontSize: '0.72rem', color: '#0891B2', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                >
+                  <FaCheckDouble className="me-1" size={10} />
+                  Mark all read
+                </button>
+              )}
+              <Form.Select
+                size="sm"
+                value={filter}
+                onChange={(e) => { setFilter(e.target.value); setPage(1) }}
+                style={{ width: 'auto', fontSize: '0.72rem', border: '1px solid #e2e8f0', borderRadius: 6 }}
+              >
+                <option value="all">All ({notifications.length})</option>
+                <option value="unread">Unread ({unreadCount})</option>
+                <option value="read">Read ({notifications.length - unreadCount})</option>
+              </Form.Select>
+            </div>
           </div>
         </div>
 
