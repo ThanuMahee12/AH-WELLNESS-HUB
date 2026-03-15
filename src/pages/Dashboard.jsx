@@ -132,12 +132,12 @@ function Dashboard() {
 
   return (
     <Container fluid className="p-3 p-md-4">
-      <Row className="mb-4">
-        <Col>
-          <h2>Dashboard</h2>
-          <p className="text-muted">Welcome back, <strong>{user?.username}</strong>!</p>
-        </Col>
-      </Row>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 className="mb-0 fw-bold" style={{ fontSize: '1rem' }}>Dashboard</h6>
+          <small className="text-muted" style={{ fontSize: '0.75rem' }}>Welcome back, {user?.username}</small>
+        </div>
+      </div>
 
       <Row className="g-3 g-md-4 mb-4">
         <Col xs={12} sm={6} lg={3}>
