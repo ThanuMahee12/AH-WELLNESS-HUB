@@ -210,7 +210,7 @@ export const DEFAULT_SETTINGS = {
       tabs: {
         forms:  { label: 'Form Fields',         roles: ['superadmin'] },
         tables: { label: 'Table Columns',        roles: ['superadmin'] },
-        pages:  { label: 'Page Access',          roles: ['superadmin'] },
+        pages:  { label: 'Page Control',          roles: ['superadmin'] },
         public: { label: 'Public Page Control',  roles: ['superadmin', 'maintainer', 'editor'] },
         checkup: { label: 'Checkup', roles: ['superadmin'] },
         feedback: { label: 'Feedback', roles: ['superadmin', 'maintainer', 'editor'] },

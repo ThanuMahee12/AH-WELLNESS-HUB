@@ -7,7 +7,7 @@ import { useSettings } from '../hooks/useSettings'
 
 import FormsSettingsTab from './tabs/FormsSettingsTab'
 import TablesSettingsTab from './tabs/TablesSettingsTab'
-import PagesSettingsTab from './tabs/PagesSettingsTab'
+import PageControlTab from './tabs/PageControlTab'
 import PublicPageTab from './tabs/PublicPageTab'
 import CheckupSettingsTab from './tabs/LabResultsSettingsTab'
 import FeedbackTab from './tabs/FeedbackTab'
@@ -15,7 +15,7 @@ import FeedbackTab from './tabs/FeedbackTab'
 const SETTINGS_TABS = [
   { key: 'forms', icon: FaWpforms, component: FormsSettingsTab },
   { key: 'tables', icon: FaTable, component: TablesSettingsTab },
-  { key: 'pages', icon: FaShieldAlt, component: PagesSettingsTab },
+  { key: 'pages', icon: FaShieldAlt, component: PageControlTab },
   { key: 'public', icon: FaGlobe, component: PublicPageTab },
   { key: 'checkup', icon: FaStethoscope, component: CheckupSettingsTab },
   { key: 'feedback', icon: FaCommentDots, component: FeedbackTab },
