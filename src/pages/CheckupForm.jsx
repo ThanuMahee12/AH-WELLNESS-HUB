@@ -324,14 +324,12 @@ function CheckupForm() {
 
   const TABS = [
     { key: 'patient', label: 'Patient', icon: FaUserInjured },
-    ...(isEditorOrAbove ? [{ key: 'tests', label: 'Tests', icon: FaFlask }] : []),
-    ...(!isNew && checkup && isEditorOrAbove ? [
+    ...(isEditorOrAbove ? [
+      { key: 'tests', label: 'Tests', icon: FaFlask },
       { key: 'extra', label: 'Extra', icon: FaCog },
       { key: 'medicine', label: 'Medicine', icon: FaPills },
     ] : []),
-    ...(!isNew && checkup ? [
-      { key: 'summary', label: 'Summary', icon: FaListAlt },
-    ] : []),
+    { key: 'summary', label: 'Summary', icon: FaListAlt },
   ]
 
   // Helper to render general/lab test fields
@@ -572,7 +570,7 @@ function CheckupForm() {
           )}
 
           {/* ===== EXTRA TAB (edit only) ===== */}
-          {activeTab === 'extra' && !isNew && checkup && (
+          {activeTab === 'extra' && isEditorOrAbove && (
             <div style={{ maxWidth: 700 }}>
               {/* Doctor Fees */}
               {isFieldVisible('checkups', 'doctorFees') && (
@@ -605,7 +603,7 @@ function CheckupForm() {
           )}
 
           {/* ===== MEDICINE TAB (edit only) ===== */}
-          {activeTab === 'medicine' && !isNew && checkup && isFieldVisible('checkups', 'prescription') && (
+          {activeTab === 'medicine' && isEditorOrAbove && isFieldVisible('checkups', 'prescription') && (
             <div style={{ maxWidth: 800 }}>
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <small className="fw-bold text-muted">PRESCRIPTION ({prescriptionMedicines.length})</small>
@@ -644,7 +642,7 @@ function CheckupForm() {
           )}
 
           {/* ===== SUMMARY TAB (edit only) ===== */}
-          {activeTab === 'summary' && !isNew && checkup && (
+          {activeTab === 'summary' && (
             <div style={{ maxWidth: 600 }}>
               <Card className="border-0 shadow-sm">
                 <Card.Body className="p-3">
