@@ -184,8 +184,8 @@ const EnhancedCRUDTable = React.memo(({
         )}
       </div>
 
-      {/* Fixed Table Header */}
-      <div className="flex-shrink-0" style={{ overflowX: 'auto' }}>
+      {/* Fixed Table Header — hidden on mobile where card layout is used */}
+      <div className="flex-shrink-0 d-none d-md-block" style={{ overflowX: 'auto' }}>
         <table className="table mb-0" style={{ fontSize: '0.82rem', tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
