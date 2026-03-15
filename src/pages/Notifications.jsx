@@ -102,12 +102,17 @@ function Notifications() {
               <div
                 key={n.id}
                 className="d-flex align-items-start px-3"
+                onClick={() => !n.read && handleMarkAsRead(n)}
                 style={{
                   padding: '10px 0',
                   borderBottom: '1px solid #f1f5f9',
                   borderLeft: !n.read ? '3px solid #0891B2' : '3px solid transparent',
                   background: !n.read ? '#f0fdfa' : 'transparent',
+                  cursor: !n.read ? 'pointer' : 'default',
+                  transition: 'background 0.15s ease',
                 }}
+                onMouseEnter={(e) => { if (!n.read) e.currentTarget.style.background = '#e0f7fa' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = !n.read ? '#f0fdfa' : 'transparent' }}
               >
                 <span style={{ fontSize: '0.82rem', marginRight: 8, marginTop: 2, lineHeight: 1 }}>{icon(n.type)}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
