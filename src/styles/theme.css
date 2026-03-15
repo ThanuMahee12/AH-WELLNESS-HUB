@@ -329,10 +329,10 @@
 
 /* --- Table Header --- */
 .thead-theme {
-  background-color: var(--theme-bg-light-cyan) !important;
+  background-color: #f8f9fa !important;
 }
 .thead-theme th {
-  color: var(--theme-primary) !important;
+  color: #334155 !important;
 }
 
 /* --- Settings Card (CheckupDetail PDF settings) --- */
