@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { Badge, Pagination, Card, Form } from 'react-bootstrap'
 import { FaBell, FaCheck, FaCheckDouble } from 'react-icons/fa'
 import { subscribeToNotifications, markAsRead, markAllAsRead } from '../services/notificationService'
-import { PageHeader } from '../components/ui'
+import { PageHeader, DateRangePicker } from '../components/ui'
 import { formatDistanceToNow } from 'date-fns'
 
 function Notifications() {
@@ -11,6 +11,8 @@ function Notifications() {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [filter, setFilter] = useState('all')
+  const [timeRange, setTimeRange] = useState('all')
+  const [customDates, setCustomDates] = useState({})
   const [perPage, setPerPage] = useState(50)
   const [page, setPage] = useState(1)
 
@@ -40,9 +42,29 @@ function Notifications() {
     catch { return 'Recently' }
   }
 
-  const filtered = notifications.filter(n =>
-    filter === 'unread' ? !n.read : filter === 'read' ? n.read : true
-  )
+  const filtered = notifications.filter(n => {
+    // Read/unread filter
+    if (filter === 'unread' && n.read) return false
+    if (filter === 'read' && !n.read) return false
+
+    // Time range filter
+    if (timeRange !== 'all') {
+      const ts = n.createdAt?.toDate ? n.createdAt.toDate() : new Date(n.createdAt)
+      if (timeRange === 'custom') {
+        if (customDates.startDate && customDates.endDate) {
+          const start = new Date(customDates.startDate); start.setHours(0, 0, 0, 0)
+          const end = new Date(customDates.endDate); end.setHours(23, 59, 59, 999)
+          if (ts < start || ts > end) return false
+        }
+      } else {
+        const daysAgo = new Date()
+        daysAgo.setDate(daysAgo.getDate() - timeRange)
+        daysAgo.setHours(0, 0, 0, 0)
+        if (ts < daysAgo) return false
+      }
+    }
+    return true
+  })
   const totalPages = Math.ceil(filtered.length / perPage)
   const paginated = filtered.slice((page - 1) * perPage, page * perPage)
 
@@ -56,26 +78,42 @@ function Notifications() {
       <Card className="shadow-sm border-0 d-flex flex-column flex-grow-1" style={{ minHeight: 0 }}>
         {/* Fixed Filter Bar */}
         <div className="py-2 px-3 border-bottom flex-shrink-0">
-          <div className="d-flex justify-content-between align-items-center">
-            <div className="d-flex gap-1">
-              {['all', 'unread', 'read'].map(f => (
-                <button
-                  key={f}
-                  className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline-secondary'}`}
-                  onClick={() => { setFilter(f); setPage(1) }}
-                  style={{
-                    fontSize: '0.72rem',
-                    padding: '2px 10px',
-                    borderRadius: '12px',
-                    ...(filter === f ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : {}),
-                  }}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                  {f === 'unread' && unreadCount > 0 && (
-                    <Badge pill bg="danger" className="ms-1" style={{ fontSize: '0.6rem' }}>{unreadCount}</Badge>
-                  )}
-                </button>
-              ))}
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <div className="d-flex gap-1">
+                {['all', 'unread', 'read'].map(f => (
+                  <button
+                    key={f}
+                    className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    onClick={() => { setFilter(f); setPage(1) }}
+                    style={{
+                      fontSize: '0.72rem',
+                      padding: '2px 10px',
+                      borderRadius: '12px',
+                      ...(filter === f ? { backgroundColor: '#0891B2', borderColor: '#0891B2' } : {}),
+                    }}
+                  >
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                    {f === 'unread' && unreadCount > 0 && (
+                      <Badge pill bg="danger" className="ms-1" style={{ fontSize: '0.6rem' }}>{unreadCount}</Badge>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <DateRangePicker
+                value={timeRange}
+                onChange={(range, dates) => {
+                  setTimeRange(range)
+                  if (range === 'custom') setCustomDates(dates)
+                  setPage(1)
+                }}
+                presets={[
+                  { key: 'all', label: 'All' },
+                  { key: 7, label: '7d' },
+                  { key: 30, label: '30d' },
+                ]}
+                compact
+              />
             </div>
             {unreadCount > 0 && (
               <button
