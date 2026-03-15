@@ -592,7 +592,7 @@ ${fb.adminNote ? `### Admin Response\n${fb.adminNote}` : ''}
           ].map(tab => (
             <button
               key={tab.key}
-              className={`btn btn-link text-decoration-none px-3 py-2 flex-shrink-0 ${activeTab === tab.key ? 'fw-semibold' : ''}`}
+              className={`btn btn-link text-decoration-none px-3 py-2 ${activeTab === tab.key ? 'fw-semibold' : ''}`}
               onClick={() => setActiveTab(tab.key)}
               style={{
                 fontSize: '0.8rem',

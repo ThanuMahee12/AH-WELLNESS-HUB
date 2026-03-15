@@ -398,9 +398,9 @@ function CheckupForm() {
 
         {/* Tab Bar */}
         <div className="border-bottom" style={{ backgroundColor: '#fff' }}>
-          <div className="d-flex gap-0 overflow-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="d-flex flex-wrap gap-0">
             {TABS.map(tab => (
-              <button key={tab.key} type="button" className={`btn btn-link text-decoration-none px-3 py-2 flex-shrink-0 ${activeTab === tab.key ? 'fw-semibold' : ''}`} onClick={() => setActiveTab(tab.key)}
+              <button key={tab.key} type="button" className={`btn btn-link text-decoration-none px-3 py-2 ${activeTab === tab.key ? 'fw-semibold' : ''}`} onClick={() => setActiveTab(tab.key)}
                 style={{ fontSize: '0.8rem', color: activeTab === tab.key ? '#0891B2' : '#64748b', borderRadius: 0, borderBottom: activeTab === tab.key ? '2px solid #0891B2' : '2px solid transparent' }}>
                 <tab.icon className="me-1" size={13} />{tab.label}
               </button>

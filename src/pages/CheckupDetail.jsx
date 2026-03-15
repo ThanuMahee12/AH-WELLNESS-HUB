@@ -661,7 +661,7 @@ function CheckupDetail() {
               { key: 'details', label: 'Invoice', icon: FaFilePdf },
               { key: 'prescription', label: 'Prescription', icon: FaPrescriptionBottleAlt },
             ].map(tab => (
-              <button key={tab.key} className={`btn btn-link text-decoration-none px-3 py-2 flex-shrink-0 ${activeTab === tab.key ? 'fw-semibold' : ''}`} onClick={() => setActiveTab(tab.key)}
+              <button key={tab.key} className={`btn btn-link text-decoration-none px-3 py-2 ${activeTab === tab.key ? 'fw-semibold' : ''}`} onClick={() => setActiveTab(tab.key)}
                 style={{ fontSize: '0.8rem', color: activeTab === tab.key ? '#0891B2' : '#64748b', borderRadius: 0, borderBottom: activeTab === tab.key ? '2px solid #0891B2' : '2px solid transparent' }}>
                 <tab.icon className="me-1" size={13} />{tab.label}
               </button>

@@ -28,14 +28,14 @@ const TabLayout = React.memo(({ tabs = [], defaultTab, className = '' }) => {
     <div className={`tab-layout d-flex flex-column ${className}`} style={{ height: '100%', minHeight: 0 }}>
       {/* Fixed Tab Bar */}
       <div className="tab-layout-header flex-shrink-0 border-bottom" style={{ backgroundColor: '#fff' }}>
-        <div className="d-flex gap-0 overflow-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="d-flex flex-wrap gap-0">
           {tabs.map(tab => {
             const Icon = tab.icon
             const isActive = activeTab === tab.key
             return (
               <button
                 key={tab.key}
-                className={`btn btn-link text-decoration-none px-3 py-2 position-relative flex-shrink-0 ${isActive ? 'fw-semibold' : ''}`}
+                className={`btn btn-link text-decoration-none px-3 py-2 position-relative ${isActive ? 'fw-semibold' : ''}`}
                 onClick={() => handleTabChange(tab.key)}
                 style={{
                   fontSize: '0.8rem',
