@@ -1245,6 +1245,28 @@
   font-size: 0.78rem;
 }
 
+/* --- Mobile FAB (Floating Action Button) --- */
+.page-header-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1020;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #0891B2;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s ease;
+}
+.page-header-fab:hover {
+  background: #0e7490;
+}
+
 /* --- Main Content Layout --- */
 .main-content {
   margin-left: 0;
