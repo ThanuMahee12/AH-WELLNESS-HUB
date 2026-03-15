@@ -969,8 +969,8 @@ function CheckupDetail() {
 
       {/* Invoice Preview */}
       {activeTab === 'details' && (
-        <Row>
-          <Col>
+        <Row className="justify-content-center">
+          <Col lg={10} xl={8}>
           <style>{`
             @media print {
               @page {
@@ -1062,8 +1062,8 @@ function CheckupDetail() {
 
       {/* Prescription Tab */}
       {activeTab === 'prescription' && (
-        <Row>
-          <Col>
+        <Row className="justify-content-center">
+          <Col lg={10} xl={8}>
             <Card className="shadow-sm">
               <Card.Body ref={prescriptionRef} className="bill-content" style={{ padding: 'clamp(0.75rem, 3vw, 2.5rem)', backgroundColor: 'white' }}>
                 {renderTemplate(
