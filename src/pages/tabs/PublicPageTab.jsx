@@ -20,6 +20,21 @@ const extractMapSrc = (input) => {
   return input.trim()
 }
 
+/** Convert Google Drive share URL to direct image URL */
+const toDirectImageUrl = (url) => {
+  if (!url) return ''
+  // Google Drive file link: /file/d/FILE_ID/view or /file/d/FILE_ID/edit etc
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
+  if (driveMatch) return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`
+  // Google Drive open link: /open?id=FILE_ID
+  const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/)
+  if (openMatch) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`
+  // Google Drive uc link: /uc?id=FILE_ID
+  const ucMatch = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/)
+  if (ucMatch) return `https://lh3.googleusercontent.com/d/${ucMatch[1]}`
+  return url
+}
+
 const EMPTY_FEATURE = { title: '', description: '', imageUrl: '', visible: true }
 const EMPTY_CONTACT_FIELD = { type: 'detail', label: '', icon: 'FaPhone', value: '', url: '', visible: true }
 
@@ -290,10 +305,10 @@ function PublicPageTab() {
                   <Form.Label style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Preview</Form.Label>
                   <div className="rounded" style={{ border: '1px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
                     <img
-                      src={localContent.heroImageUrl}
+                      src={toDirectImageUrl(localContent.heroImageUrl)}
                       alt="Hero preview"
                       style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
-                      onError={(e) => { e.target.style.display = 'none' }}
+                      onError={(e) => { e.target.parentElement.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:0.72rem">Image failed to load.<br/>Check URL format.</div>' }}
                     />
                   </div>
                 </div>
