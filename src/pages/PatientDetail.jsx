@@ -33,7 +33,7 @@ function PatientDetail() {
   const [patientCheckups, setPatientCheckups] = useState([])
   const [healthData, setHealthData] = useState([])
   const [expandedRows, setExpandedRows] = useState({})
-  const [chartView, setChartView] = useState('vitals')
+  const [chartView, setChartView] = useState('body')
 
   const INITIAL_FORM = { name: '', age: '', gender: '', mobile: '', email: '', address: '' }
   const visibleFields = getEntityFields('patients')
@@ -151,13 +151,18 @@ function PatientDetail() {
   const CHART_COLORS = ['#0891B2', '#14B8A6', '#F59E0B', '#ef4444', '#6366f1', '#ec4899', '#22c55e', '#f97316']
 
   const chartConfigs = {
+    body: {
+      label: 'Body',
+      keys: ['weight', 'height'],
+      labels: { weight: 'Weight (kg)', height: 'Height (cm)' },
+    },
     vitals: {
       label: 'Vitals',
-      keys: ['weight', 'gt_bp', 'gt_pulse', 'gt_temp', 'gt_spo2', 'gt_rbs', 'gt_bmi'],
-      labels: { weight: 'Weight', gt_bp: 'BP', gt_pulse: 'Pulse', gt_temp: 'Temp', gt_spo2: 'SpO2', gt_rbs: 'RBS', gt_bmi: 'BMI' },
+      keys: ['gt_bp', 'gt_pulse', 'gt_temp', 'gt_spo2', 'gt_rbs', 'gt_bmi'],
+      labels: { gt_bp: 'BP', gt_pulse: 'Pulse', gt_temp: 'Temp', gt_spo2: 'SpO2', gt_rbs: 'RBS', gt_bmi: 'BMI' },
     },
     lipid: {
-      label: 'Lipid Profile',
+      label: 'Lipid',
       keys: ['lr_tc', 'lr_tg', 'lr_ldl', 'lr_vldl', 'lr_hdl'],
       labels: { lr_tc: 'TC', lr_tg: 'TG', lr_ldl: 'LDL', lr_vldl: 'VLDL', lr_hdl: 'HDL' },
     },
@@ -167,9 +172,14 @@ function PatientDetail() {
       labels: { lr_bu: 'BU', lr_scr: 'SCr', lr_egfr: 'eGFR', lr_sgot: 'SGOT', lr_sgpt: 'SGPT', lr_ggt: 'GGT' },
     },
     blood: {
-      label: 'Blood & Others',
+      label: 'Blood',
       keys: ['lr_fbs', 'lr_hb', 'lr_esr', 'lr_crp', 'lr_hba1c', 'lr_tsh', 'lr_na', 'lr_k'],
       labels: { lr_fbs: 'FBS', lr_hb: 'Hb', lr_esr: 'ESR', lr_crp: 'CRP', lr_hba1c: 'HBA1C', lr_tsh: 'TSH', lr_na: 'Na', lr_k: 'K' },
+    },
+    all: {
+      label: 'All',
+      keys: ['weight', 'height', 'gt_bp', 'gt_pulse', 'gt_temp', 'gt_spo2', 'gt_rbs', 'gt_bmi', 'lr_fbs', 'lr_tc', 'lr_tg', 'lr_ldl', 'lr_hdl', 'lr_hb', 'lr_hba1c', 'lr_tsh'],
+      labels: { weight: 'Weight', height: 'Height', gt_bp: 'BP', gt_pulse: 'Pulse', gt_temp: 'Temp', gt_spo2: 'SpO2', gt_rbs: 'RBS', gt_bmi: 'BMI', lr_fbs: 'FBS', lr_tc: 'TC', lr_tg: 'TG', lr_ldl: 'LDL', lr_hdl: 'HDL', lr_hb: 'Hb', lr_hba1c: 'HBA1C', lr_tsh: 'TSH' },
     },
   }
 
@@ -268,7 +278,7 @@ function PatientDetail() {
           </Row>
 
           {/* Health Monitoring Chart */}
-          {healthData.length > 0 && visibleChartKeys.length > 0 && (
+          {healthData.length > 0 && (
             <Row className="mb-3">
               <Col>
                 <Card className="shadow-sm border-0">
@@ -295,27 +305,33 @@ function PatientDetail() {
                         })}
                       </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <LineChart data={healthData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip contentStyle={{ fontSize: '0.78rem' }} />
-                        <Legend wrapperStyle={{ fontSize: '0.72rem' }} />
-                        {visibleChartKeys.map((key, i) => (
-                          <Line
-                            key={key}
-                            type="monotone"
-                            dataKey={key}
-                            stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                            strokeWidth={2}
-                            dot={{ r: 3 }}
-                            name={activeConfig.labels[key] || key}
-                            connectNulls
-                          />
-                        ))}
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {visibleChartKeys.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <LineChart data={healthData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip contentStyle={{ fontSize: '0.78rem' }} />
+                          <Legend wrapperStyle={{ fontSize: '0.72rem' }} />
+                          {visibleChartKeys.map((key, i) => (
+                            <Line
+                              key={key}
+                              type="monotone"
+                              dataKey={key}
+                              stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                              name={activeConfig.labels[key] || key}
+                              connectNulls
+                            />
+                          ))}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-4 text-muted">
+                        <small>No {activeConfig.label} data recorded yet</small>
+                      </div>
+                    )}
                   </Card.Body>
                 </Card>
               </Col>
@@ -341,6 +357,7 @@ function PatientDetail() {
                           <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>Tests</th>
                           <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>Total</th>
                           <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>Notes</th>
+                          <th style={{ padding: '6px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', textTransform: 'uppercase', width: '60px' }}></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -366,9 +383,18 @@ function PatientDetail() {
                                 <td style={{ padding: '6px 10px', color: '#64748b' }}>
                                   {checkup.notes || '-'}
                                 </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  <button
+                                    className="btn btn-sm btn-outline-secondary"
+                                    style={{ padding: '1px 6px', fontSize: '0.7rem' }}
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/checkups/${checkup.id}`) }}
+                                  >
+                                    Edit
+                                  </button>
+                                </td>
                               </tr>
                               <tr>
-                                <td colSpan="5" style={{ padding: 0, border: 'none' }}>
+                                <td colSpan="6" style={{ padding: 0, border: 'none' }}>
                                   <Collapse in={isExpanded}>
                                     <div style={{ padding: '8px 12px', backgroundColor: '#f8f9fa' }}>
                                       <table className="table table-sm mb-0" style={{ fontSize: '0.78rem', backgroundColor: '#fff' }}>
