@@ -34,6 +34,7 @@ function UserDashboard() {
   const { success: showSuccess, error: showError } = useNotification()
 
   const [selectedPatientId, setSelectedPatientId] = useState(null)
+  const [expandedCheckup, setExpandedCheckup] = useState(null)
 
   // Appointment state
   const [appointments, setAppointments] = useState([])
@@ -333,18 +334,72 @@ function UserDashboard() {
                 </div>
                 {recentCheckups.map(c => {
                   const pat = patients.find(p => p.id === c.patientId)
+                  const isExp = expandedCheckup === c.id
+                  const cTests = (c.tests || []).map(t => { const test = tests.find(tt => tt.id === t.testId); return { ...t, name: test?.name || t.testId, price: test?.price || 0 } })
                   return (
-                    <Link key={c.id} to={`/checkups/${c.id}/details`} className="text-decoration-none"
-                      style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', padding: '10px 8px', borderBottom: '1px solid #f1f5f9', color: '#1e293b', transition: 'background 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <span style={{ width: 80, fontSize: '0.78rem', color: '#64748b' }}><FaCalendarAlt size={9} className="me-1 opacity-50" />{formatDate(c.timestamp)}</span>
-                      <span style={{ width: 70, fontWeight: 600, fontSize: '0.82rem' }}>#{c.billNo || c.id?.slice(-4)}</span>
-                      {!selectedPatientId && <span style={{ width: 120, fontSize: '0.8rem' }}>{pat?.name || '-'}</span>}
-                      <span style={{ flex: 1, fontSize: '0.78rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTestNames(c)}</span>
-                      <span style={{ width: 80, textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>Rs. {(c.total || 0).toLocaleString()}</span>
-                      <span style={{ width: 30, textAlign: 'center' }}><FaEye size={11} style={{ color: '#94a3b8' }} /></span>
-                    </Link>
+                    <div key={c.id}>
+                      <div onClick={() => setExpandedCheckup(isExp ? null : c.id)}
+                        style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', padding: '10px 8px', borderBottom: isExp ? 'none' : '1px solid #f1f5f9', color: '#1e293b', cursor: 'pointer', transition: 'background 0.15s', background: isExp ? '#f8fafc' : 'transparent' }}>
+                        <span style={{ width: 80, fontSize: '0.78rem', color: '#64748b' }}><FaCalendarAlt size={9} className="me-1 opacity-50" />{formatDate(c.timestamp)}</span>
+                        <span style={{ width: 70, fontWeight: 600, fontSize: '0.82rem' }}>#{c.billNo || c.id?.slice(-4)}</span>
+                        {!selectedPatientId && <span style={{ width: 120, fontSize: '0.8rem' }}>{pat?.name || '-'}</span>}
+                        <span style={{ flex: 1, fontSize: '0.78rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTestNames(c)}</span>
+                        <span style={{ width: 80, textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>Rs. {(c.total || 0).toLocaleString()}</span>
+                        <span style={{ width: 30, textAlign: 'center' }}><FaEye size={11} style={{ color: isExp ? '#0891B2' : '#94a3b8' }} /></span>
+                      </div>
+                      {isExp && (
+                        <div style={{ padding: '12px 12px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
+                          {/* Patient info */}
+                          {pat && (
+                            <div className="d-flex flex-wrap gap-3 mb-3" style={{ fontSize: '0.78rem', color: '#475569' }}>
+                              <span><strong>Patient:</strong> {pat.name}</span>
+                              {pat.age && <span><strong>Age:</strong> {pat.age}yr</span>}
+                              {pat.gender && <span><strong>Gender:</strong> {pat.gender}</span>}
+                              {pat.mobile && <span><strong>Mobile:</strong> {pat.mobile}</span>}
+                            </div>
+                          )}
+                          {/* Tests table */}
+                          {cTests.length > 0 && (
+                            <div className="mb-3">
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>TESTS</div>
+                              {cTests.map((t, i) => (
+                                <div key={i} className="d-flex justify-content-between py-1" style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.78rem' }}>
+                                  <span>{t.name}</span>
+                                  <span style={{ fontWeight: 600 }}>Rs. {(t.price || 0).toLocaleString()}</span>
+                                </div>
+                              ))}
+                              <div className="d-flex justify-content-between py-1" style={{ fontWeight: 700, fontSize: '0.82rem' }}>
+                                <span>Total</span>
+                                <span style={{ color: '#0891B2' }}>Rs. {(c.total || 0).toLocaleString()}</span>
+                              </div>
+                            </div>
+                          )}
+                          {/* Medicines */}
+                          {c.prescriptionMedicines?.length > 0 && (
+                            <div className="mb-3">
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>MEDICINES</div>
+                              {c.prescriptionMedicines.map((m, i) => (
+                                <div key={i} style={{ fontSize: '0.78rem', color: '#334155', paddingBottom: 2 }}>
+                                  {m.name} {m.dosage ? `— ${m.dosage}` : ''}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Notes */}
+                          {c.notes && (
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>
+                              <strong>Notes:</strong> {c.notes}
+                            </div>
+                          )}
+                          {/* Discount */}
+                          {c.discount > 0 && (
+                            <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: 4 }}>
+                              <strong>Discount:</strong> {c.discount}%
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </Card.Body>
