@@ -125,19 +125,24 @@ function PublicPageTab() {
 
   useEffect(() => {
     setLocalContent({
+      heroBadge: homeContent.heroBadge || '',
       heroTitle: homeContent.heroTitle || '',
       heroSubtitle: homeContent.heroSubtitle || '',
       heroImageUrl: homeContent.heroImageUrl || '',
       ctaText: homeContent.ctaText || '',
       ctaAuthText: homeContent.ctaAuthText || '',
-      ctaLink: homeContent.ctaLink || '/login',
-      ctaAuthLink: homeContent.ctaAuthLink || '/dashboard',
+      ctaLink: homeContent.ctaLink || '',
+      ctaAuthLink: homeContent.ctaAuthLink || '',
       ctaVisible: homeContent.ctaVisible !== false,
       ctaAuthVisible: homeContent.ctaAuthVisible !== false,
+      featuresBadge: homeContent.featuresBadge || '',
+      featuresTitle: homeContent.featuresTitle || '',
+      aboutBadge: homeContent.aboutBadge || '',
       aboutTitle: homeContent.aboutTitle || '',
       aboutDescription: homeContent.aboutDescription || '',
       aboutImageUrl: homeContent.aboutImageUrl || '',
       aboutVisible: homeContent.aboutVisible !== false,
+      contactBadge: homeContent.contactBadge || '',
       contactTitle: homeContent.contactTitle || '',
       contactMapEmbedUrl: homeContent.contactMapEmbedUrl || '',
       contactVisible: homeContent.contactVisible !== false,
@@ -436,12 +441,18 @@ function PublicPageTab() {
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <small className="fw-bold text-muted">HERO SECTION</small>
-            <SaveBtn saving={saving} onClick={() => saveSection(['heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['heroBadge', 'heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
           </div>
           <Row className="g-2">
             {/* Left: fields */}
             <Col xs={12} md={localContent.heroImageUrl ? 8 : 12}>
               <Row className="g-2">
+                <Col xs={12}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Badge Text</Form.Label>
+                    <Form.Control size="sm" value={localContent.heroBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroBadge: e.target.value }))} onBlur={() => handleContentBlur('heroBadge')} placeholder="e.g., Laboratory Management System" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
                 <Col xs={12}>
                   <Form.Group className="mb-1">
                     <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
@@ -525,10 +536,27 @@ function PublicPageTab() {
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <small className="fw-bold text-muted">FEATURES</small>
-            <button type="button" onClick={() => openModal('feature')} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
-              <FaPlus size={8} className="me-1" />Add
-            </button>
+            <div className="d-flex align-items-center gap-1">
+              <SaveBtn saving={saving} onClick={() => saveSection(['featuresBadge', 'featuresTitle'])} />
+              <button type="button" onClick={() => openModal('feature')} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+                <FaPlus size={8} className="me-1" />Add
+              </button>
+            </div>
           </div>
+          <Row className="g-2 mb-2">
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Badge</Form.Label>
+                <Form.Control size="sm" value={localContent.featuresBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, featuresBadge: e.target.value }))} placeholder="e.g., Our Services" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Title</Form.Label>
+                <Form.Control size="sm" value={localContent.featuresTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, featuresTitle: e.target.value }))} placeholder="e.g., What We Offer" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+          </Row>
           {features.length === 0 ? (
             <div className="text-center text-muted py-3" style={{ fontSize: '0.78rem' }}>No features yet. Click &quot;Add&quot; to create one.</div>
           ) : (
@@ -584,10 +612,14 @@ function PublicPageTab() {
               checked={localContent.aboutVisible || false}
               onChange={(e) => { setLocalContent(p => ({ ...p, aboutVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { aboutVisible: e.target.checked } } } }, user })) }} />
             </div>
-            <SaveBtn saving={saving} onClick={() => saveSection(['aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['aboutBadge', 'aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
           </div>
           <Row className="g-2">
             <Col xs={12} md={localContent.aboutImageUrl ? 8 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Badge</Form.Label>
+                <Form.Control size="sm" value={localContent.aboutBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutBadge: e.target.value }))} placeholder="e.g., Who We Are" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
               <Form.Group className="mb-1">
                 <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
                 <Form.Control size="sm" value={localContent.aboutTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutTitle: e.target.value }))} onBlur={() => handleContentBlur('aboutTitle')} placeholder="e.g., About Us" style={{ fontSize: '0.8rem' }} />
@@ -630,10 +662,14 @@ function PublicPageTab() {
                 checked={localContent.contactVisible || false}
                 onChange={(e) => { setLocalContent(p => ({ ...p, contactVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { contactVisible: e.target.checked } } } }, user })) }} />
             </div>
-            <SaveBtn saving={saving} onClick={() => saveSection(['contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['contactBadge', 'contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
           </div>
           <Row className="g-2">
             <Col xs={12} md={localContent.contactMapEmbedUrl ? 6 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Badge</Form.Label>
+                <Form.Control size="sm" value={localContent.contactBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, contactBadge: e.target.value }))} placeholder="e.g., Get In Touch" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
               <Form.Group className="mb-1">
                 <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Title</Form.Label>
                 <Form.Control size="sm" value={localContent.contactTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, contactTitle: e.target.value }))} placeholder="e.g., Contact Us" style={{ fontSize: '0.8rem' }} />

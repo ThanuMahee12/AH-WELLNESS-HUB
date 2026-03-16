@@ -59,21 +59,26 @@ function Home() {
   const { isAuthenticated } = useSelector(state => state.auth)
   const { settings } = useSettings()
   const content = settings?.pages?.home?.content || {}
-  const heroTitle = content.heroTitle || 'AH WELLNESS HUB & ASIRI LABORATORIES'
-  const heroSubtitle = content.heroSubtitle || 'Professional Point of Sale System for Modern Blood Testing Laboratories'
+  const heroBadge = content.heroBadge || ''
+  const heroTitle = content.heroTitle || ''
+  const heroSubtitle = content.heroSubtitle || ''
   const heroImageUrl = content.heroImageUrl || ''
-  const ctaText = content.ctaText || 'Get Started'
-  const ctaAuthText = content.ctaAuthText || 'Go to Dashboard'
-  const ctaLink = content.ctaLink || '/login'
-  const ctaAuthLink = content.ctaAuthLink || '/dashboard'
+  const ctaText = content.ctaText || ''
+  const ctaAuthText = content.ctaAuthText || ''
+  const ctaLink = content.ctaLink || ''
+  const ctaAuthLink = content.ctaAuthLink || ''
   const ctaVisible = content.ctaVisible !== false
   const ctaAuthVisible = content.ctaAuthVisible !== false
+  const featuresBadge = content.featuresBadge || ''
+  const featuresTitle = content.featuresTitle || ''
   const blogs = (content.blogs || []).filter(b => b.visible !== false)
-  const aboutTitle = content.aboutTitle || 'About Us'
+  const aboutBadge = content.aboutBadge || ''
+  const aboutTitle = content.aboutTitle || ''
   const aboutDescription = content.aboutDescription || ''
   const aboutImageUrl = content.aboutImageUrl || ''
   const aboutVisible = content.aboutVisible !== false
-  const contactTitle = content.contactTitle || 'Contact Us'
+  const contactBadge = content.contactBadge || ''
+  const contactTitle = content.contactTitle || ''
   const contactFields = (content.contactFields || []).filter(f => f.visible !== false)
   const contactDetails = contactFields.filter(f => f.type !== 'social')
   const contactSocials = contactFields.filter(f => f.type === 'social')
@@ -95,10 +100,12 @@ function Home() {
             <Col xs={12} lg={heroImageUrl ? 7 : 8} className="order-2 order-lg-1">
               <motion.div variants={stagger} initial="hidden" animate="visible">
                 <motion.div variants={fadeUp} custom={0}>
-                  <span className="home-hero-badge">
-                    <FaFlask size={10} className="me-1" />
-                    Laboratory Management System
-                  </span>
+                  {heroBadge && (
+                    <span className="home-hero-badge">
+                      <FaFlask size={10} className="me-1" />
+                      {heroBadge}
+                    </span>
+                  )}
                 </motion.div>
                 <motion.h1 variants={fadeUp} custom={0.1} className="home-hero-title">
                   {heroTitle}
@@ -157,8 +164,8 @@ function Home() {
           <Container>
             <motion.div initial="hidden" animate="visible" variants={stagger}>
               <motion.div variants={fadeUp} className="text-center mb-4 mb-md-5">
-                <span className="home-section-badge">Our Services</span>
-                <h2 className="home-section-title">What We Offer</h2>
+                {featuresBadge && <span className="home-section-badge">{featuresBadge}</span>}
+                {featuresTitle && <h2 className="home-section-title">{featuresTitle}</h2>}
               </motion.div>
               <Row className="g-4 justify-content-center">
                 {blogs.map((blog, idx) => {
@@ -191,8 +198,8 @@ function Home() {
           <Container>
             <motion.div initial="hidden" animate="visible" variants={stagger}>
               <motion.div variants={fadeUp} className="text-center mb-4 mb-md-5">
-                <span className="home-section-badge">Who We Are</span>
-                <h2 className="home-section-title">{aboutTitle}</h2>
+                {aboutBadge && <span className="home-section-badge">{aboutBadge}</span>}
+                {aboutTitle && <h2 className="home-section-title">{aboutTitle}</h2>}
               </motion.div>
               <Row className="align-items-center g-4">
                 {aboutImageUrl && (
@@ -219,8 +226,8 @@ function Home() {
           <Container>
             <motion.div initial="hidden" animate="visible" variants={stagger}>
               <motion.div variants={fadeUp} className="text-center mb-4 mb-md-5">
-                <span className="home-section-badge">Get In Touch</span>
-                <h2 className="home-section-title">{contactTitle}</h2>
+                {contactBadge && <span className="home-section-badge">{contactBadge}</span>}
+                {contactTitle && <h2 className="home-section-title">{contactTitle}</h2>}
               </motion.div>
               <Row className="g-4 align-items-stretch">
                 {contactFields.length > 0 && (
@@ -295,7 +302,7 @@ function Home() {
           <div className="home-footer-inner">
             <div className="home-footer-brand">
               <FaFlask size={16} className="me-2" />
-              <span>{heroTitle.split('&')[0]?.trim() || 'AH WELLNESS HUB'}</span>
+              <span>{heroTitle.split('&')[0]?.trim()}</span>
             </div>
             <p className="home-footer-copy">
               &copy; {new Date().getFullYear()} All rights reserved.

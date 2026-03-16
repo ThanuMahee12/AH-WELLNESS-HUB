@@ -20,8 +20,8 @@ function Login() {
   const resetPasswordRoles = loginSettings?.showResetPassword
   const signUpRoles = loginSettings?.showSignUp
   const loginContent = loginSettings?.content || {}
-  const brandTitle = loginContent.brandTitle || 'Blood Lab Manager'
-  const brandSubtitle = loginContent.brandSubtitle || 'Complete Point of Sale system for blood testing laboratories'
+  const brandTitle = loginContent.brandTitle || ''
+  const brandSubtitle = loginContent.brandSubtitle || ''
   const brandFeatures = loginContent.brandFeatures || []
   const showResetPassword = Array.isArray(resetPasswordRoles) ? resetPasswordRoles.length > 0 : resetPasswordRoles !== false
   const showSignUp = Array.isArray(signUpRoles) ? signUpRoles.length > 0 : signUpRoles !== false
