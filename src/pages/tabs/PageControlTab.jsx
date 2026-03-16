@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Form, Accordion, Row, Col, Button } from 'react-bootstrap'
 import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaSearch } from 'react-icons/fa'
 import { useSettings } from '../../hooks/useSettings'
@@ -34,6 +34,7 @@ const PermNum = ({ role, value, onChange, disabled }) => {
 
 function PageControlTab() {
   const dispatch = useDispatch()
+  const { user } = useSelector(state => state.auth)
   const { settings } = useSettings()
   const { error: showError } = useNotification()
   const [saving, setSaving] = useState(false)
@@ -83,7 +84,7 @@ function PageControlTab() {
     }).sort((a, b) => a.order - b.order)
   }, [pages, permissions, forms, tables])
 
-  const save = async (u) => { setSaving(true); try { await dispatch(updateSettings(u)) } catch { showError('Failed') } finally { setSaving(false) } }
+  const save = async (data) => { setSaving(true); try { await dispatch(updateSettings({ data, user })).unwrap() } catch { showError('Failed to save') } finally { setSaving(false) } }
 
   const applyPermNum = (resource, role, num) => {
     const p = { ...permissions[resource] }
