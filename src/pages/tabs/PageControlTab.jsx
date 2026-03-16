@@ -22,12 +22,16 @@ const RoleBtn = ({ role, active, onClick, disabled }) => (
 
 const PermNum = ({ role, value, onChange, disabled }) => {
   const color = value === 7 ? '#16a34a' : value >= 4 ? '#d97706' : value > 0 ? '#dc2626' : '#94a3b8'
+  const cycle = () => { if (!disabled) onChange(value >= 7 ? 0 : value === 0 ? 4 : value === 4 ? 6 : 7) }
   return (
-    <div className="d-flex align-items-center" title={`${role}: ${value}`}>
+    <div className="d-flex align-items-center gap-1" title={`${role}: ${value} (click to cycle)`}>
       <span style={{ fontSize: '0.55rem', color: RC[role], fontWeight: 700, width: 10 }}>{RS[role]}</span>
-      <input type="number" min="0" max="7" value={value} onChange={(e) => onChange(Math.max(0, Math.min(7, parseInt(e.target.value) || 0)))}
-        disabled={disabled} style={{ width: 22, height: 18, fontSize: '0.65rem', fontWeight: 700, fontFamily: 'monospace',
-          textAlign: 'center', padding: 0, border: `1px solid ${color}22`, borderRadius: 3, backgroundColor: `${color}11`, color, outline: 'none' }} />
+      <button type="button" onClick={cycle} disabled={disabled}
+        style={{ width: 26, height: 22, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace',
+          textAlign: 'center', padding: 0, border: `1.5px solid ${color}44`, borderRadius: 4, backgroundColor: `${color}11`, color,
+          cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1, lineHeight: '20px' }}>
+        {value}
+      </button>
     </div>
   )
 }
