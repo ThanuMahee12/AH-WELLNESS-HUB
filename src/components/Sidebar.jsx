@@ -48,7 +48,7 @@ function Sidebar() {
       <div className={`sidebar ${showMobile ? 'show' : ''}`}>
         <div className="sidebar-header">
           <FaFlask className="sidebar-logo" />
-          <h4 className="sidebar-title">AH WELLNESS HUB</h4>
+          <h4 className="sidebar-title">{settings?.pages?.home?.content?.navbarBrand || ''}</h4>
         </div>
 
         <Nav className="flex-column sidebar-nav">

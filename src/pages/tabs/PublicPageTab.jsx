@@ -125,6 +125,7 @@ function PublicPageTab() {
 
   useEffect(() => {
     setLocalContent({
+      navbarBrand: homeContent.navbarBrand || '',
       heroBadge: homeContent.heroBadge || '',
       heroTitle: homeContent.heroTitle || '',
       heroSubtitle: homeContent.heroSubtitle || '',
@@ -159,6 +160,12 @@ function PublicPageTab() {
       brandTitle: loginContent.brandTitle || '',
       brandSubtitle: loginContent.brandSubtitle || '',
       brandFeatures: (loginContent.brandFeatures || []).map(f => ({ ...f })),
+      loginTitle: loginContent.loginTitle || '',
+      loginSubtitle: loginContent.loginSubtitle || '',
+      forgotTitle: loginContent.forgotTitle || '',
+      forgotSubtitle: loginContent.forgotSubtitle || '',
+      signupTitle: loginContent.signupTitle || '',
+      signupSubtitle: loginContent.signupSubtitle || '',
     })
   }, [loginContent.brandTitle, loginContent.brandSubtitle, loginContent.brandFeatures])
 
@@ -250,7 +257,12 @@ function PublicPageTab() {
     setSaving(true)
     try {
       await dispatch(updateSettings({
-        data: { pages: { login: { content: { brandTitle: loginLocal.brandTitle, brandSubtitle: loginLocal.brandSubtitle, brandFeatures: loginLocal.brandFeatures } } } },
+        data: { pages: { login: { content: {
+          brandTitle: loginLocal.brandTitle, brandSubtitle: loginLocal.brandSubtitle, brandFeatures: loginLocal.brandFeatures,
+          loginTitle: loginLocal.loginTitle, loginSubtitle: loginLocal.loginSubtitle,
+          forgotTitle: loginLocal.forgotTitle, forgotSubtitle: loginLocal.forgotSubtitle,
+          signupTitle: loginLocal.signupTitle, signupSubtitle: loginLocal.signupSubtitle,
+        } } } },
         user,
       })).unwrap()
     } catch (err) {
@@ -433,6 +445,31 @@ function PublicPageTab() {
               <div className="text-center text-muted py-1" style={{ fontSize: '0.72rem' }}>No features. Click Add to create one.</div>
             )}
           </div>
+
+          {/* Login Form Headers */}
+          <div className="mt-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+            <small className="fw-bold text-muted d-block mb-1" style={{ fontSize: '0.62rem' }}>LOGIN FORM HEADERS</small>
+            <Row className="g-2">
+              <Col xs={6} md={4}>
+                <Form.Control size="sm" value={loginLocal.loginTitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, loginTitle: e.target.value }))} placeholder="Login title" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={8}>
+                <Form.Control size="sm" value={loginLocal.loginSubtitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, loginSubtitle: e.target.value }))} placeholder="Login subtitle" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={4}>
+                <Form.Control size="sm" value={loginLocal.signupTitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, signupTitle: e.target.value }))} placeholder="Signup title" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={8}>
+                <Form.Control size="sm" value={loginLocal.signupSubtitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, signupSubtitle: e.target.value }))} placeholder="Signup subtitle" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={4}>
+                <Form.Control size="sm" value={loginLocal.forgotTitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, forgotTitle: e.target.value }))} placeholder="Forgot password title" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={8}>
+                <Form.Control size="sm" value={loginLocal.forgotSubtitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, forgotSubtitle: e.target.value }))} placeholder="Forgot password subtitle" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+            </Row>
+          </div>
         </Card.Body>
       </Card>
 
@@ -441,13 +478,19 @@ function PublicPageTab() {
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <small className="fw-bold text-muted">HERO SECTION</small>
-            <SaveBtn saving={saving} onClick={() => saveSection(['heroBadge', 'heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['navbarBrand', 'heroBadge', 'heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
           </div>
           <Row className="g-2">
             {/* Left: fields */}
             <Col xs={12} md={localContent.heroImageUrl ? 8 : 12}>
               <Row className="g-2">
-                <Col xs={12}>
+                <Col xs={12} md={6}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Navbar Brand Text</Form.Label>
+                    <Form.Control size="sm" value={localContent.navbarBrand || ''} onChange={(e) => setLocalContent(p => ({ ...p, navbarBrand: e.target.value }))} placeholder="e.g., AH-WH (shown next to logo in navbar)" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
+                <Col xs={12} md={6}>
                   <Form.Group className="mb-1">
                     <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Badge Text</Form.Label>
                     <Form.Control size="sm" value={localContent.heroBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroBadge: e.target.value }))} onBlur={() => handleContentBlur('heroBadge')} placeholder="e.g., Laboratory Management System" style={{ fontSize: '0.8rem' }} />

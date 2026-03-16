@@ -693,6 +693,41 @@ function CheckupSettingsTab() {
         </Card>
       </Col>
 
+      {/* PDF Header Branding */}
+      <Col xs={12}>
+        <Card className="shadow-sm border-0 mb-3">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2">PDF HEADER BRANDING</small>
+            <Row className="g-2">
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-1">
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Invoice Title</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.invoiceTitle || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { invoiceTitle: val } } }) }}
+                    placeholder="e.g., AH WELLNESS HUB & ASIRI LABORATORIES" style={{ fontSize: '0.78rem' }} />
+                </Form.Group>
+              </Col>
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-1">
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Prescription Title</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.prescriptionTitle || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { prescriptionTitle: val } } }) }}
+                    placeholder="e.g., AH WELLNESS HUB" style={{ fontSize: '0.78rem' }} />
+                </Form.Group>
+              </Col>
+              <Col xs={12}>
+                <Form.Group>
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Subtitle</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.subtitle || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { subtitle: val } } }) }}
+                    placeholder="e.g., Complete Health Care Solutions" style={{ fontSize: '0.78rem' }} />
+                </Form.Group>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+
       {/* Footer Contact Details */}
       <Col xs={12}>
         <Card className="shadow-sm border-0">

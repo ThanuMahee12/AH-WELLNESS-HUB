@@ -110,10 +110,14 @@ function CheckupDetail() {
       {/* Header */}
       <div className="mb-2 pb-1 header-section" style={{ borderBottom: '2px solid #0891B2', textAlign: 'center' }}>
         <img src={bloodLabLogo} alt="AWH Logo" className="template-logo-main" style={{ height: 'clamp(35px, 5vw, 50px)', objectFit: 'contain', marginBottom: '0.25rem' }} />
-        <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: 'clamp(0.65rem, 2vw, 0.9rem)' }}>
-          {type === 'prescription' ? 'AH WELLNESS HUB' : 'AH WELLNESS HUB & ASIRI LABORATORIES'}
-        </h4>
-        <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>Complete Health Care Solutions</p>
+        {(type === 'prescription' ? (settings?.checkupPdf?.header?.prescriptionTitle) : (settings?.checkupPdf?.header?.invoiceTitle)) && (
+          <h4 className="template-title" style={{ color: '#0891B2', fontWeight: 'bold', marginBottom: '0.15rem', fontSize: 'clamp(0.65rem, 2vw, 0.9rem)' }}>
+            {type === 'prescription' ? settings?.checkupPdf?.header?.prescriptionTitle : settings?.checkupPdf?.header?.invoiceTitle}
+          </h4>
+        )}
+        {settings?.checkupPdf?.header?.subtitle && (
+          <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>{settings.checkupPdf.header.subtitle}</p>
+        )}
         <div style={{ fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)', color: '#64748b', marginBottom: '0.25rem' }}>
           <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
           {' | '}
@@ -144,13 +148,13 @@ function CheckupDetail() {
       {/* Contact Footer — always at bottom */}
       {(() => {
         const footer = settings?.checkupPdf?.footer || {}
-        const mobile = footer.mobile || { label: 'Mobile', value: '+94 72 338 8793', visible: true }
-        const email = footer.email || { label: 'Email', value: 'vijayjena@yahoo.com', visible: true }
-        const instagram = footer.instagram || { label: 'IG', value: 'wijayjena2', visible: true }
-        const facebook = footer.facebook || { label: 'FB', value: 'drwjanakan', visible: true }
+        const mobile = footer.mobile || { label: 'Mobile', value: '', visible: true }
+        const email = footer.email || { label: 'Email', value: '', visible: true }
+        const instagram = footer.instagram || { label: 'IG', value: '', visible: true }
+        const facebook = footer.facebook || { label: 'FB', value: '', visible: true }
         const thankYouText = type === 'prescription'
-          ? (footer.thankYouPrescription || 'Thank you for choosing AH Wellness Hub')
-          : (footer.thankYouInvoice || 'Thank you for choosing AH Wellness Hub & Asiri Laboratories')
+          ? (footer.thankYouPrescription || '')
+          : (footer.thankYouInvoice || '')
         const FOOTER_ICONS = { mobile: FaPhone, email: FaEnvelope, instagram: FaInstagram, facebook: FaFacebook }
         const leftItems = [mobile, email].filter(i => i.visible !== false)
         const rightItems = [instagram, facebook].filter(i => i.visible !== false)

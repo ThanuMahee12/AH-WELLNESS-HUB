@@ -103,9 +103,9 @@ function Login() {
   const formError = error || activeForm.errors.submit
 
   const headerText = {
-    login: { title: 'Welcome back', subtitle: 'Sign in to your account to continue' },
-    forgot: { title: 'Reset password', subtitle: 'Enter your email to receive a reset link' },
-    signup: { title: 'Create account', subtitle: 'Get started with Blood Lab Manager' }
+    login: { title: loginContent.loginTitle || '', subtitle: loginContent.loginSubtitle || '' },
+    forgot: { title: loginContent.forgotTitle || '', subtitle: loginContent.forgotSubtitle || '' },
+    signup: { title: loginContent.signupTitle || '', subtitle: loginContent.signupSubtitle || '' }
   }
 
   return (
