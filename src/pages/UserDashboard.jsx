@@ -57,8 +57,24 @@ function UserDashboard() {
     setApptLoading(true)
     try {
       const result = await firestoreService.getAppointmentsByUser(user.uid)
-      if (result.success) setAppointments(result.data)
-    } catch { /* ignore */ }
+      if (result.success) {
+        setAppointments(result.data)
+      } else {
+        console.warn('Failed to load appointments:', result.error)
+        // Fallback: try without orderBy (index may not be ready)
+        try {
+          const { getDocs, collection, query, where } = await import('firebase/firestore')
+          const { db } = await import('../config/firebase')
+          const q = query(collection(db, 'appointments'), where('userId', '==', user.uid))
+          const snap = await getDocs(q)
+          setAppointments(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)))
+        } catch (fallbackErr) {
+          console.warn('Fallback query also failed:', fallbackErr.message)
+        }
+      }
+    } catch (err) {
+      console.warn('Appointment load error:', err.message)
+    }
     finally { setApptLoading(false) }
   }, [user?.uid])
 
