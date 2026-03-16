@@ -33,9 +33,21 @@ export const fetchSettings = createAsyncThunk(
     try {
       const result = await firestoreService.getSettings()
       if (result.success && result.data) {
-        return deepMerge(DEFAULT_SETTINGS, result.data)
+        const merged = deepMerge(DEFAULT_SETTINGS, result.data)
+        // Auto-sync missing pages/keys back to Firestore
+        const defaultPages = DEFAULT_SETTINGS.pages || {}
+        const firestorePages = result.data.pages || {}
+        const missingPages = {}
+        Object.keys(defaultPages).forEach(key => {
+          if (!firestorePages[key]) missingPages[key] = defaultPages[key]
+        })
+        if (Object.keys(missingPages).length > 0) {
+          firestoreService.updateSettings({ pages: missingPages }).catch(() => {})
+        }
+        return merged
       }
-      // No settings doc yet — use defaults
+      // No settings doc yet — write defaults to Firestore
+      firestoreService.updateSettings(DEFAULT_SETTINGS).catch(() => {})
       return DEFAULT_SETTINGS
     } catch (error) {
       return rejectWithValue(error.message)
