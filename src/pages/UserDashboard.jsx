@@ -184,7 +184,20 @@ function UserDashboard() {
         if (result.success) showSuccess('Appointment updated!')
       } else {
         result = await firestoreService.createAppointment(data)
-        if (result.success) showSuccess('Appointment requested!')
+        if (result.success) {
+          showSuccess('Appointment requested!')
+          // Send notifications
+          const patientName = apptForm.isOwn ? (user?.username || 'Self') : (apptForm.patientName.trim() || 'Unknown')
+          const notify = settings?.checkupPdf?.appointmentNotify
+          const msg = `New Appointment from ${user?.username || 'User'} for ${patientName} on ${apptForm.expectedDate}. Tests: ${data.tests.join(', ')}`
+          if (notify?.whatsapp?.enabled && notify?.whatsapp?.number) {
+            const waNum = notify.whatsapp.number.replace(/[^0-9]/g, '')
+            window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank')
+          }
+          if (notify?.email?.enabled && notify?.email?.address) {
+            window.open(`mailto:${notify.email.address}?subject=${encodeURIComponent('New Appointment Request')}&body=${encodeURIComponent(msg)}`, '_blank')
+          }
+        }
       }
 
       if (result.success) {

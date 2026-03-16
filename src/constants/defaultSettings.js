@@ -280,6 +280,10 @@ export const DEFAULT_SETTINGS = {
     eSign: '',
     defaultValidDays: 30,
     defaultDoctorFees: 0,
+    appointmentNotify: {
+      whatsapp: { enabled: false, number: '' },
+      email: { enabled: false, address: '' },
+    },
   },
   generalTests: {
     showEmpty: 'hide',
