@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Container, Row, Col, Card, Badge, Form, Modal } from 'react-bootstrap'
 import {
   FaUserInjured, FaClipboardCheck, FaFlask, FaUser, FaEnvelope,
-  FaPhone, FaShieldAlt, FaCalendarAlt, FaEye, FaChartBar,
+  FaPhone, FaCalendarAlt, FaEye, FaChartBar,
   FaPlus, FaTimes, FaCheck, FaClock, FaBan,
 } from 'react-icons/fa'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
@@ -361,12 +361,10 @@ function UserDashboard() {
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fff', border: '3px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -28, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                 <FaUser size={22} style={{ color: '#0891B2' }} />
               </div>
-              <h6 style={{ fontWeight: 700, marginTop: 8, marginBottom: 2, color: '#0f172a' }}>{user?.username || 'User'}</h6>
-              <Badge bg="info" style={{ fontSize: '0.65rem', fontWeight: 600, textTransform: 'capitalize' }}>{user?.role || 'user'}</Badge>
-              <div className="mt-3" style={{ fontSize: '0.8rem' }}>
+              <h6 style={{ fontWeight: 700, marginTop: 8, marginBottom: 4, color: '#0f172a' }}>{user?.username || 'User'}</h6>
+              <div style={{ fontSize: '0.8rem' }}>
                 {user?.email && <div className="d-flex align-items-center gap-2 mb-2" style={{ color: '#475569' }}><FaEnvelope size={11} style={{ color: '#94a3b8' }} /><span>{user.email}</span></div>}
-                {user?.mobile && <div className="d-flex align-items-center gap-2 mb-2" style={{ color: '#475569' }}><FaPhone size={11} style={{ color: '#94a3b8' }} /><span>{user.mobile}</span></div>}
-                <div className="d-flex align-items-center gap-2" style={{ color: '#475569' }}><FaShieldAlt size={11} style={{ color: '#94a3b8' }} /><span style={{ textTransform: 'capitalize' }}>{user?.role || 'user'}</span></div>
+                {user?.mobile && <div className="d-flex align-items-center gap-2" style={{ color: '#475569' }}><FaPhone size={11} style={{ color: '#94a3b8' }} /><span>{user.mobile}</span></div>}
               </div>
             </Card.Body>
           </Card>
