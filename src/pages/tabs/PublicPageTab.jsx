@@ -26,15 +26,14 @@ const extractMapSrc = (input) => {
 /** Convert Google Drive share URL to direct image URL */
 const toDirectImageUrl = (url) => {
   if (!url) return ''
-  // Google Drive file link: /file/d/FILE_ID/view or /file/d/FILE_ID/edit etc
+  let fileId = null
   const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
-  if (driveMatch) return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`
-  // Google Drive open link: /open?id=FILE_ID
+  if (driveMatch) fileId = driveMatch[1]
   const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/)
-  if (openMatch) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`
-  // Google Drive uc link: /uc?id=FILE_ID
+  if (openMatch) fileId = openMatch[1]
   const ucMatch = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/)
-  if (ucMatch) return `https://lh3.googleusercontent.com/d/${ucMatch[1]}`
+  if (ucMatch) fileId = ucMatch[1]
+  if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`
   return url
 }
 
