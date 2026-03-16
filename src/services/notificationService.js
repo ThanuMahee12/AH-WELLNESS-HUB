@@ -18,8 +18,16 @@ export const NOTIFICATION_TYPES = {
  * @param {Object} notificationData - The notification data
  * @returns {Promise<Object>} - Success/error result
  */
-export const createNotification = async (notificationData) => {
+export const createNotification = async (notificationData, notifSettings = null) => {
   try {
+    // Check if this notification type is enabled in settings
+    if (notifSettings && notificationData.type) {
+      const typeConfig = notifSettings[notificationData.type]
+      if (typeConfig && typeConfig.enabled === false) {
+        return { success: true, skipped: true, message: 'Notification type is disabled' }
+      }
+    }
+
     const notification = {
       ...notificationData,
       read: false,

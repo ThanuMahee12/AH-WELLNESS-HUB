@@ -261,6 +261,15 @@ export const DEFAULT_SETTINGS = {
       delete: ['superadmin'],
     },
   },
+  notifications: {
+    role_request_submitted: { enabled: true, roles: ['superadmin'] },
+    role_request_approved: { enabled: true, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    role_request_rejected: { enabled: true, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    system_release: { enabled: true, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    appointment_created: { enabled: true, roles: ['superadmin', 'maintainer', 'editor'] },
+    appointment_approved: { enabled: true, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+    appointment_rejected: { enabled: true, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+  },
   checkupPdf: {
     header: {
       invoiceTitle: '',

@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { Badge, Pagination, Card, Form } from 'react-bootstrap'
-import { FaBell, FaCheck, FaCheckDouble } from 'react-icons/fa'
+import { FaBell, FaCheck, FaCheckDouble, FaTrash } from 'react-icons/fa'
 import { subscribeToNotifications, markAsRead, markAllAsRead } from '../services/notificationService'
+import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { db } from '../config/firebase'
+import { useNotification } from '../context'
 import { PageHeader, DateRangePicker } from '../components/ui'
 import { formatDistanceToNow } from 'date-fns'
 
 function Notifications() {
   const { user } = useSelector(state => state.auth)
+  const { confirm, success: showSuccess } = useNotification()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [filter, setFilter] = useState('all')
@@ -28,11 +32,26 @@ function Notifications() {
   const handleMarkAsRead = (n) => markAsRead(n.id, n.isSystem ? user.uid : null)
   const handleMarkAllAsRead = () => user?.uid && markAllAsRead(user.uid)
 
+  const handleClearAll = async () => {
+    if (!(await confirm('Delete all your notifications? This cannot be undone.', { title: 'Clear Notifications', variant: 'danger', confirmText: 'Clear All' }))) return
+    try {
+      const userQ = query(collection(db, 'notifications'), where('recipientId', '==', user.uid))
+      const snap = await getDocs(userQ)
+      const promises = []
+      snap.forEach(d => promises.push(deleteDoc(doc(db, 'notifications', d.id))))
+      await Promise.all(promises)
+      showSuccess('Notifications cleared')
+    } catch { /* ignore */ }
+  }
+
   const icon = (type) => {
     if (type === 'role_request_submitted') return '📨'
     if (type === 'role_request_approved') return '✅'
     if (type === 'role_request_rejected') return '❌'
     if (type === 'system_release') return '🚀'
+    if (type === 'appointment_created') return '📅'
+    if (type === 'appointment_approved') return '✅'
+    if (type === 'appointment_rejected') return '❌'
     return '📌'
   }
 
@@ -94,14 +113,16 @@ function Notifications() {
               compact
             />
             <div className="d-flex align-items-center gap-2">
+              {notifications.length > 0 && (
+                <button className="btn btn-sm btn-link p-0" onClick={handleClearAll}
+                  style={{ fontSize: '0.72rem', color: '#dc2626', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  <FaTrash className="me-1" size={9} />Clear
+                </button>
+              )}
               {unreadCount > 0 && (
-                <button
-                  className="btn btn-sm btn-link p-0"
-                  onClick={handleMarkAllAsRead}
-                  style={{ fontSize: '0.72rem', color: '#0891B2', textDecoration: 'none', whiteSpace: 'nowrap' }}
-                >
-                  <FaCheckDouble className="me-1" size={10} />
-                  Mark all read
+                <button className="btn btn-sm btn-link p-0" onClick={handleMarkAllAsRead}
+                  style={{ fontSize: '0.72rem', color: '#0891B2', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  <FaCheckDouble className="me-1" size={10} />Read all
                 </button>
               )}
               <Form.Select

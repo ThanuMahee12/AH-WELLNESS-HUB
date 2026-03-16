@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Form, Accordion, Row, Col, Button } from 'react-bootstrap'
-import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaSearch } from 'react-icons/fa'
+import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaSearch, FaBell } from 'react-icons/fa'
 import { useSettings } from '../../hooks/useSettings'
 import { updateSettings } from '../../store/settingsSlice'
 import { useNotification } from '../../context'
@@ -49,6 +49,7 @@ function PageControlTab() {
   const permissions = settings?.permissions || {}
   const forms = settings?.forms || {}
   const tables = settings?.tables || {}
+  const notifSettings = settings?.notifications || {}
 
   // Merge all resources
   const items = useMemo(() => {
@@ -320,6 +321,51 @@ function PageControlTab() {
           )
         })}
       </Accordion>
+
+      {/* ===== NOTIFICATION CONTROLS ===== */}
+      <div className="mt-3 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <FaBell className="text-theme" size={10} />
+          <small className="fw-bold text-muted" style={{ fontSize: '0.65rem' }}>NOTIFICATION CONTROLS</small>
+          {saving && <span style={{ color: '#0891B2', fontWeight: 600, fontSize: '0.6rem' }}>Saving...</span>}
+        </div>
+
+        {/* Header */}
+        <div className="d-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.55rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+          <span style={{ width: 22 }}>On</span>
+          <span style={{ flex: 1 }}>Type</span>
+          {ROLES.map(r => <span key={r} style={{ width: 32, textAlign: 'center', color: RC[r], fontWeight: 700 }}>{RS[r]}</span>)}
+        </div>
+
+        {Object.entries(notifSettings).map(([type, config]) => {
+          const enabled = config?.enabled !== false
+          const roles = config?.roles || []
+          const label = type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+          const toggleEnabled = () => {
+            save({ notifications: { [type]: { enabled: !enabled } } })
+          }
+
+          const toggleRole = (role) => {
+            const newRoles = roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role]
+            save({ notifications: { [type]: { roles: newRoles } } })
+          }
+
+          return (
+            <div key={type} className="d-flex align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem', opacity: enabled ? 1 : 0.4 }}>
+              <span style={{ width: 22 }}>
+                <Form.Check type="checkbox" checked={enabled} onChange={toggleEnabled} />
+              </span>
+              <span style={{ flex: 1, fontWeight: 500, color: '#334155' }}>{label}</span>
+              {ROLES.map(r => (
+                <span key={r} style={{ width: 32, textAlign: 'center' }}>
+                  <RoleBtn role={r} active={roles.includes(r)} onClick={() => toggleRole(r)} disabled={!enabled} />
+                </span>
+              ))}
+            </div>
+          )
+        })}
+      </div>
     </>
   )
 }
