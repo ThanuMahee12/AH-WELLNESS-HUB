@@ -8,6 +8,7 @@ import {
   getDoc,
   setDoc,
   query,
+  where,
   orderBy,
   onSnapshot,
   writeBatch,
@@ -152,6 +153,68 @@ export const firestoreService = {
         batch.update(doc(db, 'patients', pid), { linkedUserId: userId })
       })
       await batch.commit()
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // --- Appointments ---
+
+  // Get appointments by userId (for users viewing their own)
+  getAppointmentsByUser: async (userId) => {
+    try {
+      const q = query(collection(db, 'appointments'), where('userId', '==', userId), orderBy('createdAt', 'desc'))
+      const snapshot = await getDocs(q)
+      return { success: true, data: snapshot.docs.map(d => ({ id: d.id, ...d.data() })) }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Get pending appointments (for admins)
+  getPendingAppointments: async () => {
+    try {
+      const q = query(collection(db, 'appointments'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'))
+      const snapshot = await getDocs(q)
+      return { success: true, data: snapshot.docs.map(d => ({ id: d.id, ...d.data() })) }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Create appointment
+  createAppointment: async (data) => {
+    try {
+      const docRef = await addDoc(collection(db, 'appointments'), { ...data, createdAt: Date.now() })
+      return { success: true, id: docRef.id }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Approve appointment — trim to { userId, checkupId, status }
+  approveAppointment: async (appointmentId, checkupId) => {
+    try {
+      const ref = doc(db, 'appointments', appointmentId)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) return { success: false, error: 'Appointment not found' }
+      const userId = snap.data().userId
+      await setDoc(ref, { userId, checkupId, status: 'approved' })
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Reject appointment — trim to { userId, status, rejectionReason }
+  rejectAppointment: async (appointmentId, reason) => {
+    try {
+      const ref = doc(db, 'appointments', appointmentId)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) return { success: false, error: 'Appointment not found' }
+      const userId = snap.data().userId
+      await setDoc(ref, { userId, status: 'rejected', rejectionReason: reason || '' })
       return { success: true }
     } catch (error) {
       return { success: false, error: error.message }
