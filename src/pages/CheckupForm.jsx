@@ -6,6 +6,7 @@ import { FaClipboardCheck, FaSave, FaTrash, FaPlus, FaTimes, FaStickyNote, FaPre
 import { Breadcrumb, RichTextEditor, PageHeader } from '../components/ui'
 import Select from 'react-select'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
+import { firestoreService } from '../services/firestoreService'
 import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
@@ -60,6 +61,7 @@ function CheckupForm() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState('patient')
+  const [appointmentPrefill, setAppointmentPrefill] = useState(null)
 
   // Additional fields (edit mode only)
   const [editedNotes, setEditedNotes] = useState('')
@@ -85,6 +87,46 @@ function CheckupForm() {
     if (tests.length === 0) dispatch(fetchTests())
     if (!isNew) dispatch(fetchMedicines())
   }, [dispatch, checkups.length, patients.length, tests.length, isNew])
+
+  // Load appointment prefill data (from Appointments page approval)
+  useEffect(() => {
+    if (!isNew) return
+    try {
+      const raw = sessionStorage.getItem('appointmentPrefill')
+      if (!raw) return
+      const prefill = JSON.parse(raw)
+      setAppointmentPrefill(prefill)
+      sessionStorage.removeItem('appointmentPrefill')
+
+      // Try to find existing patient by mobile or name
+      if (prefill.isOwn && prefill.userId) {
+        // Self-appointment: find patient linked to this user
+        const linked = patients.find(p => p.linkedUserId === prefill.userId)
+        if (linked) {
+          setFormData(prev => ({ ...prev, patientId: linked.id }))
+        }
+      } else if (prefill.patient?.mobile || prefill.patient?.name) {
+        const mobile = prefill.patient.mobile?.replace(/\s+/g, '')
+        const match = patients.find(p =>
+          (mobile && p.mobile?.replace(/\s+/g, '') === mobile) ||
+          (prefill.patient.name && p.name?.toLowerCase() === prefill.patient.name.toLowerCase())
+        )
+        if (match) {
+          setFormData(prev => ({ ...prev, patientId: match.id }))
+        } else {
+          // No match — open new patient form pre-filled
+          setShowNewPatientForm(true)
+          setNewPatientData(prev => ({
+            ...prev,
+            name: prefill.patient.name || '',
+            age: prefill.patient.age || '',
+            gender: prefill.patient.gender || 'Male',
+            mobile: prefill.patient.mobile || '',
+          }))
+        }
+      }
+    } catch { /* ignore parse errors */ }
+  }, [isNew, patients.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load checkup data into form when editing
   useEffect(() => {
@@ -197,6 +239,15 @@ function CheckupForm() {
         const result = await dispatch(addCheckup(checkupData))
         if (result.type.includes('rejected')) {
           throw new Error(result.payload || 'Failed to create checkup')
+        }
+        // If from appointment approval, mark appointment as approved
+        if (appointmentPrefill?.appointmentId) {
+          await firestoreService.approveAppointment(appointmentPrefill.appointmentId, result.payload.id)
+          // Also link patient to user if isOwn
+          if (appointmentPrefill.isOwn && appointmentPrefill.userId && formData.patientId) {
+            await firestoreService.linkPatientToUser(appointmentPrefill.userId, formData.patientId).catch(() => {})
+          }
+          setAppointmentPrefill(null)
         }
         success('Checkup created successfully!')
         navigate(`/checkups/${result.payload.id}`, { replace: true })
@@ -493,6 +544,17 @@ function CheckupForm() {
           {/* ===== TESTS TAB ===== */}
           {activeTab === 'tests' && (
             <div style={{ maxWidth: 800 }}>
+              {/* Appointment request note */}
+              {appointmentPrefill?.tests?.length > 0 && (
+                <div className="mb-3 p-2 rounded d-flex align-items-start gap-2" style={{ background: '#fefce8', border: '1px solid #fde68a', fontSize: '0.78rem' }}>
+                  <FaStickyNote size={11} style={{ color: '#d97706', marginTop: 2, flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: '#92400e' }}>Requested:</strong>{' '}
+                    <span style={{ color: '#78350f' }}>{appointmentPrefill.tests.join(', ')}</span>
+                    {appointmentPrefill.notes && <div className="mt-1" style={{ color: '#a16207' }}><strong>Note:</strong> {appointmentPrefill.notes}</div>}
+                  </div>
+                </div>
+              )}
               {isFieldVisible('checkups', 'tests') && (
                 <Form.Group className="mb-3">
                   <Form.Label style={{ fontSize: '0.82rem', fontWeight: 500 }}>Select Tests {isFieldRequired('checkups', 'tests', true) && <span className="text-danger">*</span>}</Form.Label>
