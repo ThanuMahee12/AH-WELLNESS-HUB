@@ -73,12 +73,14 @@ function CheckupForm() {
   const [editedLabResults, setEditedLabResults] = useState({})
   const [selectedTestForNote, setSelectedTestForNote] = useState(null)
 
-  // Set default validDays from settings for new checkups
+  // Set defaults from settings for new checkups
   useEffect(() => {
-    if (isNew && settings?.checkupPdf?.defaultValidDays && !formData.validDays) {
-      setFormData(prev => ({ ...prev, validDays: settings.checkupPdf.defaultValidDays }))
-    }
-  }, [isNew, settings?.checkupPdf?.defaultValidDays]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!isNew) return
+    const updates = {}
+    if (settings?.checkupPdf?.defaultValidDays && !formData.validDays) updates.validDays = settings.checkupPdf.defaultValidDays
+    if (settings?.checkupPdf?.defaultDoctorFees && !formData.doctorFees) updates.doctorFees = settings.checkupPdf.defaultDoctorFees
+    if (Object.keys(updates).length) setFormData(prev => ({ ...prev, ...updates }))
+  }, [isNew, settings?.checkupPdf?.defaultValidDays, settings?.checkupPdf?.defaultDoctorFees]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch data if store is empty
   useEffect(() => {

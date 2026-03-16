@@ -13,6 +13,7 @@ import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { fetchUsers, selectAllUsers } from '../store/usersSlice'
 import { firestoreService } from '../services/firestoreService'
+import { useSettings } from '../hooks/useSettings'
 import { useNotification } from '../context'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
@@ -32,6 +33,7 @@ function UserDashboard() {
   const { loading: pLoading } = useSelector(state => state.patients)
   const { loading: cLoading } = useSelector(state => state.checkups)
   const { success: showSuccess, error: showError, confirm } = useNotification()
+  const { settings } = useSettings()
 
   const [selectedPatientId, setSelectedPatientId] = useState(null)
 
@@ -294,15 +296,20 @@ function UserDashboard() {
                   {appointments.map(a => {
                     const st = STATUS_STYLES[a.status] || STATUS_STYLES.pending
                     const StIcon = st.icon
+                    const docFee = settings?.checkupPdf?.defaultDoctorFees || 0
+                    const totalEst = (a.approxPrice || 0) + docFee
+                    const patName = a.isOwn ? (user?.username || '') : (a.patient?.name || '')
+                    const patMobile = a.isOwn ? (user?.mobile || '') : (a.patient?.mobile || '')
                     return (
                       <div key={a.id} className="d-flex align-items-center gap-2 py-2 px-2" style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.8rem' }}>
-                        <span style={{ color: st.color, fontSize: '0.72rem', fontWeight: 600, minWidth: 70 }}>
+                        <span style={{ color: st.color, fontSize: '0.72rem', fontWeight: 600, minWidth: 65 }}>
                           <StIcon size={8} className="me-1" />{st.label}
                         </span>
-                        <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{formatDate(a.createdAt)}</span>
+                        {patName && <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.78rem' }}>{patName}</span>}
+                        {patMobile && <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{patMobile}</span>}
                         {a.expectedDate && <span style={{ color: '#475569', fontSize: '0.75rem' }}><FaCalendarAlt size={8} className="me-1 opacity-50" />{a.expectedDate}</span>}
-                        {a.tests && <span style={{ flex: 1, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{Array.isArray(a.tests) ? a.tests.join(', ') : a.tests}</span>}
-                        {a.approxPrice > 0 && <span style={{ fontWeight: 600, color: '#0f172a' }}>~Rs.{a.approxPrice.toLocaleString()}</span>}
+                        {a.tests && <span style={{ flex: 1, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem' }}>{Array.isArray(a.tests) ? a.tests.join(', ') : a.tests}</span>}
+                        {totalEst > 0 && <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.82rem' }}>~Rs.{Math.round(totalEst).toLocaleString()}</span>}
                         {a.status === 'pending' && (
                           <div className="d-flex gap-1" style={{ flexShrink: 0 }}>
                             <button onClick={() => handleEditAppointment(a)} title="Edit"
@@ -526,11 +533,17 @@ function UserDashboard() {
                 ))}
               </div>
             )}
-            {approxPrice > 0 && (
-              <div className="mt-1" style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                Approx. total: <strong style={{ color: '#0f172a' }}>Rs. {approxPrice.toLocaleString()}</strong>
-              </div>
-            )}
+            {(approxPrice > 0 || (settings?.checkupPdf?.defaultDoctorFees || 0) > 0) && (() => {
+              const docFee = settings?.checkupPdf?.defaultDoctorFees || 0
+              const total = Math.round(approxPrice + docFee)
+              return (
+                <div className="mt-2 p-2 rounded" style={{ background: '#f8fafc', fontSize: '0.75rem', color: '#64748b' }}>
+                  {approxPrice > 0 && <div>Tests: <strong style={{ color: '#334155' }}>Rs. {approxPrice.toLocaleString()}</strong></div>}
+                  {docFee > 0 && <div>Doctor fee: <strong style={{ color: '#334155' }}>Rs. {docFee.toLocaleString()}</strong></div>}
+                  {total > 0 && <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 4, marginTop: 4 }}>Estimate: <strong style={{ color: '#0f172a', fontSize: '0.85rem' }}>~Rs. {total.toLocaleString()}</strong></div>}
+                </div>
+              )
+            })()}
           </Form.Group>
 
           {/* Notes */}

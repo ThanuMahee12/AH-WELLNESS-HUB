@@ -279,6 +279,7 @@ export const DEFAULT_SETTINGS = {
     },
     eSign: '',
     defaultValidDays: 30,
+    defaultDoctorFees: 0,
   },
   generalTests: {
     showEmpty: 'hide',
