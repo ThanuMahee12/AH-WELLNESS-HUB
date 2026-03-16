@@ -17,9 +17,9 @@ import { useNotification } from '../context'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
 const STATUS_STYLES = {
-  pending: { bg: '#fef3c7', color: '#92400e', icon: FaClock, label: 'Pending' },
-  approved: { bg: '#d1fae5', color: '#065f46', icon: FaCheck, label: 'Approved' },
-  rejected: { bg: '#fee2e2', color: '#991b1b', icon: FaBan, label: 'Rejected' },
+  pending: { color: '#d97706', icon: FaClock, label: 'Pending' },
+  approved: { color: '#16a34a', icon: FaCheck, label: 'Approved' },
+  rejected: { color: '#dc2626', icon: FaBan, label: 'Rejected' },
 }
 
 function UserDashboard() {
@@ -260,9 +260,9 @@ function UserDashboard() {
                     const StIcon = st.icon
                     return (
                       <div key={a.id} className="d-flex align-items-center gap-2 py-2 px-2" style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.8rem' }}>
-                        <Badge style={{ background: st.bg, color: st.color, fontSize: '0.65rem', fontWeight: 600, padding: '3px 8px', border: 'none' }}>
+                        <span style={{ color: st.color, fontSize: '0.72rem', fontWeight: 600, minWidth: 70 }}>
                           <StIcon size={8} className="me-1" />{st.label}
-                        </Badge>
+                        </span>
                         <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{formatDate(a.createdAt)}</span>
                         {a.expectedDate && <span style={{ color: '#475569', fontSize: '0.75rem' }}><FaCalendarAlt size={8} className="me-1 opacity-50" />{a.expectedDate}</span>}
                         {a.tests && <span style={{ flex: 1, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{Array.isArray(a.tests) ? a.tests.join(', ') : a.tests}</span>}
