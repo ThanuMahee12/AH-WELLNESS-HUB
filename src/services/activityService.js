@@ -50,6 +50,11 @@ export const ACTIVITY_TYPES = {
   USER_REQUEST_REJECT: 'user_request_reject',
   USER_PASSWORD_RESET: 'user_password_reset',
 
+  // Patient Linking
+  PATIENT_LINK: 'patient_link',
+  PATIENT_UNLINK: 'patient_unlink',
+  PATIENT_AUTO_LINK: 'patient_auto_link',
+
   // Settings
   SETTINGS_UPDATE: 'settings_update',
 }
@@ -251,6 +256,10 @@ export const createActivityDescription = (activityType, metadata = {}) => {
     user_request_approve: `Approved user request: ${metadata.username || 'Unknown'}`,
     user_request_reject: `Rejected user request: ${metadata.username || 'Unknown'}`,
     user_password_reset: `Reset password for: ${metadata.username || 'Unknown'}`,
+
+    patient_link: `Linked patient ${metadata.patientName || 'Unknown'} to user ${metadata.username || 'Unknown'}`,
+    patient_unlink: `Unlinked patient ${metadata.patientName || 'Unknown'} from user ${metadata.username || 'Unknown'}`,
+    patient_auto_link: `Auto-linked ${metadata.count || 0} patient(s) by mobile to user ${metadata.username || 'Unknown'}`,
 
     settings_update: 'Updated application settings',
   }

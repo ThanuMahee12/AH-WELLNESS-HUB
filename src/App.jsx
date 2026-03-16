@@ -35,6 +35,7 @@ sessionStorage.removeItem('chunk-reload')
 const Home = lazyRetry(() => import('./pages/Home'))
 const Login = lazyRetry(() => import('./pages/Login'))
 const Dashboard = lazyRetry(() => import('./pages/Dashboard'))
+const UserDashboard = lazyRetry(() => import('./pages/UserDashboard'))
 const Patients = lazyRetry(() => import('./pages/Patients'))
 const PatientDetail = lazyRetry(() => import('./pages/PatientDetail'))
 const Checkups = lazyRetry(() => import('./pages/Checkups'))
@@ -157,7 +158,7 @@ function AppContent() {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    {user?.role === 'user' ? <UserDashboard /> : <Dashboard />}
                   </ProtectedRoute>
                 }
               />

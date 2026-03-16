@@ -144,6 +144,69 @@ export const toggleUserStatus = createAsyncThunk(
   }
 )
 
+// Link a patient to a user
+export const linkPatient = createAsyncThunk(
+  'users/linkPatient',
+  async ({ userId, patientId, patientName, targetUsername }, { rejectWithValue, getState }) => {
+    const result = await firestoreService.linkPatientToUser(userId, patientId)
+    if (!result.success) return rejectWithValue(result.error)
+    const currentUser = getState().auth.user
+    if (currentUser) {
+      logActivity({
+        userId: currentUser.uid, username: currentUser.username || currentUser.email, userRole: currentUser.role,
+        activityType: ACTIVITY_TYPES.PATIENT_LINK,
+        description: createActivityDescription(ACTIVITY_TYPES.PATIENT_LINK, { patientName, username: targetUsername }),
+        metadata: { targetUserId: userId, patientId, patientName }
+      }).catch(() => {})
+    }
+    return { userId, patientId }
+  }
+)
+
+// Unlink a patient from a user
+export const unlinkPatient = createAsyncThunk(
+  'users/unlinkPatient',
+  async ({ userId, patientId, patientName, targetUsername }, { rejectWithValue, getState }) => {
+    const result = await firestoreService.unlinkPatientFromUser(userId, patientId)
+    if (!result.success) return rejectWithValue(result.error)
+    const currentUser = getState().auth.user
+    if (currentUser) {
+      logActivity({
+        userId: currentUser.uid, username: currentUser.username || currentUser.email, userRole: currentUser.role,
+        activityType: ACTIVITY_TYPES.PATIENT_UNLINK,
+        description: createActivityDescription(ACTIVITY_TYPES.PATIENT_UNLINK, { patientName, username: targetUsername }),
+        metadata: { targetUserId: userId, patientId, patientName }
+      }).catch(() => {})
+    }
+    return { userId, patientId }
+  }
+)
+
+// Auto-link patients by matching mobile number
+export const autoLinkByMobile = createAsyncThunk(
+  'users/autoLinkByMobile',
+  async ({ userId, userMobile, targetUsername }, { rejectWithValue, getState }) => {
+    const state = getState()
+    const patients = Object.values(state.patients.entities).filter(Boolean)
+    const matchingIds = patients
+      .filter(p => p.mobile && p.mobile.replace(/\s+/g, '') === userMobile.replace(/\s+/g, '') && !p.linkedUserId)
+      .map(p => p.id)
+    if (matchingIds.length === 0) return { userId, linkedIds: [] }
+    const result = await firestoreService.bulkLinkPatients(userId, matchingIds)
+    if (!result.success) return rejectWithValue(result.error)
+    const currentUser = state.auth.user
+    if (currentUser) {
+      logActivity({
+        userId: currentUser.uid, username: currentUser.username || currentUser.email, userRole: currentUser.role,
+        activityType: ACTIVITY_TYPES.PATIENT_AUTO_LINK,
+        description: createActivityDescription(ACTIVITY_TYPES.PATIENT_AUTO_LINK, { count: matchingIds.length, username: targetUsername }),
+        metadata: { targetUserId: userId, linkedPatientIds: matchingIds }
+      }).catch(() => {})
+    }
+    return { userId, linkedIds: matchingIds }
+  }
+)
+
 const usersSlice = createSlice({
   name: 'users',
   initialState,
@@ -206,6 +269,34 @@ const usersSlice = createSlice({
           id: action.payload.id,
           changes: { disabled: action.payload.disabled }
         })
+      })
+      // Link patient
+      .addCase(linkPatient.fulfilled, (state, action) => {
+        const { userId, patientId } = action.payload
+        const user = state.entities[userId]
+        if (user) {
+          const linked = [...(user.linkedPatients || []), patientId]
+          usersAdapter.updateOne(state, { id: userId, changes: { linkedPatients: linked } })
+        }
+      })
+      // Unlink patient
+      .addCase(unlinkPatient.fulfilled, (state, action) => {
+        const { userId, patientId } = action.payload
+        const user = state.entities[userId]
+        if (user) {
+          const linked = (user.linkedPatients || []).filter(id => id !== patientId)
+          usersAdapter.updateOne(state, { id: userId, changes: { linkedPatients: linked } })
+        }
+      })
+      // Auto-link by mobile
+      .addCase(autoLinkByMobile.fulfilled, (state, action) => {
+        const { userId, linkedIds } = action.payload
+        if (linkedIds.length === 0) return
+        const user = state.entities[userId]
+        if (user) {
+          const linked = [...new Set([...(user.linkedPatients || []), ...linkedIds])]
+          usersAdapter.updateOne(state, { id: userId, changes: { linkedPatients: linked } })
+        }
       })
       // Listen to registerUser from authSlice
       .addCase(registerUser.fulfilled, (state, action) => {

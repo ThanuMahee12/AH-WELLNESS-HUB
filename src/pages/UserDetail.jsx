@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Container, Row, Col, Card, Button, Spinner } from 'react-bootstrap'
-import { FaUsers, FaKey, FaBan, FaCheckCircle } from 'react-icons/fa'
+import { Container, Row, Col, Card, Button, Spinner, Form, Badge } from 'react-bootstrap'
+import { FaUsers, FaKey, FaBan, FaCheckCircle, FaLink, FaUnlink, FaMagic } from 'react-icons/fa'
 import { Breadcrumb } from '../components/ui'
-import { fetchUsers, updateUser, deleteUser, toggleUserStatus, selectAllUsers } from '../store/usersSlice'
+import { fetchUsers, updateUser, deleteUser, toggleUserStatus, selectAllUsers, linkPatient, unlinkPatient, autoLinkByMobile } from '../store/usersSlice'
+import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { registerUser } from '../store/authSlice'
 import { authService } from '../services/authService'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
@@ -32,8 +33,11 @@ function UserDetail() {
   const { success, error: showError, confirm } = useNotification()
   const { checkPermission } = usePermission()
   const { getEntityFields, getInitialFormData } = useSettings()
+  const patients = useSelector(selectAllPatients)
   const [resettingPassword, setResettingPassword] = useState(false)
   const [togglingStatus, setTogglingStatus] = useState(false)
+  const [selectedPatientId, setSelectedPatientId] = useState('')
+  const [linking, setLinking] = useState(false)
 
   const isNew = id === 'new'
   const user = isNew ? null : users.find(u => u.id === id)
@@ -96,12 +100,11 @@ function UserDetail() {
     }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch users if store is empty
+  // Fetch users and patients if store is empty
   useEffect(() => {
-    if (users.length === 0) {
-      dispatch(fetchUsers())
-    }
-  }, [dispatch, users.length])
+    if (users.length === 0) dispatch(fetchUsers())
+    if (patients.length === 0) dispatch(fetchPatients())
+  }, [dispatch, users.length, patients.length])
 
   const handleDelete = async () => {
     if (!(await confirm('Are you sure you want to delete this user?'))) return
@@ -301,6 +304,100 @@ function UserDetail() {
           </Col>
         </Row>
       )}
+      {!isNew && user && checkPermission('users', 'edit') && (() => {
+        const linkedIds = user.linkedPatients || []
+        const linkedList = patients.filter(p => linkedIds.includes(p.id))
+        const availablePatients = patients.filter(p => !p.linkedUserId && !linkedIds.includes(p.id))
+
+        const handleLink = async () => {
+          if (!selectedPatientId) return
+          setLinking(true)
+          try {
+            const patient = patients.find(p => p.id === selectedPatientId)
+            const result = await dispatch(linkPatient({ userId: id, patientId: selectedPatientId, patientName: patient?.name, targetUsername: user.username }))
+            if (result.type.includes('rejected')) throw new Error(result.payload)
+            success(`Linked ${patient?.name || 'patient'} to ${user.username}`)
+            setSelectedPatientId('')
+          } catch (err) { showError(err.message || 'Failed to link patient') }
+          finally { setLinking(false) }
+        }
+
+        const handleUnlink = async (patientId) => {
+          const patient = patients.find(p => p.id === patientId)
+          if (!(await confirm(`Unlink ${patient?.name || 'this patient'} from ${user.username}?`, { title: 'Unlink Patient', variant: 'warning', confirmText: 'Unlink' }))) return
+          try {
+            const result = await dispatch(unlinkPatient({ userId: id, patientId, patientName: patient?.name, targetUsername: user.username }))
+            if (result.type.includes('rejected')) throw new Error(result.payload)
+            success(`Unlinked ${patient?.name || 'patient'}`)
+          } catch (err) { showError(err.message || 'Failed to unlink') }
+        }
+
+        const handleAutoLink = async () => {
+          if (!user.mobile) { showError('User has no mobile number'); return }
+          setLinking(true)
+          try {
+            const result = await dispatch(autoLinkByMobile({ userId: id, userMobile: user.mobile, targetUsername: user.username }))
+            if (result.type.includes('rejected')) throw new Error(result.payload)
+            const count = result.payload.linkedIds.length
+            if (count > 0) success(`Auto-linked ${count} patient(s) by mobile`)
+            else showError('No matching patients found')
+          } catch (err) { showError(err.message || 'Auto-link failed') }
+          finally { setLinking(false) }
+        }
+
+        return (
+          <Row className="mt-3">
+            <Col>
+              <Card className="shadow-sm" style={{ borderLeft: '4px solid #0891B2' }}>
+                <Card.Header className="card-header-theme d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0 fs-responsive-md">
+                    <FaLink className="me-2" />
+                    Linked Patients
+                    {linkedList.length > 0 && <Badge bg="info" className="ms-2">{linkedList.length}</Badge>}
+                  </h5>
+                  {user.mobile && (
+                    <Button size="sm" variant="outline-info" onClick={handleAutoLink} disabled={linking}>
+                      <FaMagic className="me-1" />
+                      Auto-link by Mobile
+                    </Button>
+                  )}
+                </Card.Header>
+                <Card.Body>
+                  {linkedList.length > 0 ? (
+                    <div className="mb-3">
+                      {linkedList.map(p => (
+                        <div key={p.id} className="d-flex align-items-center justify-content-between py-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <div>
+                            <strong>{p.name}</strong>
+                            <span className="text-muted ms-2" style={{ fontSize: '0.85rem' }}>{p.mobile || ''} {p.age ? `| ${p.age}yr` : ''} {p.gender ? `| ${p.gender}` : ''}</span>
+                          </div>
+                          <Button size="sm" variant="outline-danger" onClick={() => handleUnlink(p.id)}>
+                            <FaUnlink className="me-1" />Unlink
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted mb-3">No patients linked to this user.</p>
+                  )}
+
+                  <div className="d-flex gap-2 align-items-center">
+                    <Form.Select size="sm" value={selectedPatientId} onChange={(e) => setSelectedPatientId(e.target.value)} style={{ maxWidth: 350 }}>
+                      <option value="">Select a patient to link...</option>
+                      {availablePatients.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} {p.mobile ? `(${p.mobile})` : ''}</option>
+                      ))}
+                    </Form.Select>
+                    <Button size="sm" variant="primary" onClick={handleLink} disabled={!selectedPatientId || linking}>
+                      <FaLink className="me-1" />{linking ? 'Linking...' : 'Link'}
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        )
+      })()}
     </Container>
   )
 }

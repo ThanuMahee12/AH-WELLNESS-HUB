@@ -9,7 +9,10 @@ import {
   setDoc,
   query,
   orderBy,
-  onSnapshot
+  onSnapshot,
+  writeBatch,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 
@@ -112,5 +115,46 @@ export const firestoreService = {
     }, (error) => {
       console.error(`Firestore listener error (${collectionName}):`, error)
     })
-  }
+  },
+
+  // Link a patient to a user (atomic batch write)
+  linkPatientToUser: async (userId, patientId) => {
+    try {
+      const batch = writeBatch(db)
+      batch.update(doc(db, 'users', userId), { linkedPatients: arrayUnion(patientId) })
+      batch.update(doc(db, 'patients', patientId), { linkedUserId: userId })
+      await batch.commit()
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Unlink a patient from a user (atomic batch write)
+  unlinkPatientFromUser: async (userId, patientId) => {
+    try {
+      const batch = writeBatch(db)
+      batch.update(doc(db, 'users', userId), { linkedPatients: arrayRemove(patientId) })
+      batch.update(doc(db, 'patients', patientId), { linkedUserId: '' })
+      await batch.commit()
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Bulk link patients to a user (atomic batch write)
+  bulkLinkPatients: async (userId, patientIds) => {
+    try {
+      const batch = writeBatch(db)
+      batch.update(doc(db, 'users', userId), { linkedPatients: arrayUnion(...patientIds) })
+      patientIds.forEach(pid => {
+        batch.update(doc(db, 'patients', pid), { linkedUserId: userId })
+      })
+      await batch.commit()
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
 }
