@@ -5,8 +5,9 @@ import {
   FaPlus, FaTrash, FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe,
   FaFacebook, FaInstagram, FaWhatsapp, FaTwitter, FaLinkedin,
   FaYoutube, FaTiktok, FaViber, FaClock, FaInfoCircle, FaPaperPlane,
-  FaChevronDown, FaChevronUp,
+  FaChevronDown, FaChevronUp, FaSignInAlt,
 } from 'react-icons/fa'
+import { ICON_MAP, ICON_OPTIONS } from '../../constants/defaultSettings'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
@@ -98,8 +99,10 @@ function PublicPageTab() {
   const { success: showSuccess, error: showError } = useNotification()
 
   const homeContent = settings?.pages?.home?.content || {}
+  const loginContent = settings?.pages?.login?.content || {}
 
   const [localContent, setLocalContent] = useState({})
+  const [loginLocal, setLoginLocal] = useState({ brandTitle: '', brandSubtitle: '', brandFeatures: [] })
   const [features, setFeatures] = useState([])
   const [contactFields, setContactFields] = useState([])
 
@@ -144,6 +147,15 @@ function PublicPageTab() {
   }, [homeContent.heroTitle, homeContent.heroSubtitle, homeContent.heroImageUrl, homeContent.ctaText, homeContent.ctaAuthText, homeContent.blogs,
       homeContent.aboutTitle, homeContent.aboutDescription, homeContent.aboutImageUrl, homeContent.aboutVisible,
       homeContent.contactTitle, homeContent.contactFields, homeContent.contactMapEmbedUrl, homeContent.contactVisible])
+
+  // Sync login branding content from settings
+  useEffect(() => {
+    setLoginLocal({
+      brandTitle: loginContent.brandTitle || '',
+      brandSubtitle: loginContent.brandSubtitle || '',
+      brandFeatures: (loginContent.brandFeatures || []).map(f => ({ ...f })),
+    })
+  }, [loginContent.brandTitle, loginContent.brandSubtitle, loginContent.brandFeatures])
 
   // Reset image error state when URLs change
   useEffect(() => { setHeroImgError(false) }, [localContent.heroImageUrl])
@@ -224,6 +236,20 @@ function PublicPageTab() {
       })).unwrap()
     } catch (err) {
       showError('Failed to update: ' + (err || 'Unknown error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const saveLoginContent = async () => {
+    setSaving(true)
+    try {
+      await dispatch(updateSettings({
+        data: { pages: { login: { content: { brandTitle: loginLocal.brandTitle, brandSubtitle: loginLocal.brandSubtitle, brandFeatures: loginLocal.brandFeatures } } } },
+        user,
+      })).unwrap()
+    } catch (err) {
+      showError('Failed to save login content: ' + (err || 'Unknown error'))
     } finally {
       setSaving(false)
     }
@@ -339,6 +365,72 @@ function PublicPageTab() {
 
   return (
     <>
+      {/* Login Page Branding */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-1">
+              <FaSignInAlt size={10} className="text-muted" />
+              <small className="fw-bold text-muted">LOGIN PAGE</small>
+            </div>
+            <SaveBtn saving={saving} onClick={saveLoginContent} />
+          </div>
+          <Row className="g-2">
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Brand Title</Form.Label>
+                <Form.Control size="sm" value={loginLocal.brandTitle} onChange={(e) => setLoginLocal(p => ({ ...p, brandTitle: e.target.value }))} placeholder="e.g., Blood Lab Manager" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Brand Subtitle</Form.Label>
+                <Form.Control size="sm" value={loginLocal.brandSubtitle} onChange={(e) => setLoginLocal(p => ({ ...p, brandSubtitle: e.target.value }))} placeholder="e.g., Complete POS system for labs" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Brand Features */}
+          <div className="mt-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <small className="fw-bold text-muted" style={{ fontSize: '0.62rem' }}>BRAND FEATURES (shown on login sidebar)</small>
+              <button type="button" onClick={() => setLoginLocal(p => ({ ...p, brandFeatures: [...p.brandFeatures, { icon: 'FaFlask', text: '' }] }))}
+                style={{ fontSize: '0.62rem', padding: '1px 6px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+                <FaPlus size={7} className="me-1" />Add
+              </button>
+            </div>
+            {loginLocal.brandFeatures.map((feat, idx) => {
+              const Icon = ICON_MAP[feat.icon] || ICON_MAP.FaFlask
+              return (
+                <div key={idx} className="d-flex align-items-center gap-1 mb-1">
+                  {/* Icon selector */}
+                  <span style={{ width: 30, position: 'relative' }}>
+                    <Icon size={12} style={{ color: '#0891B2' }} />
+                    <Form.Select size="sm" value={feat.icon || 'FaFlask'}
+                      onChange={(e) => setLoginLocal(p => ({ ...p, brandFeatures: p.brandFeatures.map((f, i) => i === idx ? { ...f, icon: e.target.value } : f) }))}
+                      className="position-absolute top-0 start-0 opacity-0" style={{ width: 30, height: 24, cursor: 'pointer' }}>
+                      {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </Form.Select>
+                  </span>
+                  {/* Text */}
+                  <Form.Control size="sm" value={feat.text} placeholder="Feature description"
+                    onChange={(e) => setLoginLocal(p => ({ ...p, brandFeatures: p.brandFeatures.map((f, i) => i === idx ? { ...f, text: e.target.value } : f) }))}
+                    style={{ fontSize: '0.75rem', flex: 1, height: 26 }} />
+                  {/* Delete */}
+                  <button type="button" onClick={() => setLoginLocal(p => ({ ...p, brandFeatures: p.brandFeatures.filter((_, i) => i !== idx) }))}
+                    style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }}>
+                    <FaTrash size={9} />
+                  </button>
+                </div>
+              )
+            })}
+            {loginLocal.brandFeatures.length === 0 && (
+              <div className="text-center text-muted py-1" style={{ fontSize: '0.72rem' }}>No features. Click Add to create one.</div>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
+
       {/* Hero Section */}
       <Card className="shadow-sm border-0 mb-3">
         <Card.Body className="py-2 px-3">

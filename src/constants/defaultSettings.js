@@ -156,6 +156,15 @@ export const DEFAULT_SETTINGS = {
       label: 'Login', path: '/login', sidebar: false,
       showResetPassword: ['superadmin', 'maintainer', 'editor', 'user'],
       showSignUp: [],
+      content: {
+        brandTitle: 'Blood Lab Manager',
+        brandSubtitle: 'Complete Point of Sale system for blood testing laboratories',
+        brandFeatures: [
+          { icon: 'FaFileMedical', text: 'Patient records & billing management' },
+          { icon: 'FaChartBar', text: 'Analytics dashboard & reports' },
+          { icon: 'FaShieldAlt', text: 'Role-based access & audit trails' },
+        ],
+      },
     },
     home: {
       label: 'Home', icon: 'FaHome', path: '/', order: 0,
