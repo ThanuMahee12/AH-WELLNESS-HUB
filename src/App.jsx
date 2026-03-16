@@ -51,6 +51,7 @@ const AdminSetup = lazyRetry(() => import('./pages/AdminSetup'))
 const Settings = lazyRetry(() => import('./pages/Settings'))
 const Notifications = lazyRetry(() => import('./pages/Notifications'))
 const SystemMaintenance = lazyRetry(() => import('./pages/SystemMaintenance'))
+const Appointments = lazyRetry(() => import('./pages/Appointments'))
 
 // Create a wrapper component to access notification context
 function AppContent() {
@@ -239,6 +240,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <MedicineDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/appointments"
+                element={
+                  <ProtectedRoute>
+                    <Appointments />
                   </ProtectedRoute>
                 }
               />

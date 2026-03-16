@@ -204,8 +204,9 @@ export const DEFAULT_SETTINGS = {
     checkups:   { label: 'Checkups',   icon: 'FaClipboardCheck',  path: '/checkups',  order: 3, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
     tests:      { label: 'Tests',      icon: 'FaFlask',           path: '/tests',     order: 4, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
     medicines:  { label: 'Medicines',  icon: 'FaPills',           path: '/medicines', order: 5, roles: ['superadmin', 'maintainer', 'editor'] },
+    appointments: { label: 'Appointments', icon: 'FaCalendarCheck', path: '/appointments', order: 6, roles: ['superadmin', 'maintainer', 'editor'] },
     users: {
-      label: 'Users', icon: 'FaUsers', path: '/users', order: 6,
+      label: 'Users', icon: 'FaUsers', path: '/users', order: 7,
       roles: ['superadmin', 'maintainer'],
       tabs: {
         users:    { label: 'Users',    roles: ['superadmin', 'maintainer'] },
@@ -215,7 +216,7 @@ export const DEFAULT_SETTINGS = {
       },
     },
     settings: {
-      label: 'Settings', icon: 'FaCog', path: '/settings', order: 7,
+      label: 'Settings', icon: 'FaCog', path: '/settings', order: 8,
       roles: ['superadmin', 'maintainer', 'editor'],
       tabs: {
         pages:  { label: 'Page Control',          roles: ['superadmin'] },
@@ -224,7 +225,7 @@ export const DEFAULT_SETTINGS = {
       },
     },
     maintenance: {
-      label: 'Maintenance', icon: 'FaBug', path: '/maintenance', order: 8,
+      label: 'Maintenance', icon: 'FaBug', path: '/maintenance', order: 9,
       roles: ['superadmin'],
     },
   },
