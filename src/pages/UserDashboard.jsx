@@ -4,14 +4,13 @@ import { Link } from 'react-router-dom'
 import { Container, Row, Col, Card, Badge } from 'react-bootstrap'
 import {
   FaUserInjured, FaClipboardCheck, FaFlask, FaUser, FaEnvelope,
-  FaPhone, FaShieldAlt, FaCalendarAlt, FaEye, FaHistory, FaClock,
-  FaChevronRight, FaFileMedical,
+  FaPhone, FaShieldAlt, FaCalendarAlt, FaEye, FaChartBar,
 } from 'react-icons/fa'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
 import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { fetchUsers, selectAllUsers } from '../store/usersSlice'
-import { getUserActivities } from '../services/activityService'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
 function UserDashboard() {
@@ -24,8 +23,6 @@ function UserDashboard() {
   const { loading: pLoading } = useSelector(state => state.patients)
   const { loading: cLoading } = useSelector(state => state.checkups)
 
-  const [activities, setActivities] = useState([])
-  const [activitiesLoading, setActivitiesLoading] = useState(true)
   const [selectedPatientId, setSelectedPatientId] = useState(null)
 
   useEffect(() => {
@@ -34,17 +31,6 @@ function UserDashboard() {
     dispatch(fetchTests())
     dispatch(fetchUsers())
   }, [dispatch])
-
-  // Load user's own activities
-  useEffect(() => {
-    if (user?.uid) {
-      setActivitiesLoading(true)
-      getUserActivities({ userId: user.uid, days: 30 })
-        .then(result => { if (result.success) setActivities(result.data.slice(0, 20)) })
-        .catch(() => {})
-        .finally(() => setActivitiesLoading(false))
-    }
-  }, [user?.uid])
 
   // Get linked patient IDs from users entity (more up-to-date than auth user)
   const linkedPatientIds = useMemo(() => {
@@ -81,6 +67,32 @@ function UserDashboard() {
     [selectedCheckups]
   )
 
+  // Monthly checkup chart data (last 6 months)
+  const monthlyData = useMemo(() => {
+    const now = new Date()
+    const months = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push({
+        month: d.toLocaleDateString('en-US', { month: 'short' }),
+        year: d.getFullYear(),
+        m: d.getMonth(),
+        y: d.getFullYear(),
+        checkups: 0,
+        tests: 0,
+      })
+    }
+    myCheckups.forEach(c => {
+      const d = new Date(c.timestamp)
+      const entry = months.find(m => m.m === d.getMonth() && m.y === d.getFullYear())
+      if (entry) {
+        entry.checkups++
+        entry.tests += (c.tests || []).length
+      }
+    })
+    return months.map(m => ({ name: m.month, Checkups: m.checkups, Tests: m.tests }))
+  }, [myCheckups])
+
   const loading = pLoading || cLoading
 
   if (loading && myPatients.length === 0) {
@@ -104,14 +116,6 @@ function UserDashboard() {
       const test = tests.find(tt => tt.id === t.testId)
       return test?.name || t.testId
     }).join(', ')
-  }
-
-  const activityIcon = (type) => {
-    if (type?.includes('checkup')) return <FaClipboardCheck size={10} />
-    if (type?.includes('patient')) return <FaUserInjured size={10} />
-    if (type?.includes('login') || type?.includes('logout')) return <FaUser size={10} />
-    if (type?.includes('pdf')) return <FaFileMedical size={10} />
-    return <FaHistory size={10} />
   }
 
   return (
@@ -319,36 +323,29 @@ function UserDashboard() {
             </Card.Body>
           </Card>
 
-          {/* Recent Activity */}
+          {/* Activity Chart */}
           <Card className="border-0 shadow-sm">
             <Card.Body className="p-3">
               <h6 style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.75rem', fontSize: '0.88rem' }}>
-                <FaHistory className="me-2" style={{ color: '#64748b' }} />
-                My Activity
+                <FaChartBar className="me-2" style={{ color: '#0891B2' }} />
+                Visit History
               </h6>
-              {activitiesLoading ? (
-                <div className="text-center py-2" style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Loading...</div>
-              ) : activities.length === 0 ? (
-                <div className="text-center py-2" style={{ fontSize: '0.78rem', color: '#94a3b8' }}>No recent activity.</div>
+              {myCheckups.length === 0 ? (
+                <div className="text-center py-3" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No visit data yet.</div>
               ) : (
-                <div style={{ maxHeight: 350, overflowY: 'auto' }}>
-                  {activities.map((a, i) => (
-                    <div key={a.id || i} className="d-flex gap-2 py-2" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.75rem' }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#64748b' }}>
-                        {activityIcon(a.activityType)}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {a.description}
-                        </div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.65rem' }}>
-                          <FaClock size={8} className="me-1" />
-                          {formatDate(a.timestamp)} {formatTime(a.timestamp)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.8rem' }}
+                      cursor={{ fill: 'rgba(8,145,178,0.05)' }}
+                    />
+                    <Bar dataKey="Checkups" fill="#0891B2" radius={[4, 4, 0, 0]} barSize={16} />
+                    <Bar dataKey="Tests" fill="#06B6D4" radius={[4, 4, 0, 0]} barSize={16} opacity={0.6} />
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </Card.Body>
           </Card>
