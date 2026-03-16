@@ -84,7 +84,12 @@ function PageControlTab() {
     }).sort((a, b) => a.order - b.order)
   }, [pages, permissions, forms, tables])
 
-  const save = async (data) => { setSaving(true); try { await dispatch(updateSettings({ data, user })).unwrap() } catch { showError('Failed to save') } finally { setSaving(false) } }
+  const save = async (data) => {
+    setSaving(true)
+    try { await dispatch(updateSettings({ data, user })).unwrap() }
+    catch (err) { showError('Failed to save: ' + (err || 'Unknown error')) }
+    finally { setSaving(false) }
+  }
 
   const applyPermNum = (resource, role, num) => {
     const p = { ...permissions[resource] }
@@ -160,6 +165,7 @@ function PageControlTab() {
     <>
       <div className="d-flex align-items-center gap-2 flex-wrap mb-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa', fontSize: '0.65rem' }}>
         <FaShieldAlt className="text-theme" size={9} />
+        {saving && <span style={{ color: '#0891B2', fontWeight: 600 }}>Saving...</span>}
         <code style={{ color: '#16a34a' }}>4</code>=view <code style={{ color: '#2563eb' }}>2</code>=write <code style={{ color: '#dc2626' }}>1</code>=delete
         <span className="text-muted">| 7=rwx 6=rw- 4=r-- 0=---</span>
         {ROLES.map(r => <span key={r} style={{ color: RC[r], fontWeight: 700 }}>{RS[r]}</span>)}
@@ -186,10 +192,10 @@ function PageControlTab() {
                 <div className="d-flex align-items-center gap-3 flex-wrap mb-2">
                   <small className="fw-bold text-muted" style={{ fontSize: '0.6rem' }}>PERMS</small>
                   {ROLES.map((role, i) => (
-                    <PermNum key={role} role={role} value={code[i]} onChange={(v) => item.hasPerms ? applyPermNum(item.key, role, v) : applyPageNum(item.key, role, v)} disabled={saving} />
+                    <PermNum key={role} role={role} value={code[i]} onChange={(v) => item.hasPerms ? applyPermNum(item.key, role, v) : applyPageNum(item.key, role, v)} />
                   ))}
                   {item.path && <label className="d-flex align-items-center gap-1" style={{ fontSize: '0.6rem', color: '#64748b' }}>
-                    <Form.Check type="checkbox" checked={item.sidebar !== false} onChange={() => toggleSidebar(item.key)} disabled={saving} /> sidebar
+                    <Form.Check type="checkbox" checked={item.sidebar !== false} onChange={() => toggleSidebar(item.key)} /> sidebar
                   </label>}
                 </div>
 
@@ -200,7 +206,7 @@ function PageControlTab() {
                     {Object.entries(item.tabs).map(([tk, tc]) => (
                       <div key={tk} className="d-flex align-items-center gap-2 mt-1 ps-2" style={{ borderLeft: '2px solid #e2e8f0', fontSize: '0.7rem' }}>
                         <span style={{ fontWeight: 500, minWidth: 70 }}>{tc.label || tk}</span>
-                        {ROLES.map(r => <RoleBtn key={r} role={r} active={(tc.roles || []).includes(r)} onClick={() => toggleTabRole(item.key, tk, r)} disabled={saving} />)}
+                        {ROLES.map(r => <RoleBtn key={r} role={r} active={(tc.roles || []).includes(r)} onClick={() => toggleTabRole(item.key, tk, r)} />)}
                       </div>
                     ))}
                   </div>
@@ -233,24 +239,24 @@ function PageControlTab() {
                             onClick={() => setExpandedField(isExp ? null : `${item.key}:${fk}`)}>
                             <span style={{ width: 14 }}>{isExp ? <FaChevronDown size={6} className="text-muted" /> : <FaChevronRight size={6} className="text-muted" />}</span>
                             <span style={{ width: 18 }} onClick={e => e.stopPropagation()}>
-                              <Form.Check type="checkbox" checked={f.visible} onChange={() => updateField(item.key, fk, { visible: !f.visible })} disabled={saving} />
+                              <Form.Check type="checkbox" checked={f.visible} onChange={() => updateField(item.key, fk, { visible: !f.visible })} />
                             </span>
                             <span style={{ flex: 1, color: f.visible ? '#334155' : '#94a3b8', fontWeight: 500 }}>
                               {f.label}{f.required && <span className="text-danger">*</span>}
                             </span>
                             <span style={{ width: 30, fontSize: '0.52rem', color: '#94a3b8' }}>{f.type}</span>
                             <span style={{ width: 18, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                              {f.inTable && <Form.Check type="checkbox" checked={f.tableVisible} onChange={() => updateField(item.key, fk, { tableVisible: !f.tableVisible })} disabled={saving} />}
+                              {f.inTable && <Form.Check type="checkbox" checked={f.tableVisible} onChange={() => updateField(item.key, fk, { tableVisible: !f.tableVisible })} />}
                             </span>
                             <span style={{ width: 14, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                              {f.inTable && <Form.Check type="checkbox" checked={f.searchable} onChange={() => updateField(item.key, fk, { searchable: !f.searchable })} disabled={saving} />}
+                              {f.inTable && <Form.Check type="checkbox" checked={f.searchable} onChange={() => updateField(item.key, fk, { searchable: !f.searchable })} />}
                             </span>
                             <div className="d-flex gap-1" onClick={e => e.stopPropagation()}>
                               {ROLES.map(r => {
                                 const fieldPerms = f.perms || {}
                                 const rp = fieldPerms[r] ?? (f.roles.includes(r) ? 6 : 0)
                                 return (
-                                  <PermNum key={r} role={r} value={rp} disabled={saving || !f.visible}
+                                  <PermNum key={r} role={r} value={rp} disabled={!f.visible}
                                     onChange={(v) => updateField(item.key, fk, { perms: { ...fieldPerms, [r]: v } })} />
                                 )
                               })}
