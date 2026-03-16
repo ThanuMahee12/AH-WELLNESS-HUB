@@ -7,6 +7,7 @@ import { Breadcrumb, RichTextEditor, PageHeader } from '../components/ui'
 import Select from 'react-select'
 import { fetchCheckups, addCheckup, updateCheckup, deleteCheckup, selectAllCheckups } from '../store/checkupsSlice'
 import { firestoreService } from '../services/firestoreService'
+import { notifyAppointmentApproved } from '../services/notificationService'
 import { fetchPatients, addPatient, selectAllPatients } from '../store/patientsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { selectAllMedicines, fetchMedicines } from '../store/medicinesSlice'
@@ -249,6 +250,7 @@ function CheckupForm() {
           if (appointmentPrefill.isOwn && appointmentPrefill.userId && formData.patientId) {
             await firestoreService.linkPatientToUser(appointmentPrefill.userId, formData.patientId).catch(() => {})
           }
+          notifyAppointmentApproved({ userId: appointmentPrefill.userId, expectedDate: appointmentPrefill.expectedDate || '', checkupId: result.payload.id }).catch(() => {})
           setAppointmentPrefill(null)
         }
         success('Checkup created successfully!')

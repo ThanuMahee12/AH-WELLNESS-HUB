@@ -8,6 +8,9 @@ export const NOTIFICATION_TYPES = {
   ROLE_REQUEST_APPROVED: 'role_request_approved',
   ROLE_REQUEST_REJECTED: 'role_request_rejected',
   SYSTEM_RELEASE: 'system_release',
+  APPOINTMENT_CREATED: 'appointment_created',
+  APPOINTMENT_APPROVED: 'appointment_approved',
+  APPOINTMENT_REJECTED: 'appointment_rejected',
 }
 
 /**
@@ -287,4 +290,46 @@ export const notifySystemRelease = async (version) => {
     console.error('Error creating system release notification:', error)
     return { success: false, error: error.message }
   }
+}
+
+/**
+ * Notify editors/admins about a new appointment request
+ * Sends to 'all' so any editor+ will see it
+ */
+export const notifyAppointmentCreated = async ({ username, patientName, expectedDate, tests }) => {
+  return await createNotification({
+    type: NOTIFICATION_TYPES.APPOINTMENT_CREATED,
+    recipientId: 'all',
+    title: 'New Appointment Request',
+    message: `${username} requested an appointment for ${patientName} on ${expectedDate}. Tests: ${Array.isArray(tests) ? tests.join(', ') : tests}`,
+    metadata: { username, patientName, expectedDate },
+  })
+}
+
+/**
+ * Notify user that their appointment was approved
+ */
+export const notifyAppointmentApproved = async ({ userId, expectedDate, checkupId }) => {
+  return await createNotification({
+    type: NOTIFICATION_TYPES.APPOINTMENT_APPROVED,
+    recipientId: userId,
+    title: 'Appointment Approved',
+    message: `Your appointment for ${expectedDate} has been approved. Your checkup is ready.`,
+    metadata: { checkupId, expectedDate },
+  })
+}
+
+/**
+ * Notify user that their appointment was rejected
+ */
+export const notifyAppointmentRejected = async ({ userId, expectedDate, reason }) => {
+  return await createNotification({
+    type: NOTIFICATION_TYPES.APPOINTMENT_REJECTED,
+    recipientId: userId,
+    title: 'Appointment Rejected',
+    message: reason
+      ? `Your appointment for ${expectedDate} was rejected. Reason: ${reason}`
+      : `Your appointment for ${expectedDate} was rejected.`,
+    metadata: { expectedDate, reason },
+  })
 }

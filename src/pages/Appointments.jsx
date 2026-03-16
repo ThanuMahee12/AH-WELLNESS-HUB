@@ -7,6 +7,7 @@ import {
   FaCalendarAlt, FaFlask, FaChevronDown, FaChevronUp,
 } from 'react-icons/fa'
 import { firestoreService } from '../services/firestoreService'
+import { notifyAppointmentApproved, notifyAppointmentRejected } from '../services/notificationService'
 import { useNotification } from '../context'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
@@ -77,6 +78,7 @@ function Appointments() {
     try {
       const result = await firestoreService.rejectAppointment(rejectModal.id, rejectReason.trim())
       if (result.success) {
+        notifyAppointmentRejected({ userId: rejectModal.userId, expectedDate: rejectModal.expectedDate || '', reason: rejectReason.trim() }).catch(() => {})
         showSuccess('Appointment rejected')
         setRejectModal(null)
         setRejectReason('')

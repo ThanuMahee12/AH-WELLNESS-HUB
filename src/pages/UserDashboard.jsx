@@ -13,6 +13,7 @@ import { fetchCheckups, selectAllCheckups } from '../store/checkupsSlice'
 import { fetchTests, selectAllTests } from '../store/testsSlice'
 import { fetchUsers, selectAllUsers } from '../store/usersSlice'
 import { firestoreService } from '../services/firestoreService'
+import { notifyAppointmentCreated } from '../services/notificationService'
 import { useSettings } from '../hooks/useSettings'
 import { useNotification } from '../context'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -186,8 +187,9 @@ function UserDashboard() {
         result = await firestoreService.createAppointment(data)
         if (result.success) {
           showSuccess('Appointment requested!')
-          // Send notifications
+          // Send in-app + external notifications
           const patientName = apptForm.isOwn ? (user?.username || 'Self') : (apptForm.patientName.trim() || 'Unknown')
+          notifyAppointmentCreated({ username: user?.username || 'User', patientName, expectedDate: apptForm.expectedDate, tests: data.tests }).catch(() => {})
           const notify = settings?.checkupPdf?.appointmentNotify
           const msg = `New Appointment from ${user?.username || 'User'} for ${patientName} on ${apptForm.expectedDate}. Tests: ${data.tests.join(', ')}`
           if (notify?.whatsapp?.enabled && notify?.whatsapp?.number) {
