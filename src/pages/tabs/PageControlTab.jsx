@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Form, Accordion, Row, Col, Button } from 'react-bootstrap'
-import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaSearch } from 'react-icons/fa'
+import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaSearch, FaBell } from 'react-icons/fa'
 import { useSettings } from '../../hooks/useSettings'
 import { updateSettings } from '../../store/settingsSlice'
 import { useNotification } from '../../context'
@@ -22,18 +22,23 @@ const RoleBtn = ({ role, active, onClick, disabled }) => (
 
 const PermNum = ({ role, value, onChange, disabled }) => {
   const color = value === 7 ? '#16a34a' : value >= 4 ? '#d97706' : value > 0 ? '#dc2626' : '#94a3b8'
+  const cycle = () => { if (!disabled) onChange(value >= 7 ? 0 : value === 0 ? 4 : value === 4 ? 6 : 7) }
   return (
-    <div className="d-flex align-items-center" title={`${role}: ${value}`}>
+    <div className="d-flex align-items-center gap-1" title={`${role}: ${value} (click to cycle)`}>
       <span style={{ fontSize: '0.55rem', color: RC[role], fontWeight: 700, width: 10 }}>{RS[role]}</span>
-      <input type="number" min="0" max="7" value={value} onChange={(e) => onChange(Math.max(0, Math.min(7, parseInt(e.target.value) || 0)))}
-        disabled={disabled} style={{ width: 22, height: 18, fontSize: '0.65rem', fontWeight: 700, fontFamily: 'monospace',
-          textAlign: 'center', padding: 0, border: `1px solid ${color}22`, borderRadius: 3, backgroundColor: `${color}11`, color, outline: 'none' }} />
+      <button type="button" onClick={cycle} disabled={disabled}
+        style={{ width: 26, height: 22, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace',
+          textAlign: 'center', padding: 0, border: `1.5px solid ${color}44`, borderRadius: 4, backgroundColor: `${color}11`, color,
+          cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1, lineHeight: '20px' }}>
+        {value}
+      </button>
     </div>
   )
 }
 
 function PageControlTab() {
   const dispatch = useDispatch()
+  const { user } = useSelector(state => state.auth)
   const { settings } = useSettings()
   const { error: showError } = useNotification()
   const [saving, setSaving] = useState(false)
@@ -44,6 +49,7 @@ function PageControlTab() {
   const permissions = settings?.permissions || {}
   const forms = settings?.forms || {}
   const tables = settings?.tables || {}
+  const notifSettings = settings?.notifications || {}
 
   // Merge all resources
   const items = useMemo(() => {
@@ -83,27 +89,32 @@ function PageControlTab() {
     }).sort((a, b) => a.order - b.order)
   }, [pages, permissions, forms, tables])
 
-  const save = async (u) => { setSaving(true); try { await dispatch(updateSettings(u)) } catch { showError('Failed') } finally { setSaving(false) } }
+  const save = async (data) => {
+    setSaving(true)
+    try { await dispatch(updateSettings({ data, user })).unwrap() }
+    catch (err) { showError('Failed to save: ' + (err || 'Unknown error')) }
+    finally { setSaving(false) }
+  }
 
   const applyPermNum = (resource, role, num) => {
     const p = { ...permissions[resource] }
     const set = (a, has) => { const arr = p[a] || []; p[a] = has ? (arr.includes(role) ? arr : [...arr, role]) : arr.filter(r => r !== role) }
     set('view', num & 4); set('create', num & 2); set('edit', num & 2); set('delete', num & 1)
-    save({ permissions: { ...permissions, [resource]: p } })
+    save({ permissions: { [resource]: p } })
   }
 
   const applyPageNum = (pk, role, num) => {
     const pg = pages[pk] || {}; const roles = pg.roles || []
     const nr = num >= 4 ? (roles.includes(role) ? roles : [...roles, role]) : roles.filter(r => r !== role)
-    save({ pages: { ...pages, [pk]: { ...pg, roles: nr } } })
+    save({ pages: { [pk]: { roles: nr } } })
   }
 
   const toggleTabRole = (pk, tk, role) => {
-    const pg = pages[pk] || {}; const tabs = pg.tabs || {}; const tab = tabs[tk] || {}; const roles = tab.roles || []
-    save({ pages: { ...pages, [pk]: { ...pg, tabs: { ...tabs, [tk]: { ...tab, roles: roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role] } } } } })
+    const tab = pages[pk]?.tabs?.[tk] || {}; const roles = tab.roles || []
+    save({ pages: { [pk]: { tabs: { [tk]: { roles: roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role] } } } } })
   }
 
-  const toggleSidebar = (pk) => { const pg = pages[pk] || {}; save({ pages: { ...pages, [pk]: { ...pg, sidebar: pg.sidebar === false ? true : false } } }) }
+  const toggleSidebar = (pk) => { const pg = pages[pk] || {}; save({ pages: { [pk]: { sidebar: pg.sidebar === false ? true : false } } }) }
 
   // Unified field update — syncs both form + table
   const updateField = (entity, fieldKey, updates) => {
@@ -159,6 +170,7 @@ function PageControlTab() {
     <>
       <div className="d-flex align-items-center gap-2 flex-wrap mb-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa', fontSize: '0.65rem' }}>
         <FaShieldAlt className="text-theme" size={9} />
+        {saving && <span style={{ color: '#0891B2', fontWeight: 600 }}>Saving...</span>}
         <code style={{ color: '#16a34a' }}>4</code>=view <code style={{ color: '#2563eb' }}>2</code>=write <code style={{ color: '#dc2626' }}>1</code>=delete
         <span className="text-muted">| 7=rwx 6=rw- 4=r-- 0=---</span>
         {ROLES.map(r => <span key={r} style={{ color: RC[r], fontWeight: 700 }}>{RS[r]}</span>)}
@@ -185,10 +197,10 @@ function PageControlTab() {
                 <div className="d-flex align-items-center gap-3 flex-wrap mb-2">
                   <small className="fw-bold text-muted" style={{ fontSize: '0.6rem' }}>PERMS</small>
                   {ROLES.map((role, i) => (
-                    <PermNum key={role} role={role} value={code[i]} onChange={(v) => item.hasPerms ? applyPermNum(item.key, role, v) : applyPageNum(item.key, role, v)} disabled={saving} />
+                    <PermNum key={role} role={role} value={code[i]} onChange={(v) => item.hasPerms ? applyPermNum(item.key, role, v) : applyPageNum(item.key, role, v)} />
                   ))}
                   {item.path && <label className="d-flex align-items-center gap-1" style={{ fontSize: '0.6rem', color: '#64748b' }}>
-                    <Form.Check type="checkbox" checked={item.sidebar !== false} onChange={() => toggleSidebar(item.key)} disabled={saving} /> sidebar
+                    <Form.Check type="checkbox" checked={item.sidebar !== false} onChange={() => toggleSidebar(item.key)} /> sidebar
                   </label>}
                 </div>
 
@@ -199,7 +211,7 @@ function PageControlTab() {
                     {Object.entries(item.tabs).map(([tk, tc]) => (
                       <div key={tk} className="d-flex align-items-center gap-2 mt-1 ps-2" style={{ borderLeft: '2px solid #e2e8f0', fontSize: '0.7rem' }}>
                         <span style={{ fontWeight: 500, minWidth: 70 }}>{tc.label || tk}</span>
-                        {ROLES.map(r => <RoleBtn key={r} role={r} active={(tc.roles || []).includes(r)} onClick={() => toggleTabRole(item.key, tk, r)} disabled={saving} />)}
+                        {ROLES.map(r => <RoleBtn key={r} role={r} active={(tc.roles || []).includes(r)} onClick={() => toggleTabRole(item.key, tk, r)} />)}
                       </div>
                     ))}
                   </div>
@@ -232,24 +244,24 @@ function PageControlTab() {
                             onClick={() => setExpandedField(isExp ? null : `${item.key}:${fk}`)}>
                             <span style={{ width: 14 }}>{isExp ? <FaChevronDown size={6} className="text-muted" /> : <FaChevronRight size={6} className="text-muted" />}</span>
                             <span style={{ width: 18 }} onClick={e => e.stopPropagation()}>
-                              <Form.Check type="checkbox" checked={f.visible} onChange={() => updateField(item.key, fk, { visible: !f.visible })} disabled={saving} />
+                              <Form.Check type="checkbox" checked={f.visible} onChange={() => updateField(item.key, fk, { visible: !f.visible })} />
                             </span>
                             <span style={{ flex: 1, color: f.visible ? '#334155' : '#94a3b8', fontWeight: 500 }}>
                               {f.label}{f.required && <span className="text-danger">*</span>}
                             </span>
                             <span style={{ width: 30, fontSize: '0.52rem', color: '#94a3b8' }}>{f.type}</span>
                             <span style={{ width: 18, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                              {f.inTable && <Form.Check type="checkbox" checked={f.tableVisible} onChange={() => updateField(item.key, fk, { tableVisible: !f.tableVisible })} disabled={saving} />}
+                              {f.inTable && <Form.Check type="checkbox" checked={f.tableVisible} onChange={() => updateField(item.key, fk, { tableVisible: !f.tableVisible })} />}
                             </span>
                             <span style={{ width: 14, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                              {f.inTable && <Form.Check type="checkbox" checked={f.searchable} onChange={() => updateField(item.key, fk, { searchable: !f.searchable })} disabled={saving} />}
+                              {f.inTable && <Form.Check type="checkbox" checked={f.searchable} onChange={() => updateField(item.key, fk, { searchable: !f.searchable })} />}
                             </span>
                             <div className="d-flex gap-1" onClick={e => e.stopPropagation()}>
                               {ROLES.map(r => {
                                 const fieldPerms = f.perms || {}
                                 const rp = fieldPerms[r] ?? (f.roles.includes(r) ? 6 : 0)
                                 return (
-                                  <PermNum key={r} role={r} value={rp} disabled={saving || !f.visible}
+                                  <PermNum key={r} role={r} value={rp} disabled={!f.visible}
                                     onChange={(v) => updateField(item.key, fk, { perms: { ...fieldPerms, [r]: v } })} />
                                 )
                               })}
@@ -309,6 +321,51 @@ function PageControlTab() {
           )
         })}
       </Accordion>
+
+      {/* ===== NOTIFICATION CONTROLS ===== */}
+      <div className="mt-3 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <FaBell className="text-theme" size={10} />
+          <small className="fw-bold text-muted" style={{ fontSize: '0.65rem' }}>NOTIFICATION CONTROLS</small>
+          {saving && <span style={{ color: '#0891B2', fontWeight: 600, fontSize: '0.6rem' }}>Saving...</span>}
+        </div>
+
+        {/* Header */}
+        <div className="d-flex align-items-center gap-1 py-1 px-1 mb-1" style={{ fontSize: '0.55rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+          <span style={{ width: 22 }}>On</span>
+          <span style={{ flex: 1 }}>Type</span>
+          {ROLES.map(r => <span key={r} style={{ width: 32, textAlign: 'center', color: RC[r], fontWeight: 700 }}>{RS[r]}</span>)}
+        </div>
+
+        {Object.entries(notifSettings).map(([type, config]) => {
+          const enabled = config?.enabled !== false
+          const roles = config?.roles || []
+          const label = type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+          const toggleEnabled = () => {
+            save({ notifications: { [type]: { enabled: !enabled } } })
+          }
+
+          const toggleRole = (role) => {
+            const newRoles = roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role]
+            save({ notifications: { [type]: { roles: newRoles } } })
+          }
+
+          return (
+            <div key={type} className="d-flex align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.7rem', opacity: enabled ? 1 : 0.4 }}>
+              <span style={{ width: 22 }}>
+                <Form.Check type="checkbox" checked={enabled} onChange={toggleEnabled} />
+              </span>
+              <span style={{ flex: 1, fontWeight: 500, color: '#334155' }}>{label}</span>
+              {ROLES.map(r => (
+                <span key={r} style={{ width: 32, textAlign: 'center' }}>
+                  <RoleBtn role={r} active={roles.includes(r)} onClick={() => toggleRole(r)} disabled={!enabled} />
+                </span>
+              ))}
+            </div>
+          )
+        })}
+      </div>
     </>
   )
 }

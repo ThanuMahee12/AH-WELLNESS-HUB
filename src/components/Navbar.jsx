@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { FaUser, FaSignOutAlt, FaTachometerAlt, FaBell, FaChevronDown } from 'react-icons/fa'
 import { logoutUser } from '../store/authSlice'
 import { subscribeToNotifications } from '../services/notificationService'
+import { useSettings } from '../hooks/useSettings'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
 import '../styles/navbar.css'
 
@@ -12,6 +13,8 @@ function Navbar() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useSelector(state => state.auth)
+  const { settings } = useSettings()
+  const navbarBrand = settings?.pages?.home?.content?.navbarBrand || ''
   const [unreadCount, setUnreadCount] = useState(0)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -55,11 +58,11 @@ function Navbar() {
         <BSNavbar.Brand as={Link} to="/" className="d-flex align-items-center">
           <img
             src={bloodLabLogo}
-            alt="Blood Lab Manager"
+            alt=""
             className="brand-logo"
             style={{ height: '36px', width: 'auto' }}
           />
-          <span className="brand-text ms-1">AH-WH</span>
+          {navbarBrand && <span className="brand-text ms-1">{navbarBrand}</span>}
         </BSNavbar.Brand>
 
         <div className="d-flex align-items-center ms-auto gap-2">

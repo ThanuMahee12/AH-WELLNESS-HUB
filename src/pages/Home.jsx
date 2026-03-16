@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { Container, Row, Col, Button } from 'react-bootstrap'
+import { Container, Row, Col } from 'react-bootstrap'
 import { motion } from 'framer-motion'
 import {
   FaVial, FaFileInvoiceDollar, FaLaptopMedical, FaFlask,
   FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe, FaFacebook,
   FaInstagram, FaWhatsapp, FaClock, FaInfoCircle, FaTwitter,
-  FaLinkedin, FaYoutube, FaTiktok, FaViber,
+  FaLinkedin, FaYoutube, FaTiktok, FaViber, FaArrowRight,
+  FaChevronRight,
 } from 'react-icons/fa'
 import { useSettings } from '../hooks/useSettings'
 import bloodLabLogo from '../assets/blood-lab-logo.png'
@@ -20,7 +21,6 @@ const CONTACT_ICON_MAP = {
   FaLinkedin, FaYoutube, FaTiktok, FaViber,
 }
 
-/** Extract src URL from a full <iframe> tag, or return as-is if already a URL */
 const toMapEmbedUrl = (input) => {
   if (!input) return ''
   const srcMatch = input.match(/src=["']([^"']+)["']/)
@@ -28,10 +28,8 @@ const toMapEmbedUrl = (input) => {
   return input.trim()
 }
 
-/** Convert Google Drive share URLs to direct image URLs */
 const toDirectImageUrl = (url) => {
   if (!url) return ''
-  // Extract file ID from various Google Drive URL formats
   let fileId = null
   const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
   if (fileMatch) fileId = fileMatch[1]
@@ -43,22 +41,44 @@ const toDirectImageUrl = (url) => {
   return url
 }
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (delay = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.6, delay, ease: [0.25, 0.46, 0.45, 0.94] }
+  })
+}
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.2 } }
+}
+
 function Home() {
   const navigate = useNavigate()
   const { isAuthenticated } = useSelector(state => state.auth)
   const { settings } = useSettings()
   const content = settings?.pages?.home?.content || {}
-  const heroTitle = content.heroTitle || 'AH WELLNESS HUB & ASIRI LABORATORIES'
-  const heroSubtitle = content.heroSubtitle || 'Professional Point of Sale System for Modern Blood Testing Laboratories'
+  const heroBadge = content.heroBadge || ''
+  const heroTitle = content.heroTitle || ''
+  const heroSubtitle = content.heroSubtitle || ''
   const heroImageUrl = content.heroImageUrl || ''
-  const ctaText = content.ctaText || 'Get Started'
-  const ctaAuthText = content.ctaAuthText || 'Go to Dashboard'
+  const ctaText = content.ctaText || ''
+  const ctaAuthText = content.ctaAuthText || ''
+  const ctaLink = content.ctaLink || ''
+  const ctaAuthLink = content.ctaAuthLink || ''
+  const ctaVisible = content.ctaVisible !== false
+  const ctaAuthVisible = content.ctaAuthVisible !== false
+  const featuresBadge = content.featuresBadge || ''
+  const featuresTitle = content.featuresTitle || ''
   const blogs = (content.blogs || []).filter(b => b.visible !== false)
-  const aboutTitle = content.aboutTitle || 'About Us'
+  const aboutBadge = content.aboutBadge || ''
+  const aboutTitle = content.aboutTitle || ''
   const aboutDescription = content.aboutDescription || ''
   const aboutImageUrl = content.aboutImageUrl || ''
   const aboutVisible = content.aboutVisible !== false
-  const contactTitle = content.contactTitle || 'Contact Us'
+  const contactBadge = content.contactBadge || ''
+  const contactTitle = content.contactTitle || ''
   const contactFields = (content.contactFields || []).filter(f => f.visible !== false)
   const contactDetails = contactFields.filter(f => f.type !== 'social')
   const contactSocials = contactFields.filter(f => f.type === 'social')
@@ -66,98 +86,52 @@ function Home() {
   const contactVisible = content.contactVisible !== false
   const [heroImgLoaded, setHeroImgLoaded] = useState(false)
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.15, delayChildren: 0.2, ease: [0.6, 0.05, 0.01, 0.9] }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
-      opacity: 1, y: 0,
-      transition: { duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }
-    }
-  }
-
-  const rotateVariants = {
-    animate: {
-      rotateY: [0, 360],
-      transition: { duration: 20, repeat: Infinity, ease: 'linear' }
-    }
-  }
-
-  const scaleInVariants = {
-    hidden: { scale: 0.8, opacity: 0 },
-    visible: {
-      scale: 1, opacity: 1,
-      transition: { duration: 1, ease: [0.6, 0.05, 0.01, 0.9] }
-    }
-  }
+  const showCta = isAuthenticated ? ctaAuthVisible : ctaVisible
+  const ctaBtnText = isAuthenticated ? ctaAuthText : ctaText
+  const ctaBtnLink = isAuthenticated ? ctaAuthLink : ctaLink
 
   return (
     <div className="home-wrapper">
-      {/* Subtle gradient orbs */}
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        className="home-orb home-orb-1"
-      />
-      <motion.div
-        animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.15, 0.08] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="home-orb home-orb-2"
-      />
-
-      {/* Hero Section */}
-      <Container className="py-3 py-md-5 px-3 px-md-4 home-content">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="home-hero"
-        >
-          <Row className="mb-3 align-items-center">
-            {/* Left on desktop, Bottom on mobile */}
-            <Col xs={12} lg={8} className="text-center text-lg-start mb-4 mb-lg-0 order-2 order-lg-1">
-              <motion.div variants={scaleInVariants}>
-                {!heroImageUrl && (
-                  <motion.div variants={rotateVariants} animate="animate" className="home-logo-container d-lg-none">
-                    <img src={bloodLabLogo} alt="Blood Lab Logo" className="home-logo" />
-                  </motion.div>
-                )}
-                <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1, delay: 0.3 }}
-                  className="home-title"
-                >
+      {/* ===== HERO ===== */}
+      <section className="home-hero-section">
+        <div className="home-hero-bg" />
+        <Container className="home-hero-container">
+          <Row className="align-items-center g-4">
+            <Col xs={12} lg={heroImageUrl ? 7 : 8} className="order-2 order-lg-1">
+              <motion.div variants={stagger} initial="hidden" animate="visible">
+                <motion.div variants={fadeUp} custom={0}>
+                  {heroBadge && (
+                    <span className="home-hero-badge">
+                      <FaFlask size={10} className="me-1" />
+                      {heroBadge}
+                    </span>
+                  )}
+                </motion.div>
+                <motion.h1 variants={fadeUp} custom={0.1} className="home-hero-title">
                   {heroTitle}
                 </motion.h1>
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <p className="home-subtitle">{heroSubtitle}</p>
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="home-btn-wrapper">
-                  <Button
-                    size="lg"
-                    onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
-                    className="w-100 home-btn"
-                  >
-                    {isAuthenticated ? ctaAuthText : ctaText}
-                  </Button>
-                </motion.div>
+                <motion.p variants={fadeUp} custom={0.2} className="home-hero-subtitle">
+                  {heroSubtitle}
+                </motion.p>
+                {showCta && (
+                  <motion.div variants={fadeUp} custom={0.3}>
+                    <button
+                      className="home-hero-cta"
+                      onClick={() => navigate(ctaBtnLink)}
+                    >
+                      {ctaBtnText}
+                      <FaArrowRight size={13} className="ms-2" />
+                    </button>
+                  </motion.div>
+                )}
               </motion.div>
             </Col>
-
-            {/* Right on desktop, Top on mobile */}
-            <Col xs={12} lg={4} className="text-center mb-4 mb-lg-0 order-1 order-lg-2">
-              <motion.div variants={scaleInVariants}>
+            <Col xs={12} lg={heroImageUrl ? 5 : 4} className="text-center order-1 order-lg-2">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+              >
                 {heroImageUrl ? (
                   <div className="home-hero-img-wrap">
                     {!heroImgLoaded && <div className="home-hero-img-placeholder" />}
@@ -170,204 +144,170 @@ function Home() {
                     />
                   </div>
                 ) : (
-                  <motion.div variants={rotateVariants} animate="animate" className="home-logo-container d-none d-lg-inline-block">
+                  <motion.div
+                    animate={{ rotateY: [0, 360] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    className="home-logo-container"
+                  >
                     <img src={bloodLabLogo} alt="Blood Lab Logo" className="home-logo" />
                   </motion.div>
                 )}
               </motion.div>
             </Col>
           </Row>
-        </motion.div>
-      </Container>
+        </Container>
+      </section>
 
-      {/* Blogs / Cards Section */}
+      {/* ===== FEATURES / WHAT WE OFFER ===== */}
       {blogs.length > 0 && (
-        <section className="home-blogs">
-          <Container className="px-3 px-md-4">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="home-blogs-heading">What We Offer</h2>
+        <section className="home-features">
+          <Container>
+            <motion.div initial="hidden" animate="visible" variants={stagger}>
+              <motion.div variants={fadeUp} className="text-center mb-4 mb-md-5">
+                {featuresBadge && <span className="home-section-badge">{featuresBadge}</span>}
+                {featuresTitle && <h2 className="home-section-title">{featuresTitle}</h2>}
+              </motion.div>
+              <Row className="g-4 justify-content-center">
+                {blogs.map((blog, idx) => {
+                  const Icon = BLOG_ICONS[idx % BLOG_ICONS.length]
+                  return (
+                    <Col key={idx} xs={12} sm={6} lg={4}>
+                      <motion.div variants={fadeUp} className="home-feature-card">
+                        {blog.imageUrl ? (
+                          <img src={toDirectImageUrl(blog.imageUrl)} alt={blog.title} className="home-feature-card-img" />
+                        ) : (
+                          <div className="home-feature-icon-wrap">
+                            <Icon className="home-feature-icon" />
+                          </div>
+                        )}
+                        <h5 className="home-feature-card-title">{blog.title}</h5>
+                        <p className="home-feature-card-desc">{blog.description}</p>
+                      </motion.div>
+                    </Col>
+                  )
+                })}
+              </Row>
             </motion.div>
-            <Row className="g-4 justify-content-center">
-              {blogs.map((blog, idx) => {
-                const Icon = BLOG_ICONS[idx % BLOG_ICONS.length]
-                return (
-                  <Col key={idx} xs={12} sm={6} lg={4}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 40 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: idx * 0.15 }}
-                      whileHover={{ y: -8, transition: { duration: 0.25 } }}
-                      className="home-blog-card"
-                    >
-                      {blog.imageUrl ? (
-                        <img src={toDirectImageUrl(blog.imageUrl)} alt={blog.title} className="home-blog-card-img" />
-                      ) : (
-                        <div className="home-blog-card-icon-wrapper">
-                          <Icon className="home-blog-card-icon" />
-                        </div>
-                      )}
-                      <h5 className="home-blog-card-title">{blog.title}</h5>
-                      <p className="home-blog-card-desc">{blog.description}</p>
+          </Container>
+        </section>
+      )}
+
+      {/* ===== ABOUT ===== */}
+      {aboutVisible && aboutDescription && (
+        <section className="home-about">
+          <Container>
+            <motion.div initial="hidden" animate="visible" variants={stagger}>
+              <motion.div variants={fadeUp} className="text-center mb-4 mb-md-5">
+                {aboutBadge && <span className="home-section-badge">{aboutBadge}</span>}
+                {aboutTitle && <h2 className="home-section-title">{aboutTitle}</h2>}
+              </motion.div>
+              <Row className="align-items-center g-4">
+                {aboutImageUrl && (
+                  <Col xs={12} md={5}>
+                    <motion.div variants={fadeUp}>
+                      <img src={toDirectImageUrl(aboutImageUrl)} alt="About Us" className="home-about-img" />
                     </motion.div>
                   </Col>
-                )
-              })}
-            </Row>
-          </Container>
-        </section>
-      )}
-
-      {/* About Us Section */}
-      {aboutVisible && (
-        <section className="home-about">
-          <Container className="px-3 px-md-4">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="home-section-heading">{aboutTitle}</h2>
-            </motion.div>
-            <Row className="align-items-center g-4">
-              {aboutImageUrl && (
-                <Col xs={12} md={5}>
-                  <motion.div
-                    initial={{ opacity: 0, x: -40 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <img
-                      src={toDirectImageUrl(aboutImageUrl)}
-                      alt="About Us"
-                      className="home-about-img"
-                    />
+                )}
+                <Col xs={12} md={aboutImageUrl ? 7 : 12}>
+                  <motion.div variants={fadeUp}>
+                    <p className="home-about-text">{aboutDescription}</p>
                   </motion.div>
                 </Col>
-              )}
-              <Col xs={12} md={aboutImageUrl ? 7 : 12}>
-                <motion.div
-                  initial={{ opacity: 0, x: 40 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.15 }}
-                >
-                  <p className="home-about-text">{aboutDescription}</p>
-                </motion.div>
-              </Col>
-            </Row>
+              </Row>
+            </motion.div>
           </Container>
         </section>
       )}
 
-      {/* Contact Section */}
+      {/* ===== CONTACT ===== */}
       {contactVisible && (contactFields.length > 0 || contactMapEmbedUrl) && (
         <section className="home-contact">
-          <Container className="px-3 px-md-4">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="home-section-heading">{contactTitle}</h2>
-            </motion.div>
-            <Row className="g-4 align-items-stretch">
-              {/* Left — Contact Details + Social Icons */}
-              {contactFields.length > 0 && (
-                <Col xs={12} md={contactMapEmbedUrl ? 5 : 12}>
-                  <motion.div
-                    initial={{ opacity: 0, x: -40 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="home-contact-left"
-                  >
-                    {/* Detail rows */}
-                    {contactDetails.length > 0 && (
-                      <div className="home-contact-details">
-                        {contactDetails.map((field, idx) => {
-                          const Icon = CONTACT_ICON_MAP[field.icon] || FaInfoCircle
-                          return (
-                            <div key={idx} className="home-contact-row">
-                              <Icon className="home-contact-row-icon" />
-                              <div className="home-contact-row-text">
-                                <span className="home-contact-row-label">{field.label}</span>
-                                {field.value && (
-                                  field.url ? (
-                                    <a href={field.url} target="_blank" rel="noopener noreferrer" className="home-contact-val-link">{field.value}</a>
-                                  ) : (
-                                    <span className="home-contact-val">{field.value}</span>
-                                  )
-                                )}
+          <Container>
+            <motion.div initial="hidden" animate="visible" variants={stagger}>
+              <motion.div variants={fadeUp} className="text-center mb-4 mb-md-5">
+                {contactBadge && <span className="home-section-badge">{contactBadge}</span>}
+                {contactTitle && <h2 className="home-section-title">{contactTitle}</h2>}
+              </motion.div>
+              <Row className="g-4 align-items-stretch">
+                {contactFields.length > 0 && (
+                  <Col xs={12} md={contactMapEmbedUrl ? 5 : 12}>
+                    <motion.div variants={fadeUp} className="home-contact-card">
+                      {contactDetails.length > 0 && (
+                        <div className="home-contact-details">
+                          {contactDetails.map((field, idx) => {
+                            const Icon = CONTACT_ICON_MAP[field.icon] || FaInfoCircle
+                            return (
+                              <div key={idx} className="home-contact-row">
+                                <div className="home-contact-row-icon-wrap">
+                                  <Icon className="home-contact-row-icon" />
+                                </div>
+                                <div className="home-contact-row-text">
+                                  <span className="home-contact-row-label">{field.label}</span>
+                                  {field.value && (
+                                    field.url ? (
+                                      <a href={field.url} target="_blank" rel="noopener noreferrer" className="home-contact-val-link">
+                                        {field.value}
+                                        <FaChevronRight size={8} className="ms-1 opacity-50" />
+                                      </a>
+                                    ) : (
+                                      <span className="home-contact-val">{field.value}</span>
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                    {/* Social media icons */}
-                    {contactSocials.length > 0 && (
-                      <div className="home-contact-socials">
-                        {contactSocials.map((field, idx) => {
-                          const Icon = CONTACT_ICON_MAP[field.icon] || FaGlobe
-                          return (
-                            <a
-                              key={idx}
-                              href={field.url || '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="home-contact-social-link"
-                              title={field.label}
-                            >
-                              <Icon />
-                            </a>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </motion.div>
-                </Col>
-              )}
-              {/* Right — Google Map */}
-              {contactMapEmbedUrl && (
-                <Col xs={12} md={contactFields.length > 0 ? 7 : 12}>
-                  <motion.div
-                    initial={{ opacity: 0, x: 40 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.15 }}
-                    className="home-contact-map-wrap"
-                  >
-                    <iframe
-                      src={toMapEmbedUrl(contactMapEmbedUrl)}
-                      title="Location Map"
-                      className="home-contact-map"
-                      allowFullScreen
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </motion.div>
-                </Col>
-              )}
-            </Row>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {contactSocials.length > 0 && (
+                        <div className="home-contact-socials">
+                          {contactSocials.map((field, idx) => {
+                            const Icon = CONTACT_ICON_MAP[field.icon] || FaGlobe
+                            return (
+                              <a key={idx} href={field.url || '#'} target="_blank" rel="noopener noreferrer"
+                                className="home-contact-social-link" title={field.label}>
+                                <Icon />
+                              </a>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </motion.div>
+                  </Col>
+                )}
+                {contactMapEmbedUrl && (
+                  <Col xs={12} md={contactFields.length > 0 ? 7 : 12}>
+                    <motion.div variants={fadeUp} className="home-contact-map-wrap">
+                      <iframe
+                        src={toMapEmbedUrl(contactMapEmbedUrl)}
+                        title="Location Map"
+                        className="home-contact-map"
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    </motion.div>
+                  </Col>
+                )}
+              </Row>
+            </motion.div>
           </Container>
         </section>
       )}
 
-      {/* Footer */}
+      {/* ===== FOOTER ===== */}
       <footer className="home-footer">
-        <Container className="text-center">
-          <p className="mb-0">
-            &copy; {new Date().getFullYear()} {heroTitle.split('&')[0]?.trim() || 'AH WELLNESS HUB'}. All rights reserved.
-          </p>
+        <Container>
+          <div className="home-footer-inner">
+            <div className="home-footer-brand">
+              <FaFlask size={16} className="me-2" />
+              <span>{heroTitle.split('&')[0]?.trim()}</span>
+            </div>
+            <p className="home-footer-copy">
+              &copy; {new Date().getFullYear()} All rights reserved.
+            </p>
+          </div>
         </Container>
       </footer>
     </div>

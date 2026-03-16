@@ -5,8 +5,9 @@ import {
   FaPlus, FaTrash, FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe,
   FaFacebook, FaInstagram, FaWhatsapp, FaTwitter, FaLinkedin,
   FaYoutube, FaTiktok, FaViber, FaClock, FaInfoCircle, FaPaperPlane,
-  FaChevronDown, FaChevronUp,
+  FaChevronDown, FaChevronUp, FaSignInAlt,
 } from 'react-icons/fa'
+import { ICON_MAP, ICON_OPTIONS } from '../../constants/defaultSettings'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
@@ -25,15 +26,14 @@ const extractMapSrc = (input) => {
 /** Convert Google Drive share URL to direct image URL */
 const toDirectImageUrl = (url) => {
   if (!url) return ''
-  // Google Drive file link: /file/d/FILE_ID/view or /file/d/FILE_ID/edit etc
+  let fileId = null
   const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
-  if (driveMatch) return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`
-  // Google Drive open link: /open?id=FILE_ID
+  if (driveMatch) fileId = driveMatch[1]
   const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/)
-  if (openMatch) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`
-  // Google Drive uc link: /uc?id=FILE_ID
+  if (openMatch) fileId = openMatch[1]
   const ucMatch = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/)
-  if (ucMatch) return `https://lh3.googleusercontent.com/d/${ucMatch[1]}`
+  if (ucMatch) fileId = ucMatch[1]
+  if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`
   return url
 }
 
@@ -98,8 +98,10 @@ function PublicPageTab() {
   const { success: showSuccess, error: showError } = useNotification()
 
   const homeContent = settings?.pages?.home?.content || {}
+  const loginContent = settings?.pages?.login?.content || {}
 
   const [localContent, setLocalContent] = useState({})
+  const [loginLocal, setLoginLocal] = useState({ brandTitle: '', brandSubtitle: '', brandFeatures: [] })
   const [features, setFeatures] = useState([])
   const [contactFields, setContactFields] = useState([])
 
@@ -122,19 +124,25 @@ function PublicPageTab() {
 
   useEffect(() => {
     setLocalContent({
+      navbarBrand: homeContent.navbarBrand || '',
+      heroBadge: homeContent.heroBadge || '',
       heroTitle: homeContent.heroTitle || '',
       heroSubtitle: homeContent.heroSubtitle || '',
       heroImageUrl: homeContent.heroImageUrl || '',
       ctaText: homeContent.ctaText || '',
       ctaAuthText: homeContent.ctaAuthText || '',
-      ctaLink: homeContent.ctaLink || '/login',
-      ctaAuthLink: homeContent.ctaAuthLink || '/dashboard',
+      ctaLink: homeContent.ctaLink || '',
+      ctaAuthLink: homeContent.ctaAuthLink || '',
       ctaVisible: homeContent.ctaVisible !== false,
       ctaAuthVisible: homeContent.ctaAuthVisible !== false,
+      featuresBadge: homeContent.featuresBadge || '',
+      featuresTitle: homeContent.featuresTitle || '',
+      aboutBadge: homeContent.aboutBadge || '',
       aboutTitle: homeContent.aboutTitle || '',
       aboutDescription: homeContent.aboutDescription || '',
       aboutImageUrl: homeContent.aboutImageUrl || '',
       aboutVisible: homeContent.aboutVisible !== false,
+      contactBadge: homeContent.contactBadge || '',
       contactTitle: homeContent.contactTitle || '',
       contactMapEmbedUrl: homeContent.contactMapEmbedUrl || '',
       contactVisible: homeContent.contactVisible !== false,
@@ -144,6 +152,21 @@ function PublicPageTab() {
   }, [homeContent.heroTitle, homeContent.heroSubtitle, homeContent.heroImageUrl, homeContent.ctaText, homeContent.ctaAuthText, homeContent.blogs,
       homeContent.aboutTitle, homeContent.aboutDescription, homeContent.aboutImageUrl, homeContent.aboutVisible,
       homeContent.contactTitle, homeContent.contactFields, homeContent.contactMapEmbedUrl, homeContent.contactVisible])
+
+  // Sync login branding content from settings
+  useEffect(() => {
+    setLoginLocal({
+      brandTitle: loginContent.brandTitle || '',
+      brandSubtitle: loginContent.brandSubtitle || '',
+      brandFeatures: (loginContent.brandFeatures || []).map(f => ({ ...f })),
+      loginTitle: loginContent.loginTitle || '',
+      loginSubtitle: loginContent.loginSubtitle || '',
+      forgotTitle: loginContent.forgotTitle || '',
+      forgotSubtitle: loginContent.forgotSubtitle || '',
+      signupTitle: loginContent.signupTitle || '',
+      signupSubtitle: loginContent.signupSubtitle || '',
+    })
+  }, [loginContent.brandTitle, loginContent.brandSubtitle, loginContent.brandFeatures])
 
   // Reset image error state when URLs change
   useEffect(() => { setHeroImgError(false) }, [localContent.heroImageUrl])
@@ -224,6 +247,25 @@ function PublicPageTab() {
       })).unwrap()
     } catch (err) {
       showError('Failed to update: ' + (err || 'Unknown error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const saveLoginContent = async () => {
+    setSaving(true)
+    try {
+      await dispatch(updateSettings({
+        data: { pages: { login: { content: {
+          brandTitle: loginLocal.brandTitle, brandSubtitle: loginLocal.brandSubtitle, brandFeatures: loginLocal.brandFeatures,
+          loginTitle: loginLocal.loginTitle, loginSubtitle: loginLocal.loginSubtitle,
+          forgotTitle: loginLocal.forgotTitle, forgotSubtitle: loginLocal.forgotSubtitle,
+          signupTitle: loginLocal.signupTitle, signupSubtitle: loginLocal.signupSubtitle,
+        } } } },
+        user,
+      })).unwrap()
+    } catch (err) {
+      showError('Failed to save login content: ' + (err || 'Unknown error'))
     } finally {
       setSaving(false)
     }
@@ -339,17 +381,120 @@ function PublicPageTab() {
 
   return (
     <>
+      {/* Login Page Branding */}
+      <Card className="shadow-sm border-0 mb-3">
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-1">
+              <FaSignInAlt size={10} className="text-muted" />
+              <small className="fw-bold text-muted">LOGIN PAGE</small>
+            </div>
+            <SaveBtn saving={saving} onClick={saveLoginContent} />
+          </div>
+          <Row className="g-2">
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Brand Title</Form.Label>
+                <Form.Control size="sm" value={loginLocal.brandTitle} onChange={(e) => setLoginLocal(p => ({ ...p, brandTitle: e.target.value }))} placeholder="e.g., Blood Lab Manager" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Brand Subtitle</Form.Label>
+                <Form.Control size="sm" value={loginLocal.brandSubtitle} onChange={(e) => setLoginLocal(p => ({ ...p, brandSubtitle: e.target.value }))} placeholder="e.g., Complete POS system for labs" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Brand Features */}
+          <div className="mt-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <small className="fw-bold text-muted" style={{ fontSize: '0.62rem' }}>BRAND FEATURES (shown on login sidebar)</small>
+              <button type="button" onClick={() => setLoginLocal(p => ({ ...p, brandFeatures: [...p.brandFeatures, { icon: 'FaFlask', text: '' }] }))}
+                style={{ fontSize: '0.62rem', padding: '1px 6px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+                <FaPlus size={7} className="me-1" />Add
+              </button>
+            </div>
+            {loginLocal.brandFeatures.map((feat, idx) => {
+              const Icon = ICON_MAP[feat.icon] || ICON_MAP.FaFlask
+              return (
+                <div key={idx} className="d-flex align-items-center gap-1 mb-1">
+                  {/* Icon selector */}
+                  <span style={{ width: 30, position: 'relative' }}>
+                    <Icon size={12} style={{ color: '#0891B2' }} />
+                    <Form.Select size="sm" value={feat.icon || 'FaFlask'}
+                      onChange={(e) => setLoginLocal(p => ({ ...p, brandFeatures: p.brandFeatures.map((f, i) => i === idx ? { ...f, icon: e.target.value } : f) }))}
+                      className="position-absolute top-0 start-0 opacity-0" style={{ width: 30, height: 24, cursor: 'pointer' }}>
+                      {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </Form.Select>
+                  </span>
+                  {/* Text */}
+                  <Form.Control size="sm" value={feat.text} placeholder="Feature description"
+                    onChange={(e) => setLoginLocal(p => ({ ...p, brandFeatures: p.brandFeatures.map((f, i) => i === idx ? { ...f, text: e.target.value } : f) }))}
+                    style={{ fontSize: '0.75rem', flex: 1, height: 26 }} />
+                  {/* Delete */}
+                  <button type="button" onClick={() => setLoginLocal(p => ({ ...p, brandFeatures: p.brandFeatures.filter((_, i) => i !== idx) }))}
+                    style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }}>
+                    <FaTrash size={9} />
+                  </button>
+                </div>
+              )
+            })}
+            {loginLocal.brandFeatures.length === 0 && (
+              <div className="text-center text-muted py-1" style={{ fontSize: '0.72rem' }}>No features. Click Add to create one.</div>
+            )}
+          </div>
+
+          {/* Login Form Headers */}
+          <div className="mt-2 p-2 rounded" style={{ backgroundColor: '#f8f9fa' }}>
+            <small className="fw-bold text-muted d-block mb-1" style={{ fontSize: '0.62rem' }}>LOGIN FORM HEADERS</small>
+            <Row className="g-2">
+              <Col xs={6} md={4}>
+                <Form.Control size="sm" value={loginLocal.loginTitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, loginTitle: e.target.value }))} placeholder="Login title" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={8}>
+                <Form.Control size="sm" value={loginLocal.loginSubtitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, loginSubtitle: e.target.value }))} placeholder="Login subtitle" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={4}>
+                <Form.Control size="sm" value={loginLocal.signupTitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, signupTitle: e.target.value }))} placeholder="Signup title" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={8}>
+                <Form.Control size="sm" value={loginLocal.signupSubtitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, signupSubtitle: e.target.value }))} placeholder="Signup subtitle" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={4}>
+                <Form.Control size="sm" value={loginLocal.forgotTitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, forgotTitle: e.target.value }))} placeholder="Forgot password title" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+              <Col xs={6} md={8}>
+                <Form.Control size="sm" value={loginLocal.forgotSubtitle || ''} onChange={(e) => setLoginLocal(p => ({ ...p, forgotSubtitle: e.target.value }))} placeholder="Forgot password subtitle" style={{ fontSize: '0.75rem', height: 26 }} />
+              </Col>
+            </Row>
+          </div>
+        </Card.Body>
+      </Card>
+
       {/* Hero Section */}
       <Card className="shadow-sm border-0 mb-3">
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <small className="fw-bold text-muted">HERO SECTION</small>
-            <SaveBtn saving={saving} onClick={() => saveSection(['heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['navbarBrand', 'heroBadge', 'heroTitle', 'heroSubtitle', 'heroImageUrl', 'ctaText', 'ctaAuthText', 'ctaLink', 'ctaAuthLink', 'ctaVisible', 'ctaAuthVisible'])} />
           </div>
           <Row className="g-2">
             {/* Left: fields */}
             <Col xs={12} md={localContent.heroImageUrl ? 8 : 12}>
               <Row className="g-2">
+                <Col xs={12} md={6}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Navbar Brand Text</Form.Label>
+                    <Form.Control size="sm" value={localContent.navbarBrand || ''} onChange={(e) => setLocalContent(p => ({ ...p, navbarBrand: e.target.value }))} placeholder="e.g., AH-WH (shown next to logo in navbar)" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
+                <Col xs={12} md={6}>
+                  <Form.Group className="mb-1">
+                    <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Badge Text</Form.Label>
+                    <Form.Control size="sm" value={localContent.heroBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, heroBadge: e.target.value }))} onBlur={() => handleContentBlur('heroBadge')} placeholder="e.g., Laboratory Management System" style={{ fontSize: '0.8rem' }} />
+                  </Form.Group>
+                </Col>
                 <Col xs={12}>
                   <Form.Group className="mb-1">
                     <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
@@ -433,10 +578,27 @@ function PublicPageTab() {
         <Card.Body className="py-2 px-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <small className="fw-bold text-muted">FEATURES</small>
-            <button type="button" onClick={() => openModal('feature')} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
-              <FaPlus size={8} className="me-1" />Add
-            </button>
+            <div className="d-flex align-items-center gap-1">
+              <SaveBtn saving={saving} onClick={() => saveSection(['featuresBadge', 'featuresTitle'])} />
+              <button type="button" onClick={() => openModal('feature')} style={{ fontSize: '0.68rem', padding: '1px 8px', backgroundColor: '#0891B2', color: '#fff', border: 'none', borderRadius: 3 }}>
+                <FaPlus size={8} className="me-1" />Add
+              </button>
+            </div>
           </div>
+          <Row className="g-2 mb-2">
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Badge</Form.Label>
+                <Form.Control size="sm" value={localContent.featuresBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, featuresBadge: e.target.value }))} placeholder="e.g., Our Services" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Title</Form.Label>
+                <Form.Control size="sm" value={localContent.featuresTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, featuresTitle: e.target.value }))} placeholder="e.g., What We Offer" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
+            </Col>
+          </Row>
           {features.length === 0 ? (
             <div className="text-center text-muted py-3" style={{ fontSize: '0.78rem' }}>No features yet. Click &quot;Add&quot; to create one.</div>
           ) : (
@@ -492,10 +654,14 @@ function PublicPageTab() {
               checked={localContent.aboutVisible || false}
               onChange={(e) => { setLocalContent(p => ({ ...p, aboutVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { aboutVisible: e.target.checked } } } }, user })) }} />
             </div>
-            <SaveBtn saving={saving} onClick={() => saveSection(['aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['aboutBadge', 'aboutTitle', 'aboutDescription', 'aboutImageUrl', 'aboutVisible'])} />
           </div>
           <Row className="g-2">
             <Col xs={12} md={localContent.aboutImageUrl ? 8 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Badge</Form.Label>
+                <Form.Control size="sm" value={localContent.aboutBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutBadge: e.target.value }))} placeholder="e.g., Who We Are" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
               <Form.Group className="mb-1">
                 <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Title</Form.Label>
                 <Form.Control size="sm" value={localContent.aboutTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, aboutTitle: e.target.value }))} onBlur={() => handleContentBlur('aboutTitle')} placeholder="e.g., About Us" style={{ fontSize: '0.8rem' }} />
@@ -538,10 +704,14 @@ function PublicPageTab() {
                 checked={localContent.contactVisible || false}
                 onChange={(e) => { setLocalContent(p => ({ ...p, contactVisible: e.target.checked })); dispatch(updateSettings({ data: { pages: { home: { content: { contactVisible: e.target.checked } } } }, user })) }} />
             </div>
-            <SaveBtn saving={saving} onClick={() => saveSection(['contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
+            <SaveBtn saving={saving} onClick={() => saveSection(['contactBadge', 'contactTitle', 'contactMapEmbedUrl', 'contactVisible'])} />
           </div>
           <Row className="g-2">
             <Col xs={12} md={localContent.contactMapEmbedUrl ? 6 : 12}>
+              <Form.Group className="mb-1">
+                <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Badge</Form.Label>
+                <Form.Control size="sm" value={localContent.contactBadge || ''} onChange={(e) => setLocalContent(p => ({ ...p, contactBadge: e.target.value }))} placeholder="e.g., Get In Touch" style={{ fontSize: '0.8rem' }} />
+              </Form.Group>
               <Form.Group className="mb-1">
                 <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Section Title</Form.Label>
                 <Form.Control size="sm" value={localContent.contactTitle || ''} onChange={(e) => setLocalContent(p => ({ ...p, contactTitle: e.target.value }))} placeholder="e.g., Contact Us" style={{ fontSize: '0.8rem' }} />

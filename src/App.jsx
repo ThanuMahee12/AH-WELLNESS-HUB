@@ -35,6 +35,7 @@ sessionStorage.removeItem('chunk-reload')
 const Home = lazyRetry(() => import('./pages/Home'))
 const Login = lazyRetry(() => import('./pages/Login'))
 const Dashboard = lazyRetry(() => import('./pages/Dashboard'))
+const UserDashboard = lazyRetry(() => import('./pages/UserDashboard'))
 const Patients = lazyRetry(() => import('./pages/Patients'))
 const PatientDetail = lazyRetry(() => import('./pages/PatientDetail'))
 const Checkups = lazyRetry(() => import('./pages/Checkups'))
@@ -50,6 +51,7 @@ const AdminSetup = lazyRetry(() => import('./pages/AdminSetup'))
 const Settings = lazyRetry(() => import('./pages/Settings'))
 const Notifications = lazyRetry(() => import('./pages/Notifications'))
 const SystemMaintenance = lazyRetry(() => import('./pages/SystemMaintenance'))
+const Appointments = lazyRetry(() => import('./pages/Appointments'))
 
 // Create a wrapper component to access notification context
 function AppContent() {
@@ -157,7 +159,7 @@ function AppContent() {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    {user?.role === 'user' ? <UserDashboard /> : <Dashboard />}
                   </ProtectedRoute>
                 }
               />
@@ -238,6 +240,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <MedicineDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/appointments"
+                element={
+                  <ProtectedRoute>
+                    <Appointments />
                   </ProtectedRoute>
                 }
               />

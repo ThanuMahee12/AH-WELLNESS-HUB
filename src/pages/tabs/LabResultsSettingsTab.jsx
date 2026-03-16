@@ -693,6 +693,76 @@ function CheckupSettingsTab() {
         </Card>
       </Col>
 
+      {/* Appointment Notifications */}
+      <Col xs={12}>
+        <Card className="shadow-sm border-0 mb-3">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2">APPOINTMENT NOTIFICATIONS</small>
+            <Row className="g-2">
+              <Col xs={12} md={6}>
+                <div className="p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <small className="fw-semibold" style={{ fontSize: '0.72rem', color: '#16a34a' }}>WhatsApp</small>
+                    <Form.Check type="switch" checked={settings?.checkupPdf?.appointmentNotify?.whatsapp?.enabled || false}
+                      onChange={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { whatsapp: { enabled: e.target.checked } } } })} />
+                  </div>
+                  <Form.Control size="sm" type="tel" defaultValue={settings?.checkupPdf?.appointmentNotify?.whatsapp?.number || ''}
+                    onBlur={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { whatsapp: { number: e.target.value.trim() } } } })}
+                    placeholder="WhatsApp number (e.g., 94771234567)" style={{ fontSize: '0.75rem' }} />
+                </div>
+              </Col>
+              <Col xs={12} md={6}>
+                <div className="p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <small className="fw-semibold" style={{ fontSize: '0.72rem', color: '#0891B2' }}>Email</small>
+                    <Form.Check type="switch" checked={settings?.checkupPdf?.appointmentNotify?.email?.enabled || false}
+                      onChange={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { email: { enabled: e.target.checked } } } })} />
+                  </div>
+                  <Form.Control size="sm" type="email" defaultValue={settings?.checkupPdf?.appointmentNotify?.email?.address || ''}
+                    onBlur={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { email: { address: e.target.value.trim() } } } })}
+                    placeholder="Notification email address" style={{ fontSize: '0.75rem' }} />
+                </div>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+
+      {/* PDF Header Branding */}
+      <Col xs={12}>
+        <Card className="shadow-sm border-0 mb-3">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2">PDF HEADER BRANDING</small>
+            <Row className="g-2">
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-1">
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Invoice Title</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.invoiceTitle || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { invoiceTitle: val } } }) }}
+                    placeholder="e.g., AH WELLNESS HUB & ASIRI LABORATORIES" style={{ fontSize: '0.78rem' }} />
+                </Form.Group>
+              </Col>
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-1">
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Prescription Title</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.prescriptionTitle || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { prescriptionTitle: val } } }) }}
+                    placeholder="e.g., AH WELLNESS HUB" style={{ fontSize: '0.78rem' }} />
+                </Form.Group>
+              </Col>
+              <Col xs={12}>
+                <Form.Group>
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Subtitle</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.subtitle || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { subtitle: val } } }) }}
+                    placeholder="e.g., Complete Health Care Solutions" style={{ fontSize: '0.78rem' }} />
+                </Form.Group>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+
       {/* Footer Contact Details */}
       <Col xs={12}>
         <Card className="shadow-sm border-0">

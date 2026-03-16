@@ -55,11 +55,29 @@ function Dashboard() {
 
   const loading = patientsLoading || testsLoading || checkupsLoading || usersLoading
 
+  // User-level filtering: "user" role sees only their linked patients/checkups
+  const isBasicUser = user?.role === 'user'
+  const linkedPatientIds = useMemo(() => {
+    if (!isBasicUser) return null
+    // Read from users entity (more up-to-date than auth.user)
+    const userEntity = users.find(u => u.id === user?.uid)
+    return userEntity?.linkedPatients || user?.linkedPatients || []
+  }, [isBasicUser, users, user?.uid, user?.linkedPatients])
+
+  const visiblePatients = useMemo(() =>
+    isBasicUser ? patients.filter(p => linkedPatientIds.includes(p.id)) : patients,
+    [isBasicUser, patients, linkedPatientIds]
+  )
+  const visibleCheckups = useMemo(() =>
+    isBasicUser ? checkups.filter(c => linkedPatientIds.includes(c.patientId)) : checkups,
+    [isBasicUser, checkups, linkedPatientIds]
+  )
+
   // Memoized calculations using utility functions
-  const totalRevenue = useMemo(() => calculateTotalRevenue(checkups), [checkups])
-  const totalCommission = useMemo(() => calculateTotalCommission(checkups, tests), [checkups, tests])
-  const filteredCheckups = useMemo(() => filterCheckupsByDateRange(checkups, dateRange), [checkups, dateRange])
-  const chartData = useMemo(() => getDateRangeChartData(checkups, tests, dateRange), [checkups, tests, dateRange])
+  const totalRevenue = useMemo(() => calculateTotalRevenue(visibleCheckups), [visibleCheckups])
+  const totalCommission = useMemo(() => calculateTotalCommission(visibleCheckups, tests), [visibleCheckups, tests])
+  const filteredCheckups = useMemo(() => filterCheckupsByDateRange(visibleCheckups, dateRange), [visibleCheckups, dateRange])
+  const chartData = useMemo(() => getDateRangeChartData(visibleCheckups, tests, dateRange), [visibleCheckups, tests, dateRange])
 
   const testDistribution = useMemo(() => getTestDistribution(checkups, tests), [checkups, tests])
   const monthlyRevenue = useMemo(() => getMonthlyRevenueData(checkups, tests, selectedYear), [checkups, tests, selectedYear])

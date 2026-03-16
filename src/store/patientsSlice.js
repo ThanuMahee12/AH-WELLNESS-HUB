@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, createEntityAdapter } from '@reduxjs/toolkit'
 import { firestoreService } from '../services/firestoreService'
 import { logActivity, ACTIVITY_TYPES, createActivityDescription } from '../services/activityService'
+import { linkPatient, unlinkPatient, autoLinkByMobile } from './usersSlice'
 
 const COLLECTION = 'patients'
 
@@ -177,6 +178,21 @@ const patientsSlice = createSlice({
       .addCase(updatePatient.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+      })
+      // Link patient (cross-slice)
+      .addCase(linkPatient.fulfilled, (state, action) => {
+        patientsAdapter.updateOne(state, { id: action.payload.patientId, changes: { linkedUserId: action.payload.userId } })
+      })
+      // Unlink patient (cross-slice)
+      .addCase(unlinkPatient.fulfilled, (state, action) => {
+        patientsAdapter.updateOne(state, { id: action.payload.patientId, changes: { linkedUserId: '' } })
+      })
+      // Auto-link by mobile (cross-slice)
+      .addCase(autoLinkByMobile.fulfilled, (state, action) => {
+        const { userId, linkedIds } = action.payload
+        linkedIds.forEach(pid => {
+          patientsAdapter.updateOne(state, { id: pid, changes: { linkedUserId: userId } })
+        })
       })
       // Delete patient
       .addCase(deletePatient.pending, (state) => {

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useCallback, useContext, useRef } from 'react';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast, ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import '../styles/toast.css';
 import { Modal, Button } from 'react-bootstrap';
 
 const NotificationContext = createContext();
@@ -97,20 +98,22 @@ export const NotificationProvider = ({ children }) => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="colored"
+        theme="light"
+        transition={Slide}
+        limit={4}
       />
 
       {/* Confirmation Modal */}
       <Modal show={!!confirmState} onHide={handleCancel} centered size="sm" style={{ zIndex: 10000 }}>
-        <Modal.Header closeButton>
-          <Modal.Title style={{ fontSize: '1rem' }}>{confirmState?.title}</Modal.Title>
+        <Modal.Header closeButton style={{ border: 'none', paddingBottom: 0 }}>
+          <Modal.Title style={{ fontSize: '1rem', fontWeight: 700 }}>{confirmState?.title}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ fontSize: '0.9rem' }}>{confirmState?.message}</Modal.Body>
-        <Modal.Footer className="py-2">
-          <Button size="sm" variant="secondary" onClick={handleCancel}>
+        <Modal.Body style={{ fontSize: '0.9rem', color: '#475569', paddingTop: '0.5rem' }}>{confirmState?.message}</Modal.Body>
+        <Modal.Footer style={{ border: 'none', paddingTop: 0 }}>
+          <Button size="sm" variant="light" onClick={handleCancel} style={{ borderRadius: 8, fontWeight: 600, color: '#64748b' }}>
             {confirmState?.cancelText}
           </Button>
-          <Button size="sm" variant={confirmState?.variant} onClick={handleConfirm}>
+          <Button size="sm" variant={confirmState?.variant} onClick={handleConfirm} style={{ borderRadius: 8, fontWeight: 600 }}>
             {confirmState?.confirmText}
           </Button>
         </Modal.Footer>
