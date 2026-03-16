@@ -99,21 +99,21 @@ function PageControlTab() {
     const p = { ...permissions[resource] }
     const set = (a, has) => { const arr = p[a] || []; p[a] = has ? (arr.includes(role) ? arr : [...arr, role]) : arr.filter(r => r !== role) }
     set('view', num & 4); set('create', num & 2); set('edit', num & 2); set('delete', num & 1)
-    save({ permissions: { ...permissions, [resource]: p } })
+    save({ permissions: { [resource]: p } })
   }
 
   const applyPageNum = (pk, role, num) => {
     const pg = pages[pk] || {}; const roles = pg.roles || []
     const nr = num >= 4 ? (roles.includes(role) ? roles : [...roles, role]) : roles.filter(r => r !== role)
-    save({ pages: { ...pages, [pk]: { ...pg, roles: nr } } })
+    save({ pages: { [pk]: { roles: nr } } })
   }
 
   const toggleTabRole = (pk, tk, role) => {
-    const pg = pages[pk] || {}; const tabs = pg.tabs || {}; const tab = tabs[tk] || {}; const roles = tab.roles || []
-    save({ pages: { ...pages, [pk]: { ...pg, tabs: { ...tabs, [tk]: { ...tab, roles: roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role] } } } } })
+    const tab = pages[pk]?.tabs?.[tk] || {}; const roles = tab.roles || []
+    save({ pages: { [pk]: { tabs: { [tk]: { roles: roles.includes(role) ? roles.filter(r => r !== role) : [...roles, role] } } } } })
   }
 
-  const toggleSidebar = (pk) => { const pg = pages[pk] || {}; save({ pages: { ...pages, [pk]: { ...pg, sidebar: pg.sidebar === false ? true : false } } }) }
+  const toggleSidebar = (pk) => { const pg = pages[pk] || {}; save({ pages: { [pk]: { sidebar: pg.sidebar === false ? true : false } } }) }
 
   // Unified field update — syncs both form + table
   const updateField = (entity, fieldKey, updates) => {
