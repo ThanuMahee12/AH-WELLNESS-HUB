@@ -220,4 +220,24 @@ export const firestoreService = {
       return { success: false, error: error.message }
     }
   },
+
+  // Delete appointment (user can delete their own pending ones)
+  deleteAppointment: async (appointmentId) => {
+    try {
+      await deleteDoc(doc(db, 'appointments', appointmentId))
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Update appointment (user can edit their own pending ones)
+  updateAppointment: async (appointmentId, data) => {
+    try {
+      await updateDoc(doc(db, 'appointments', appointmentId), data)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
 }

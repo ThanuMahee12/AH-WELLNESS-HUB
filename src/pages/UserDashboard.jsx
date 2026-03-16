@@ -5,7 +5,7 @@ import { Container, Row, Col, Card, Badge, Form, Modal } from 'react-bootstrap'
 import {
   FaUserInjured, FaClipboardCheck, FaFlask, FaUser, FaEnvelope,
   FaPhone, FaCalendarAlt, FaEye, FaChartBar,
-  FaPlus, FaTimes, FaCheck, FaClock, FaBan,
+  FaPlus, FaTimes, FaCheck, FaClock, FaBan, FaEdit, FaTrash,
 } from 'react-icons/fa'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
@@ -31,7 +31,7 @@ function UserDashboard() {
   const tests = useSelector(selectAllTests)
   const { loading: pLoading } = useSelector(state => state.patients)
   const { loading: cLoading } = useSelector(state => state.checkups)
-  const { success: showSuccess, error: showError } = useNotification()
+  const { success: showSuccess, error: showError, confirm } = useNotification()
 
   const [selectedPatientId, setSelectedPatientId] = useState(null)
 
@@ -40,6 +40,7 @@ function UserDashboard() {
   const [apptLoading, setApptLoading] = useState(true)
   const [showApptForm, setShowApptForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [editingApptId, setEditingApptId] = useState(null)
   const [apptForm, setApptForm] = useState({ isOwn: true, patientName: '', patientMobile: '', patientAge: '', patientGender: '', expectedDate: '', tests: '', notes: '' })
   const [testSuggestions, setTestSuggestions] = useState([])
   const [selectedTests, setSelectedTests] = useState([])
@@ -176,17 +177,58 @@ function UserDashboard() {
         notes: apptForm.notes.trim(),
         status: 'pending',
       }
-      const result = await firestoreService.createAppointment(data)
+
+      let result
+      if (editingApptId) {
+        result = await firestoreService.updateAppointment(editingApptId, data)
+        if (result.success) showSuccess('Appointment updated!')
+      } else {
+        result = await firestoreService.createAppointment(data)
+        if (result.success) showSuccess('Appointment requested!')
+      }
+
       if (result.success) {
-        showSuccess('Appointment requested successfully!')
         setShowApptForm(false)
+        setEditingApptId(null)
         resetApptForm()
         loadAppointments()
       } else {
-        showError(result.error || 'Failed to create appointment')
+        showError(result.error || 'Failed')
       }
     } catch (err) { showError(err.message || 'Failed') }
     finally { setSubmitting(false) }
+  }
+
+  const handleEditAppointment = (appt) => {
+    setEditingApptId(appt.id)
+    setApptForm({
+      isOwn: appt.isOwn !== false,
+      patientName: appt.patient?.name || '',
+      patientMobile: appt.patient?.mobile || '',
+      patientAge: appt.patient?.age || '',
+      patientGender: appt.patient?.gender || '',
+      expectedDate: appt.expectedDate || '',
+      tests: '',
+      notes: appt.notes || '',
+    })
+    setSelectedTests((appt.tests || []).map((name, i) => {
+      const match = tests.find(t => t.name === name)
+      return match ? { id: match.id, name: match.name, price: match.price } : { id: `custom-${i}`, name, price: 0 }
+    }))
+    setShowApptForm(true)
+  }
+
+  const handleDeleteAppointment = async (apptId) => {
+    if (!(await confirm('Delete this appointment request?', { title: 'Delete Appointment', variant: 'danger', confirmText: 'Delete' }))) return
+    try {
+      const result = await firestoreService.deleteAppointment(apptId)
+      if (result.success) {
+        showSuccess('Appointment deleted')
+        loadAppointments()
+      } else {
+        showError(result.error || 'Failed to delete')
+      }
+    } catch (err) { showError(err.message || 'Failed') }
   }
 
   if (loading && myPatients.length === 0 && appointments.length === 0) {
@@ -240,7 +282,7 @@ function UserDashboard() {
                   My Appointments
                   {pendingCount > 0 && <Badge bg="warning" text="dark" className="ms-2" style={{ fontSize: '0.6rem' }}>{pendingCount} pending</Badge>}
                 </h6>
-                <button onClick={() => { resetApptForm(); setShowApptForm(true) }}
+                <button onClick={() => { resetApptForm(); setEditingApptId(null); setShowApptForm(true) }}
                   style={{ fontSize: '0.75rem', padding: '6px 14px', background: 'linear-gradient(135deg, #0891B2, #06B6D4)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>
                   <FaPlus size={10} className="me-1" />Request Appointment
                 </button>
@@ -267,6 +309,18 @@ function UserDashboard() {
                         {a.expectedDate && <span style={{ color: '#475569', fontSize: '0.75rem' }}><FaCalendarAlt size={8} className="me-1 opacity-50" />{a.expectedDate}</span>}
                         {a.tests && <span style={{ flex: 1, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{Array.isArray(a.tests) ? a.tests.join(', ') : a.tests}</span>}
                         {a.approxPrice > 0 && <span style={{ fontWeight: 600, color: '#0f172a' }}>~Rs.{a.approxPrice.toLocaleString()}</span>}
+                        {a.status === 'pending' && (
+                          <div className="d-flex gap-1" style={{ flexShrink: 0 }}>
+                            <button onClick={() => handleEditAppointment(a)} title="Edit"
+                              style={{ background: 'none', border: 'none', color: '#0891B2', cursor: 'pointer', padding: '2px 4px' }}>
+                              <FaEdit size={11} />
+                            </button>
+                            <button onClick={() => handleDeleteAppointment(a.id)} title="Delete"
+                              style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '2px 4px' }}>
+                              <FaTrash size={10} />
+                            </button>
+                          </div>
+                        )}
                         {a.status === 'approved' && a.checkupId && (
                           <Link to={`/checkups/${a.checkupId}/details`} style={{ fontSize: '0.7rem', color: '#0891B2', fontWeight: 600 }}>
                             <FaEye size={9} className="me-1" />View
@@ -416,7 +470,7 @@ function UserDashboard() {
       <Modal show={showApptForm} onHide={() => setShowApptForm(false)} centered fullscreen="md-down">
         <Modal.Header closeButton style={{ border: 'none', paddingBottom: 0 }}>
           <Modal.Title style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-            <FaCalendarAlt className="me-2" style={{ color: '#8b5cf6' }} />Request Appointment
+            <FaCalendarAlt className="me-2" style={{ color: '#8b5cf6' }} />{editingApptId ? 'Edit Appointment' : 'Request Appointment'}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="px-4">
@@ -509,7 +563,7 @@ function UserDashboard() {
           <button onClick={() => setShowApptForm(false)} style={{ padding: '8px 20px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem' }}>Cancel</button>
           <button onClick={handleSubmitAppointment} disabled={submitting}
             style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #0891B2, #06B6D4)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem', opacity: submitting ? 0.6 : 1 }}>
-            {submitting ? 'Submitting...' : 'Submit Request'}
+            {submitting ? 'Submitting...' : editingApptId ? 'Update' : 'Submit Request'}
           </button>
         </Modal.Footer>
       </Modal>
