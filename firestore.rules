@@ -146,6 +146,21 @@ service cloud.firestore {
     }
 
     // ============================================
+    // Appointments Collection
+    // ============================================
+    match /appointments/{appointmentId} {
+      // Users can read their own appointments, editor+ can read all (pending queue)
+      allow read: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isEditorOrAbove());
+      // Any authenticated user can create an appointment for themselves
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Editor+ can update (approve/reject), users cannot modify their own
+      allow update: if isEditorOrAbove();
+      // Superadmin can delete appointments
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================
     // Deny all other access (catch-all)
     // ============================================
     match /{document=**} {
