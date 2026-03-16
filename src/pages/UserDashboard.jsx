@@ -5,7 +5,7 @@ import { Container, Row, Col, Card, Badge, Form, Modal } from 'react-bootstrap'
 import {
   FaUserInjured, FaClipboardCheck, FaFlask, FaUser, FaEnvelope,
   FaPhone, FaCalendarAlt, FaEye, FaChartBar,
-  FaPlus, FaTimes, FaCheck, FaClock, FaBan, FaEdit, FaTrash,
+  FaPlus, FaCheck, FaClock, FaBan, FaEdit, FaTrash,
 } from 'react-icons/fa'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { fetchPatients, selectAllPatients } from '../store/patientsSlice'
@@ -42,8 +42,6 @@ function UserDashboard() {
   const [submitting, setSubmitting] = useState(false)
   const [editingApptId, setEditingApptId] = useState(null)
   const [apptForm, setApptForm] = useState({ isOwn: true, patientName: '', patientMobile: '', patientAge: '', patientGender: '', expectedDate: '', tests: '', notes: '' })
-  const [testSuggestions, setTestSuggestions] = useState([])
-  const [selectedTests, setSelectedTests] = useState([])
 
   useEffect(() => {
     dispatch(fetchPatients())
@@ -124,40 +122,40 @@ function UserDashboard() {
 
   const loading = pLoading || cLoading
 
-  // Test auto-suggest
-  const handleTestInput = (val) => {
-    setApptForm(p => ({ ...p, tests: val }))
-    if (val.trim().length >= 2) {
-      const q = val.trim().toLowerCase()
-      setTestSuggestions(tests.filter(t => t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q)).slice(0, 5))
-    } else {
-      setTestSuggestions([])
-    }
+  // Test suggestions based on current input
+  const testSuggestions = useMemo(() => {
+    const val = apptForm.tests?.trim()
+    if (!val || val.length < 2) return []
+    // Get the last word being typed (after comma)
+    const parts = val.split(',')
+    const lastPart = parts[parts.length - 1].trim().toLowerCase()
+    if (lastPart.length < 2) return []
+    return tests.filter(t => t.name?.toLowerCase().includes(lastPart) || t.code?.toLowerCase().includes(lastPart)).slice(0, 5)
+  }, [apptForm.tests, tests])
+
+  const addSuggestion = (testName) => {
+    const parts = apptForm.tests.split(',').map(s => s.trim()).filter(Boolean)
+    parts[parts.length - 1] = testName // replace last partial with full name
+    setApptForm(p => ({ ...p, tests: parts.join(', ') + ', ' }))
   }
 
-  const addTest = (test) => {
-    if (!selectedTests.find(t => t.id === test.id)) {
-      setSelectedTests(prev => [...prev, { id: test.id, name: test.name, price: test.price }])
-    }
-    setApptForm(p => ({ ...p, tests: '' }))
-    setTestSuggestions([])
-  }
-
-  const removeTest = (testId) => {
-    setSelectedTests(prev => prev.filter(t => t.id !== testId))
-  }
-
-  const approxPrice = useMemo(() => selectedTests.reduce((sum, t) => sum + (t.price || 0), 0), [selectedTests])
+  // Estimate price from matched test names
+  const approxPrice = useMemo(() => {
+    if (!apptForm.tests) return 0
+    const names = apptForm.tests.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+    return names.reduce((sum, name) => {
+      const match = tests.find(t => t.name?.toLowerCase() === name)
+      return sum + (match?.price || 0)
+    }, 0)
+  }, [apptForm.tests, tests])
 
   const resetApptForm = () => {
     setApptForm({ isOwn: true, patientName: '', patientMobile: '', patientAge: '', patientGender: '', expectedDate: '', tests: '', notes: '' })
-    setSelectedTests([])
-    setTestSuggestions([])
   }
 
   const handleSubmitAppointment = async () => {
     if (!apptForm.expectedDate) { showError('Please select a preferred date'); return }
-    if (selectedTests.length === 0) { showError('Please add at least one test'); return }
+    if (!apptForm.tests.trim()) { showError('Please describe what tests you need'); return }
     if (!apptForm.isOwn && !apptForm.patientName.trim()) { showError('Please enter patient name'); return }
 
     setSubmitting(true)
@@ -172,7 +170,7 @@ function UserDashboard() {
           gender: apptForm.patientGender,
         },
         expectedDate: apptForm.expectedDate,
-        tests: selectedTests.map(t => t.name),
+        tests: apptForm.tests.split(',').map(s => s.trim()).filter(Boolean),
         approxPrice,
         notes: apptForm.notes.trim(),
         status: 'pending',
@@ -208,13 +206,9 @@ function UserDashboard() {
       patientAge: appt.patient?.age || '',
       patientGender: appt.patient?.gender || '',
       expectedDate: appt.expectedDate || '',
-      tests: '',
+      tests: Array.isArray(appt.tests) ? appt.tests.join(', ') : (appt.tests || ''),
       notes: appt.notes || '',
     })
-    setSelectedTests((appt.tests || []).map((name, i) => {
-      const match = tests.find(t => t.name === name)
-      return match ? { id: match.id, name: match.name, price: match.price } : { id: `custom-${i}`, name, price: 0 }
-    }))
     setShowApptForm(true)
   }
 
@@ -516,37 +510,24 @@ function UserDashboard() {
               onChange={e => setApptForm(p => ({ ...p, expectedDate: e.target.value }))} />
           </Form.Group>
 
-          {/* Tests with auto-suggest */}
+          {/* Tests — free text with suggestions */}
           <Form.Group className="mb-3" style={{ position: 'relative' }}>
-            <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Tests *</Form.Label>
-            <Form.Control size="sm" placeholder="Type to search tests..." value={apptForm.tests}
-              onChange={e => handleTestInput(e.target.value)} autoComplete="off" />
+            <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Tests / Keywords *</Form.Label>
+            <Form.Control size="sm" placeholder="e.g., blood sugar, TSH, full blood count"
+              value={apptForm.tests} onChange={e => setApptForm(p => ({ ...p, tests: e.target.value }))} autoComplete="off" />
+            <Form.Text style={{ fontSize: '0.68rem' }} className="text-muted">Type test names or keywords, separated by commas</Form.Text>
             {testSuggestions.length > 0 && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxHeight: 200, overflowY: 'auto' }}>
+              <div className="d-flex flex-wrap gap-1 mt-1">
                 {testSuggestions.map(t => (
-                  <div key={t.id} onClick={() => addTest(t)} style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.82rem', borderBottom: '1px solid #f8f9fa' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
-                    <span style={{ fontWeight: 600 }}>{t.name}</span>
-                    {t.code && <span className="text-muted ms-2" style={{ fontSize: '0.72rem' }}>({t.code})</span>}
-                    {t.price > 0 && <span className="float-end" style={{ color: '#0891B2', fontWeight: 600 }}>Rs.{t.price}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-            {selectedTests.length > 0 && (
-              <div className="d-flex flex-wrap gap-1 mt-2">
-                {selectedTests.map(t => (
-                  <span key={t.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: '#e0f2fe', color: '#0e7490', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600 }}>
-                    {t.name}
-                    {t.price > 0 && <span style={{ color: '#94a3b8', fontWeight: 400 }}>Rs.{t.price}</span>}
-                    <FaTimes size={8} style={{ cursor: 'pointer', marginLeft: 2 }} onClick={() => removeTest(t.id)} />
-                  </span>
+                  <button key={t.id} type="button" onClick={() => addSuggestion(t.name)}
+                    style={{ padding: '2px 8px', background: '#f0f9ff', color: '#0e7490', border: '1px solid #bae6fd', borderRadius: 4, fontSize: '0.7rem', fontWeight: 500, cursor: 'pointer' }}>
+                    {t.name} {t.price > 0 && <span style={{ color: '#94a3b8' }}>Rs.{t.price}</span>}
+                  </button>
                 ))}
               </div>
             )}
             {approxPrice > 0 && (
-              <div className="mt-2" style={{ fontSize: '0.78rem', color: '#64748b' }}>
+              <div className="mt-1" style={{ fontSize: '0.75rem', color: '#64748b' }}>
                 Approx. total: <strong style={{ color: '#0f172a' }}>Rs. {approxPrice.toLocaleString()}</strong>
               </div>
             )}
