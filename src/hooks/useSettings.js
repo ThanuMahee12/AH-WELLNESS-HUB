@@ -181,6 +181,10 @@ export function useSettings() {
     Object.entries(entitySettings).forEach(([key, cfg]) => {
       if (cfg.type === 'list') initial[key] = []
       else if (cfg.type === 'checkbox') initial[key] = false
+      else if ((cfg.type === 'select' || cfg.type === 'radio') && Array.isArray(cfg.options)) {
+        const def = cfg.options.find(o => typeof o === 'object' && o.is_default)
+        initial[key] = def ? (def.key ?? def.value ?? '') : ''
+      }
       else initial[key] = ''
     })
     return { ...initial, ...defaults }

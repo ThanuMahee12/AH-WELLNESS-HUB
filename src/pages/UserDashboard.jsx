@@ -512,7 +512,7 @@ function UserDashboard() {
                 <Col xs={6} md={3}>
                   <Form.Select size="sm" value={apptForm.patientGender} onChange={e => setApptForm(p => ({ ...p, patientGender: e.target.value }))}>
                     <option value="">Gender</option>
-                    {(settings?.forms?.patients?.fields?.gender?.options || []).map(opt => <option key={typeof opt === 'object' ? opt.value : opt} value={typeof opt === 'object' ? opt.value : opt}>{typeof opt === 'object' ? opt.label : opt}</option>)}
+                    {(settings?.forms?.patients?.fields?.gender?.options || []).map(opt => { const v = typeof opt === 'object' ? (opt.key ?? opt.value) : opt; const l = typeof opt === 'object' ? opt.label : opt; return <option key={v} value={v}>{l}</option> })}
                   </Form.Select>
                 </Col>
                 <Col xs={12}>

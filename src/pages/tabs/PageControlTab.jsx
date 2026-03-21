@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Form, Accordion, Row, Col, Button } from 'react-bootstrap'
-import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaSearch, FaBell } from 'react-icons/fa'
+import { Form, Accordion, Row, Col, Badge } from 'react-bootstrap'
+import { FaShieldAlt, FaChevronDown, FaChevronRight, FaPlus, FaTrash, FaBell, FaGripVertical, FaStar } from 'react-icons/fa'
 import { useSettings } from '../../hooks/useSettings'
 import { updateSettings } from '../../store/settingsSlice'
 import { useNotification } from '../../context'
@@ -10,6 +10,31 @@ import { ICON_MAP, ENTITY_LABELS } from '../../constants/defaultSettings'
 const ROLES = ['superadmin', 'maintainer', 'editor', 'user']
 const RS = { superadmin: 'S', maintainer: 'M', editor: 'E', user: 'U' }
 const RC = { superadmin: '#ef4444', maintainer: '#f59e0b', editor: '#0891B2', user: '#64748b' }
+
+const FIELD_TYPES = [
+  { value: 'text', label: 'Text', icon: 'Aa', hasOptions: false },
+  { value: 'number', label: 'Number', icon: '#', hasOptions: false },
+  { value: 'email', label: 'Email', icon: '@', hasOptions: false },
+  { value: 'tel', label: 'Phone', icon: 'Ph', hasOptions: false },
+  { value: 'password', label: 'Password', icon: '**', hasOptions: false },
+  { value: 'date', label: 'Date', icon: 'D', hasOptions: false },
+  { value: 'textarea', label: 'Textarea', icon: 'T', hasOptions: false },
+  { value: 'select', label: 'Dropdown', icon: 'v', hasOptions: true },
+  { value: 'radio', label: 'Radio', icon: 'o', hasOptions: true },
+  { value: 'checkbox', label: 'Checkbox', icon: 'x', hasOptions: false },
+  { value: 'list', label: 'Tags/List', icon: '[]', hasOptions: false },
+  { value: 'richtext', label: 'Rich Text', icon: 'RT', hasOptions: false },
+  { value: 'custom', label: 'Custom', icon: 'C', hasOptions: false },
+]
+
+const TYPE_HAS_OPTIONS = new Set(FIELD_TYPES.filter(t => t.hasOptions).map(t => t.value))
+
+const S = {
+  pill: { fontSize: '0.58rem', padding: '1px 6px', borderRadius: 10, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all 0.15s', lineHeight: '16px', display: 'inline-flex', alignItems: 'center', gap: 3 },
+  label: { fontSize: '0.58rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 },
+  input: { fontSize: '0.7rem', height: 24, borderRadius: 4 },
+  section: { backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, padding: '8px 10px', marginTop: 4 },
+}
 
 const RoleBtn = ({ role, active, onClick, disabled }) => (
   <button type="button" onClick={onClick} disabled={disabled}
@@ -36,6 +61,161 @@ const PermNum = ({ role, value, onChange, disabled }) => {
   )
 }
 
+/* ===== Options Editor for select/radio ===== */
+const OptionsEditor = ({ options = [], onChange }) => {
+  const [newLabel, setNewLabel] = useState('')
+  const [newKey, setNewKey] = useState('')
+
+  const normalizeOpts = (opts) => opts.map(o => typeof o === 'string' ? { label: o, key: o.toLowerCase().replace(/\s+/g, '_'), is_default: false } : o)
+  const opts = normalizeOpts(options)
+
+  const addOption = () => {
+    const label = newLabel.trim()
+    if (!label) return
+    const key = newKey.trim() || label.toLowerCase().replace(/\s+/g, '_')
+    if (opts.find(o => o.key === key)) return
+    onChange([...opts, { label, key, is_default: false }])
+    setNewLabel('')
+    setNewKey('')
+  }
+
+  const removeOption = (idx) => {
+    const next = [...opts]
+    next.splice(idx, 1)
+    onChange(next)
+  }
+
+  const toggleDefault = (idx) => {
+    const next = opts.map((o, i) => ({ ...o, is_default: i === idx ? !o.is_default : false }))
+    onChange(next)
+  }
+
+  const updateOpt = (idx, field, value) => {
+    const next = [...opts]
+    next[idx] = { ...next[idx], [field]: value }
+    onChange(next)
+  }
+
+  return (
+    <div style={S.section}>
+      <div className="d-flex align-items-center justify-content-between mb-1">
+        <span style={S.label}>Options</span>
+        <Badge bg="light" text="dark" style={{ fontSize: '0.55rem' }}>{opts.length} items</Badge>
+      </div>
+
+      {/* Options list */}
+      {opts.length > 0 && (
+        <div style={{ border: '1px solid #f1f5f9', borderRadius: 4, overflow: 'hidden', marginBottom: 6 }}>
+          {/* Header */}
+          <div className="d-flex align-items-center gap-2 px-2 py-1" style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #f1f5f9', fontSize: '0.52rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
+            <span style={{ width: 14 }}></span>
+            <span style={{ flex: 2 }}>Label</span>
+            <span style={{ flex: 1 }}>Key</span>
+            <span style={{ width: 30, textAlign: 'center' }}>Default</span>
+            <span style={{ width: 20 }}></span>
+          </div>
+          {opts.map((opt, idx) => (
+            <div key={idx} className="d-flex align-items-center gap-2 px-2 py-1" style={{ borderBottom: '1px solid #f8fafc', fontSize: '0.68rem', backgroundColor: opt.is_default ? '#f0fdf4' : '#fff' }}>
+              <FaGripVertical size={7} style={{ color: '#cbd5e1', width: 14 }} />
+              <Form.Control size="sm" value={opt.label} onChange={e => updateOpt(idx, 'label', e.target.value)}
+                style={{ ...S.input, flex: 2, height: 22 }} />
+              <Form.Control size="sm" value={opt.key} onChange={e => updateOpt(idx, 'key', e.target.value)}
+                style={{ ...S.input, flex: 1, height: 22, color: '#64748b', fontFamily: 'monospace', fontSize: '0.6rem' }} />
+              <span style={{ width: 30, textAlign: 'center' }}>
+                <button type="button" className="btn p-0" onClick={() => toggleDefault(idx)}
+                  style={{ color: opt.is_default ? '#f59e0b' : '#e2e8f0', lineHeight: 1 }} title="Set as default">
+                  <FaStar size={10} />
+                </button>
+              </span>
+              <span style={{ width: 20 }}>
+                <button type="button" className="btn p-0" onClick={() => removeOption(idx)}
+                  style={{ color: '#ef4444', lineHeight: 1, fontSize: '0.5rem' }}><FaTrash size={8} /></button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new option */}
+      <div className="d-flex align-items-center gap-1">
+        <Form.Control size="sm" value={newLabel} onChange={e => { setNewLabel(e.target.value); if (!newKey) setNewKey('') }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOption() } }}
+          placeholder="Label" style={{ ...S.input, flex: 2, height: 22 }} />
+        <Form.Control size="sm" value={newKey} onChange={e => setNewKey(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOption() } }}
+          placeholder="key (auto)" style={{ ...S.input, flex: 1, height: 22, fontFamily: 'monospace', fontSize: '0.6rem', color: '#64748b' }} />
+        <button type="button" className="btn btn-sm d-flex align-items-center gap-1"
+          onClick={addOption} disabled={!newLabel.trim()}
+          style={{ fontSize: '0.58rem', padding: '2px 8px', backgroundColor: newLabel.trim() ? '#0891B2' : '#e2e8f0', color: '#fff', borderRadius: 4, height: 22, whiteSpace: 'nowrap' }}>
+          <FaPlus size={7} /> Add
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ===== Field Editor Panel ===== */
+const FieldEditor = ({ field: f, entityKey, fieldKey, onUpdate }) => {
+  const showOptions = TYPE_HAS_OPTIONS.has(f.type)
+
+  return (
+    <div className="ps-3 py-2 mb-1" style={{ backgroundColor: '#fafbfc', borderRadius: 6, borderLeft: '3px solid #0891B2', fontSize: '0.68rem' }}>
+      {/* Row 1: Label, Type, Width */}
+      <Row className="g-2 mb-2">
+        <Col xs={5}>
+          <label style={S.label}>Label</label>
+          <Form.Control size="sm" value={f.label} onChange={e => onUpdate({ label: e.target.value })} style={S.input} />
+        </Col>
+        <Col xs={4}>
+          <label style={S.label}>Type</label>
+          <Form.Select size="sm" value={f.type} onChange={e => onUpdate({ type: e.target.value })} style={S.input}>
+            {FIELD_TYPES.map(t => (
+              <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
+            ))}
+          </Form.Select>
+        </Col>
+        <Col xs={3}>
+          <label style={S.label}>Width</label>
+          <Form.Select size="sm" value={f.colSize} onChange={e => onUpdate({ colSize: parseInt(e.target.value) })} style={S.input}>
+            <option value={3}>25%</option>
+            <option value={4}>33%</option>
+            <option value={6}>50%</option>
+            <option value={8}>66%</option>
+            <option value={12}>100%</option>
+          </Form.Select>
+        </Col>
+      </Row>
+
+      {/* Row 2: Placeholder + toggles */}
+      <Row className="g-2 mb-1">
+        <Col xs={5}>
+          <label style={S.label}>Placeholder</label>
+          <Form.Control size="sm" value={f.placeholder} onChange={e => onUpdate({ placeholder: e.target.value })} style={S.input} />
+        </Col>
+        <Col xs={7} className="d-flex align-items-end gap-3 pb-1 flex-wrap">
+          <Form.Check type="switch" id={`${entityKey}-${fieldKey}-req`} checked={f.required}
+            onChange={() => onUpdate({ required: !f.required })}
+            label={<span style={{ fontSize: '0.62rem', fontWeight: 500 }}>Required</span>} />
+          <Form.Check type="switch" id={`${entityKey}-${fieldKey}-tbl`} checked={f.inTable}
+            onChange={() => onUpdate({ inTable: !f.inTable, tableVisible: true })}
+            label={<span style={{ fontSize: '0.62rem', fontWeight: 500 }}>Table</span>} />
+          <Form.Check type="switch" id={`${entityKey}-${fieldKey}-form`} checked={f.inForm}
+            onChange={() => onUpdate({ inForm: !f.inForm })}
+            label={<span style={{ fontSize: '0.62rem', fontWeight: 500 }}>Form</span>} />
+        </Col>
+      </Row>
+
+      {/* Row 3: Options editor (select / radio only) */}
+      {showOptions && (
+        <OptionsEditor
+          options={f.options}
+          onChange={(newOpts) => onUpdate({ options: newOpts })}
+        />
+      )}
+    </div>
+  )
+}
+
 function PageControlTab() {
   const dispatch = useDispatch()
   const { user } = useSelector(state => state.auth)
@@ -44,7 +224,7 @@ function PageControlTab() {
   const [saving, setSaving] = useState(false)
   const [expandedField, setExpandedField] = useState(null)
   const [newFieldKey, setNewFieldKey] = useState('')
-  const [newOptionText, setNewOptionText] = useState('')
+  const [addFieldType, setAddFieldType] = useState('text')
 
   const pages = settings?.pages || {}
   const permissions = settings?.permissions || {}
@@ -145,14 +325,23 @@ function PageControlTab() {
   }
 
   const addField = (entity) => {
-    if (!newFieldKey.trim()) return
-    const key = newFieldKey.trim().toLowerCase().replace(/\s+/g, '_')
-    const ff = { ...forms[entity]?.fields }; const tc = { ...tables[entity]?.columns }
+    const raw = newFieldKey.trim()
+    if (!raw) return
+    const key = raw.toLowerCase().replace(/\s+/g, '_')
+    const label = raw.split(/[\s_]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    const ff = { ...(forms[entity]?.fields || {}) }
+    const tc = { ...(tables[entity]?.columns || {}) }
     if (ff[key] || tc[key]) { showError('Field already exists'); return }
-    ff[key] = { label: key.charAt(0).toUpperCase() + key.slice(1), type: 'text', visible: true, required: false, colSize: 6 }
-    tc[key] = { label: ff[key].label, visible: true, roles: [...ROLES], searchable: false }
-    save({ forms: { ...forms, [entity]: { ...forms[entity], fields: ff } }, tables: { ...tables, [entity]: { ...tables[entity], columns: tc } } })
+    ff[key] = { label, type: addFieldType, visible: true, required: false, colSize: 6, placeholder: '' }
+    if (TYPE_HAS_OPTIONS.has(addFieldType)) ff[key].options = []
+    tc[key] = { label, visible: true, roles: [...ROLES], searchable: false }
+    save({
+      forms: { ...forms, [entity]: { ...forms[entity], fields: ff } },
+      tables: { ...tables, [entity]: { ...tables[entity], columns: tc } },
+    })
     setNewFieldKey('')
+    setAddFieldType('text')
+    setExpandedField(`${entity}:${key}`)
   }
 
   const removeField = (entity, fieldKey) => {
@@ -220,7 +409,7 @@ function PageControlTab() {
                 )}
 
                 {/* FIELDS (unified form + table) */}
-                {item.hasFields && (
+                {(item.hasFields || forms[item.key] || tables[item.key]) && (
                   <div>
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <small className="fw-bold text-muted" style={{ fontSize: '0.6rem' }}>FIELDS</small>
@@ -231,27 +420,35 @@ function PageControlTab() {
                       <span style={{ width: 14 }}></span>
                       <span style={{ width: 18 }}>Vis</span>
                       <span style={{ flex: 1 }}>Field</span>
-                      <span style={{ width: 30 }}>Type</span>
+                      <span style={{ width: 46 }}>Type</span>
                       <span style={{ width: 18, textAlign: 'center' }}>Tbl</span>
-                      <span style={{ width: 14, textAlign: 'center' }}>🔍</span>
+                      <span style={{ width: 14, textAlign: 'center' }}>S</span>
                       {ROLES.map(r => <span key={r} style={{ width: 32, textAlign: 'center', color: RC[r], fontWeight: 700 }}>{RS[r]}</span>)}
                       <span style={{ width: 14 }}></span>
                     </div>
 
                     {Object.entries(item.fields).map(([fk, f]) => {
                       const isExp = expandedField === `${item.key}:${fk}`
+                      const typeInfo = FIELD_TYPES.find(t => t.value === f.type)
                       return (
                         <div key={fk}>
-                          <div className="d-flex align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.68rem', cursor: 'pointer' }}
+                          <div className="d-flex align-items-center gap-1 py-1 px-1" style={{ borderBottom: '1px solid #f8f9fa', fontSize: '0.68rem', cursor: 'pointer', backgroundColor: isExp ? '#f0f9ff' : 'transparent' }}
                             onClick={() => setExpandedField(isExp ? null : `${item.key}:${fk}`)}>
-                            <span style={{ width: 14 }}>{isExp ? <FaChevronDown size={6} className="text-muted" /> : <FaChevronRight size={6} className="text-muted" />}</span>
+                            <span style={{ width: 14 }}>{isExp ? <FaChevronDown size={6} className="text-theme" /> : <FaChevronRight size={6} className="text-muted" />}</span>
                             <span style={{ width: 18 }} onClick={e => e.stopPropagation()}>
                               <Form.Check type="checkbox" checked={f.visible} onChange={() => updateField(item.key, fk, { visible: !f.visible })} />
                             </span>
                             <span style={{ flex: 1, color: f.visible ? '#334155' : '#94a3b8', fontWeight: 500 }}>
-                              {f.label}{f.required && <span className="text-danger">*</span>}
+                              {f.label}{f.required && <span className="text-danger ms-1">*</span>}
+                              {TYPE_HAS_OPTIONS.has(f.type) && f.options?.length > 0 && (
+                                <Badge bg="light" text="muted" style={{ fontSize: '0.45rem', marginLeft: 4, fontWeight: 500 }}>{f.options.length} opts</Badge>
+                              )}
                             </span>
-                            <span style={{ width: 30, fontSize: '0.52rem', color: '#94a3b8' }}>{f.type}</span>
+                            <span style={{ width: 46 }}>
+                              <span style={{ fontSize: '0.5rem', padding: '0 4px', backgroundColor: '#f1f5f9', borderRadius: 3, color: '#64748b', fontWeight: 500 }}>
+                                {typeInfo?.icon || '?'} {f.type}
+                              </span>
+                            </span>
                             <span style={{ width: 18, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                               {f.inTable && <Form.Check type="checkbox" checked={f.tableVisible} onChange={() => updateField(item.key, fk, { tableVisible: !f.tableVisible })} />}
                             </span>
@@ -274,84 +471,30 @@ function PageControlTab() {
                           </div>
 
                           {isExp && (
-                            <div className="ps-4 py-1 mb-1" style={{ backgroundColor: '#f8f9fa', borderRadius: 3, fontSize: '0.68rem' }}>
-                              <Row className="g-1">
-                                <Col xs={4}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Label</label>
-                                  <Form.Control size="sm" value={f.label} onChange={e => updateField(item.key, fk, { label: e.target.value })} style={{ fontSize: '0.7rem', height: 22 }} /></Col>
-                                <Col xs={3}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Type</label>
-                                  <Form.Select size="sm" value={f.type} onChange={e => updateField(item.key, fk, { type: e.target.value })} style={{ fontSize: '0.65rem', height: 22 }}>
-                                    {['text','number','email','tel','textarea','select','password','checkbox','date','richtext','custom','list'].map(t => <option key={t}>{t}</option>)}
-                                  </Form.Select></Col>
-                                <Col xs={2}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Width</label>
-                                  <Form.Select size="sm" value={f.colSize} onChange={e => updateField(item.key, fk, { colSize: parseInt(e.target.value) })} style={{ fontSize: '0.65rem', height: 22 }}>
-                                    <option value={6}>Half</option><option value={12}>Full</option>
-                                  </Form.Select></Col>
-                                <Col xs={3} className="d-flex align-items-end pb-1">
-                                  <Form.Check type="checkbox" checked={f.required} onChange={() => updateField(item.key, fk, { required: !f.required })}
-                                    label={<span style={{ fontSize: '0.6rem' }}>Req</span>} /></Col>
-                              </Row>
-                              <Row className="g-1 mt-1">
-                                <Col xs={6}><label style={{ fontSize: '0.58rem', color: '#64748b' }}>Placeholder</label>
-                                  <Form.Control size="sm" value={f.placeholder} onChange={e => updateField(item.key, fk, { placeholder: e.target.value })} style={{ fontSize: '0.7rem', height: 22 }} /></Col>
-                                <Col xs={3} className="d-flex align-items-end pb-1">
-                                  <Form.Check type="checkbox" checked={f.inTable} onChange={() => updateField(item.key, fk, { inTable: !f.inTable, tableVisible: true })}
-                                    label={<span style={{ fontSize: '0.6rem' }}>Show in Table</span>} /></Col>
-                                <Col xs={3} className="d-flex align-items-end pb-1">
-                                  <Form.Check type="checkbox" checked={f.inForm} onChange={() => updateField(item.key, fk, { inForm: !f.inForm })}
-                                    label={<span style={{ fontSize: '0.6rem' }}>Show in Form</span>} /></Col>
-                              </Row>
-
-                              {/* Select options editor */}
-                              {f.type === 'select' && (
-                                <div className="mt-1 p-1 rounded" style={{ backgroundColor: '#fff', border: '1px solid #e2e8f0' }}>
-                                  <label style={{ fontSize: '0.58rem', color: '#64748b' }}>Options</label>
-                                  <div className="d-flex flex-wrap gap-1 mb-1">
-                                    {(f.options || []).map((opt, idx) => {
-                                      const label = typeof opt === 'object' ? opt.label : opt
-                                      return (
-                                        <span key={idx} className="d-flex align-items-center gap-1 px-1" style={{ fontSize: '0.62rem', backgroundColor: '#f1f5f9', borderRadius: 3, border: '1px solid #e2e8f0' }}>
-                                          {label}
-                                          <button type="button" className="btn p-0" style={{ fontSize: '0.5rem', color: '#dc2626', lineHeight: 1 }}
-                                            onClick={() => { const opts = [...(f.options || [])]; opts.splice(idx, 1); updateField(item.key, fk, { options: opts }) }}>
-                                            <FaTrash size={6} />
-                                          </button>
-                                        </span>
-                                      )
-                                    })}
-                                  </div>
-                                  <div className="d-flex gap-1">
-                                    <Form.Control size="sm" value={expandedField === `${item.key}:${fk}` ? newOptionText : ''}
-                                      onChange={e => setNewOptionText(e.target.value)}
-                                      onKeyDown={e => {
-                                        if (e.key === 'Enter' && newOptionText.trim()) {
-                                          e.preventDefault()
-                                          updateField(item.key, fk, { options: [...(f.options || []), newOptionText.trim()] })
-                                          setNewOptionText('')
-                                        }
-                                      }}
-                                      placeholder="Add option..." style={{ fontSize: '0.65rem', height: 20, maxWidth: 140 }} />
-                                    <button type="button" className="btn btn-sm"
-                                      onClick={() => { if (newOptionText.trim()) { updateField(item.key, fk, { options: [...(f.options || []), newOptionText.trim()] }); setNewOptionText('') } }}
-                                      style={{ fontSize: '0.55rem', padding: '0 5px', backgroundColor: '#0891B2', color: '#fff', borderRadius: 3, height: 20 }}>
-                                      <FaPlus size={7} />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                            <FieldEditor
+                              field={f}
+                              entityKey={item.key}
+                              fieldKey={fk}
+                              onUpdate={(updates) => updateField(item.key, fk, updates)}
+                            />
                           )}
                         </div>
                       )
                     })}
 
                     {/* Add new field */}
-                    <div className="d-flex align-items-center gap-1 mt-1 pt-1" style={{ borderTop: '1px solid #e2e8f0' }}>
+                    <div className="d-flex align-items-center gap-1 mt-2 pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
                       <Form.Control size="sm" value={newFieldKey} onChange={e => setNewFieldKey(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addField(item.key) } }}
-                        placeholder="new_field_key" style={{ fontSize: '0.68rem', height: 22, maxWidth: 150 }} />
-                      <button type="button" className="btn btn-sm" onClick={() => addField(item.key)}
-                        style={{ fontSize: '0.6rem', padding: '1px 6px', backgroundColor: '#0891B2', color: '#fff', borderRadius: 3 }}>
-                        <FaPlus size={8} /> Add
+                        placeholder="field_name" style={{ ...S.input, flex: 1, maxWidth: 140 }} />
+                      <Form.Select size="sm" value={addFieldType} onChange={e => setAddFieldType(e.target.value)}
+                        style={{ ...S.input, width: 100 }}>
+                        {FIELD_TYPES.map(t => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
+                      </Form.Select>
+                      <button type="button" className="btn btn-sm d-flex align-items-center gap-1"
+                        onClick={() => addField(item.key)} disabled={!newFieldKey.trim()}
+                        style={{ fontSize: '0.62rem', padding: '2px 10px', backgroundColor: newFieldKey.trim() ? '#0891B2' : '#e2e8f0', color: '#fff', borderRadius: 4, height: 24, whiteSpace: 'nowrap' }}>
+                        <FaPlus size={8} /> Add Field
                       </button>
                     </div>
                   </div>

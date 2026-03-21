@@ -57,14 +57,11 @@ const FormField = React.memo(({
           >
             {placeholder && <option value="">{placeholder}</option>}
             {!placeholder && <option value="">Select...</option>}
-            {options.map((option) => (
-              <option
-                key={typeof option === 'object' ? option.value : option}
-                value={typeof option === 'object' ? option.value : option}
-              >
-                {typeof option === 'object' ? option.label : option}
-              </option>
-            ))}
+            {options.map((option) => {
+              const val = typeof option === 'object' ? (option.key ?? option.value) : option
+              const lbl = typeof option === 'object' ? option.label : option
+              return <option key={val} value={val}>{lbl}</option>
+            })}
           </Form.Select>
         );
 
@@ -86,25 +83,29 @@ const FormField = React.memo(({
 
       case 'radio':
         return (
-          <div className="d-flex gap-3">
-            {options.map((option) => (
-              <Form.Check
-                key={typeof option === 'object' ? option.value : option}
-                type="radio"
-                name={name}
-                id={`${name}-${typeof option === 'object' ? option.value : option}`}
-                label={typeof option === 'object' ? option.label : option}
-                value={typeof option === 'object' ? option.value : option}
-                checked={value === (typeof option === 'object' ? option.value : option)}
-                onChange={onChange}
-                onBlur={onBlur}
-                disabled={disabled}
-                isInvalid={!!error}
-                inline
-                style={{ fontSize: '0.82rem' }}
-                {...rest}
-              />
-            ))}
+          <div className="d-flex gap-3 flex-wrap">
+            {options.map((option) => {
+              const val = typeof option === 'object' ? (option.key ?? option.value) : option
+              const lbl = typeof option === 'object' ? option.label : option
+              return (
+                <Form.Check
+                  key={val}
+                  type="radio"
+                  name={name}
+                  id={`${name}-${val}`}
+                  label={lbl}
+                  value={val}
+                  checked={value === val}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  disabled={disabled}
+                  isInvalid={!!error}
+                  inline
+                  style={{ fontSize: '0.82rem' }}
+                  {...rest}
+                />
+              )
+            })}
           </div>
         );
 
