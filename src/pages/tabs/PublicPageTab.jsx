@@ -60,40 +60,22 @@ const CONTACT_ICON_MAP = {
   FaTiktok, FaViber, FaClock, FaInfoCircle,
 }
 
-const CONTACT_ICON_OPTIONS = [
-  { value: 'FaPhone', label: 'Phone' },
-  { value: 'FaEnvelope', label: 'Email' },
-  { value: 'FaMapMarkerAlt', label: 'Location' },
-  { value: 'FaGlobe', label: 'Website' },
-  { value: 'FaFacebook', label: 'Facebook' },
-  { value: 'FaInstagram', label: 'Instagram' },
-  { value: 'FaWhatsapp', label: 'WhatsApp' },
-  { value: 'FaTwitter', label: 'Twitter' },
-  { value: 'FaLinkedin', label: 'LinkedIn' },
-  { value: 'FaYoutube', label: 'YouTube' },
-  { value: 'FaTiktok', label: 'TikTok' },
-  { value: 'FaViber', label: 'Viber' },
-  { value: 'FaClock', label: 'Hours' },
-  { value: 'FaInfoCircle', label: 'Info' },
-]
-
-const CONTACT_TYPE_OPTIONS = [
-  { value: 'detail', label: 'Detail (shows label + value)' },
-  { value: 'social', label: 'Social Media (icon only)' },
-]
-
-const CONTACT_FIELD_FIELDS = [
-  { name: 'type', label: 'Type', type: 'select', required: true, colSize: 6, options: CONTACT_TYPE_OPTIONS },
-  { name: 'label', label: 'Label', type: 'text', required: true, colSize: 6, placeholder: 'e.g., Phone, Facebook' },
-  { name: 'icon', label: 'Icon', type: 'select', required: true, colSize: 6, options: CONTACT_ICON_OPTIONS },
-  { name: 'value', label: 'Display Value', type: 'text', required: true, colSize: 6, placeholder: 'e.g., +94 77 123 4567' },
-  { name: 'url', label: 'Link URL (optional)', type: 'text', required: false, colSize: 12, placeholder: 'e.g., tel:+94771234567 or https://facebook.com/...' },
-  { name: 'visible', label: 'Visible', type: 'checkbox', required: false, colSize: 12 },
-]
-
 function PublicPageTab() {
   const dispatch = useDispatch()
   const { settings, loading } = useSettings()
+
+  // Read dropdown options from Firestore settings
+  const contactIconOpts = (settings?.dropdowns?.contactIcons || []).map(o => ({ value: o.key, label: o.label }))
+  const contactTypeOpts = (settings?.dropdowns?.contactTypes || []).map(o => ({ value: o.key, label: o.label }))
+
+  const CONTACT_FIELD_FIELDS = [
+    { name: 'type', label: 'Type', type: 'select', required: true, colSize: 6, options: contactTypeOpts },
+    { name: 'label', label: 'Label', type: 'text', required: true, colSize: 6, placeholder: 'e.g., Phone, Facebook' },
+    { name: 'icon', label: 'Icon', type: 'select', required: true, colSize: 6, options: contactIconOpts },
+    { name: 'value', label: 'Display Value', type: 'text', required: true, colSize: 6, placeholder: 'e.g., +94 77 123 4567' },
+    { name: 'url', label: 'Link URL (optional)', type: 'text', required: false, colSize: 12, placeholder: 'e.g., tel:+94771234567 or https://facebook.com/...' },
+    { name: 'visible', label: 'Visible', type: 'checkbox', required: false, colSize: 12 },
+  ]
   const { user } = useSelector(state => state.auth)
   const { success: showSuccess, error: showError } = useNotification()
 
@@ -323,7 +305,7 @@ function PublicPageTab() {
         updated.url = autoUrl(icon, val)
         // Default label from icon if empty
         if (!updated.label) {
-          const opt = CONTACT_ICON_OPTIONS.find(o => o.value === icon)
+          const opt = contactIconOpts.find(o => o.value === icon)
           if (opt) updated.label = opt.label
         }
       }
@@ -788,7 +770,7 @@ function PublicPageTab() {
                       <Form.Select size="sm" value={field.icon || 'FaPhone'}
                         onChange={(e) => updateContactField(idx, 'icon', e.target.value)} onBlur={saveContactFields}
                         className="position-absolute top-0 start-0 opacity-0" style={{ width: 30, height: 24, cursor: 'pointer' }}>
-                        {CONTACT_ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        {contactIconOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </Form.Select>
                     </span>
                     {/* Type */}
@@ -807,7 +789,7 @@ function PublicPageTab() {
                     {/* Label (optional, defaults to icon name) */}
                     <span style={{ flex: 1 }}>
                       <Form.Control size="sm" value={field.label || ''} onChange={(e) => updateContactField(idx, 'label', e.target.value)} onBlur={saveContactFields}
-                        placeholder={CONTACT_ICON_OPTIONS.find(o => o.value === field.icon)?.label || 'Label'} style={{ fontSize: '0.72rem', height: 24, color: field.label ? '#334155' : '#94a3b8' }} />
+                        placeholder={contactIconOpts.find(o => o.value === field.icon)?.label || 'Label'} style={{ fontSize: '0.72rem', height: 24, color: field.label ? '#334155' : '#94a3b8' }} />
                     </span>
                     {/* URL (auto-generated, editable) */}
                     <span style={{ flex: 1 }} className="d-none d-md-block">

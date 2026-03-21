@@ -36,16 +36,6 @@ export const PERFORMANCE_RANGE_OPTIONS = [
   { value: 'year', label: 'This Year' }
 ];
 
-// Blood groups
-export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-
-// Gender options
-export const GENDER_OPTIONS = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' }
-];
-
 // Age limits
 export const MIN_AGE = 0;
 export const MAX_AGE = 120;
@@ -101,8 +91,6 @@ export default {
   DEFAULT_PDF_FORMAT,
   DATE_RANGE_OPTIONS,
   PERFORMANCE_RANGE_OPTIONS,
-  BLOOD_GROUPS,
-  GENDER_OPTIONS,
   MIN_AGE,
   MAX_AGE,
   CHART_COLORS,

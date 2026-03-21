@@ -34,15 +34,39 @@ export const fetchSettings = createAsyncThunk(
       const result = await firestoreService.getSettings()
       if (result.success && result.data) {
         const merged = deepMerge(DEFAULT_SETTINGS, result.data)
-        // Auto-sync missing pages/keys back to Firestore
+        // Auto-sync missing top-level keys back to Firestore
+        const syncUpdates = {}
+        // Sync missing pages
         const defaultPages = DEFAULT_SETTINGS.pages || {}
         const firestorePages = result.data.pages || {}
         const missingPages = {}
         Object.keys(defaultPages).forEach(key => {
           if (!firestorePages[key]) missingPages[key] = defaultPages[key]
         })
-        if (Object.keys(missingPages).length > 0) {
-          firestoreService.updateSettings({ pages: missingPages }).catch(() => {})
+        if (Object.keys(missingPages).length > 0) syncUpdates.pages = missingPages
+        // Sync dropdowns if missing entirely
+        if (!result.data.dropdowns && DEFAULT_SETTINGS.dropdowns) {
+          syncUpdates.dropdowns = DEFAULT_SETTINGS.dropdowns
+        }
+        // Sync missing form field options (e.g. gender, role) if field exists but has no options
+        const defaultForms = DEFAULT_SETTINGS.forms || {}
+        const firestoreForms = result.data.forms || {}
+        Object.entries(defaultForms).forEach(([entity, entityCfg]) => {
+          const fields = entityCfg.fields || {}
+          Object.entries(fields).forEach(([fieldKey, fieldCfg]) => {
+            if (fieldCfg.options && fieldCfg.options.length > 0) {
+              const fsField = firestoreForms[entity]?.fields?.[fieldKey]
+              if (fsField && !fsField.options) {
+                if (!syncUpdates.forms) syncUpdates.forms = {}
+                if (!syncUpdates.forms[entity]) syncUpdates.forms[entity] = { fields: {} }
+                if (!syncUpdates.forms[entity].fields) syncUpdates.forms[entity].fields = {}
+                syncUpdates.forms[entity].fields[fieldKey] = { ...fsField, options: fieldCfg.options }
+              }
+            }
+          })
+        })
+        if (Object.keys(syncUpdates).length > 0) {
+          firestoreService.updateSettings(syncUpdates).catch(() => {})
         }
         return merged
       }
