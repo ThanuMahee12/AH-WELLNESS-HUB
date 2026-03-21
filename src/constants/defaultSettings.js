@@ -96,7 +96,7 @@ export const DEFAULT_SETTINGS = {
       fields: {
         name: { visible: true, required: true, label: 'Patient Name', type: 'text', colSize: 6, placeholder: '' },
         age: { visible: true, required: true, label: 'Age', type: 'number', colSize: 6, placeholder: '' },
-        gender: { visible: true, required: true, label: 'Gender', type: 'select', colSize: 6, placeholder: '', options: [] },
+        gender: { visible: true, required: true, label: 'Gender', type: 'select', colSize: 6, placeholder: '' },
         mobile: { visible: true, required: true, label: 'Mobile', type: 'tel', colSize: 6, placeholder: '' },
         email: { visible: true, required: false, label: 'Email', type: 'email', colSize: 6, placeholder: '' },
         address: { visible: true, required: true, label: 'Address', type: 'textarea', colSize: 12, placeholder: '', rows: 2 },
@@ -128,7 +128,7 @@ export const DEFAULT_SETTINGS = {
         username: { visible: true, required: true, label: 'Username', type: 'text', colSize: 6, placeholder: '' },
         email: { visible: true, required: true, label: 'Email', type: 'email', colSize: 6, placeholder: '' },
         mobile: { visible: true, required: true, label: 'Mobile', type: 'tel', colSize: 6, placeholder: '' },
-        role: { visible: true, required: true, label: 'Role', type: 'select', colSize: 6, placeholder: '', options: ['user', 'editor', 'maintainer', 'admin', 'superadmin'] },
+        role: { visible: true, required: true, label: 'Role', type: 'select', colSize: 6, placeholder: '' },
       },
     },
     checkups: {
@@ -269,6 +269,29 @@ export const DEFAULT_SETTINGS = {
     appointment_created: { enabled: true, roles: ['superadmin', 'maintainer', 'editor'] },
     appointment_approved: { enabled: true, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
     appointment_rejected: { enabled: true, roles: ['superadmin', 'maintainer', 'editor', 'user'] },
+  },
+  dropdowns: {
+    contactIcons: [
+      { key: 'FaPhone', label: 'Phone' }, { key: 'FaEnvelope', label: 'Email' },
+      { key: 'FaMapMarkerAlt', label: 'Location' }, { key: 'FaGlobe', label: 'Website' },
+      { key: 'FaFacebook', label: 'Facebook' }, { key: 'FaInstagram', label: 'Instagram' },
+      { key: 'FaWhatsapp', label: 'WhatsApp' }, { key: 'FaTwitter', label: 'Twitter' },
+      { key: 'FaLinkedin', label: 'LinkedIn' }, { key: 'FaYoutube', label: 'YouTube' },
+      { key: 'FaTiktok', label: 'TikTok' }, { key: 'FaViber', label: 'Viber' },
+      { key: 'FaClock', label: 'Hours' }, { key: 'FaInfoCircle', label: 'Info' },
+    ],
+    contactTypes: [
+      { key: 'detail', label: 'Detail (shows label + value)' },
+      { key: 'social', label: 'Social Media (icon only)' },
+    ],
+    displayFormats: [
+      { key: '*', label: '*' }, { key: 'B', label: 'B' }, { key: 'I', label: 'I' },
+      { key: 'U', label: 'U' }, { key: 'IB', label: 'IB' }, { key: 'UB', label: 'UB' }, { key: 'IU', label: 'IU' },
+    ],
+    operators: [
+      { key: '>', label: '>' }, { key: '<', label: '<' }, { key: '>=', label: '>=' },
+      { key: '<=', label: '<=' }, { key: '==', label: '==' }, { key: 'between', label: 'Between' },
+    ],
   },
   checkupPdf: {
     header: {

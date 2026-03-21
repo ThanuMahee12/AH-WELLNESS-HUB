@@ -6,6 +6,9 @@ import { ROLES } from '../../constants/roles'
 import { useSelector } from 'react-redux'
 import { usePermission } from '../auth/PermissionGate'
 import { useNotification } from '../../context'
+import { useSettings } from '../../hooks/useSettings'
+
+const ROLE_COLORS = { user: 'secondary', editor: 'info', maintainer: 'warning', admin: 'primary', superadmin: 'danger' }
 
 /**
  * Role Manager Component
@@ -15,6 +18,7 @@ const RoleManager = ({ userId, currentRole, username, onRoleChanged }) => {
   const { userRole } = usePermission()
   const currentUser = useSelector((state) => state.auth.user)
   const { confirm } = useNotification()
+  const { settings } = useSettings()
   const [selectedRole, setSelectedRole] = useState(currentRole)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
@@ -24,12 +28,13 @@ const RoleManager = ({ userId, currentRole, username, onRoleChanged }) => {
     return null
   }
 
-  const roleOptions = [
-    { value: ROLES.USER, label: 'User', color: 'secondary', description: 'View only access' },
-    { value: ROLES.EDITOR, label: 'Editor', color: 'info', description: 'Can edit with approval' },
-    { value: ROLES.MAINTAINER, label: 'Maintainer', color: 'warning', description: 'User management + approvals' },
-    { value: ROLES.SUPERADMIN, label: 'SuperAdmin', color: 'danger', description: 'Full system control' },
-  ]
+  // Read role options from Firestore settings
+  const rawOpts = settings?.forms?.users?.fields?.role?.options || []
+  const roleOptions = rawOpts.map(opt => {
+    const key = typeof opt === 'object' ? (opt.key ?? opt.value) : opt
+    const label = typeof opt === 'object' ? opt.label : opt
+    return { value: key, label, color: ROLE_COLORS[key] || 'secondary' }
+  })
 
   const handleRoleChange = async () => {
     if (selectedRole === currentRole) {
@@ -119,7 +124,7 @@ const RoleManager = ({ userId, currentRole, username, onRoleChanged }) => {
           >
             {roleOptions.map((role) => (
               <option key={role.value} value={role.value}>
-                {role.label} - {role.description}
+                {role.label}
               </option>
             ))}
           </Form.Select>

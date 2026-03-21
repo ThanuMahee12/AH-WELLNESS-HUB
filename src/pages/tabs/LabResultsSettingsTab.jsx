@@ -81,24 +81,9 @@ function CheckupSettingsTab() {
     if (editingRule?.index === index) setEditingRule(null)
   }
 
-  const DISPLAY_OPTIONS = [
-    { value: '*', label: '*' },
-    { value: 'B', label: 'B' },
-    { value: 'I', label: 'I' },
-    { value: 'U', label: 'U' },
-    { value: 'IB', label: 'IB' },
-    { value: 'UB', label: 'UB' },
-    { value: 'IU', label: 'IU' },
-  ]
-
-  const OPERATORS = [
-    { value: '>', label: '>' },
-    { value: '<', label: '<' },
-    { value: '>=', label: '>=' },
-    { value: '<=', label: '<=' },
-    { value: '==', label: '==' },
-    { value: 'between', label: 'Between' },
-  ]
+  // Read from Firestore settings
+  const DISPLAY_OPTIONS = (settings?.dropdowns?.displayFormats || []).map(o => ({ value: o.key, label: o.label }))
+  const OPERATORS = (settings?.dropdowns?.operators || []).map(o => ({ value: o.key, label: o.label }))
 
   // PDF settings
   const invoicePdf = settings?.checkupPdf?.invoice || { format: 'a5', width: 148, height: 210, orientation: 'portrait' }

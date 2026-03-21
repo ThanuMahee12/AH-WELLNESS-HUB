@@ -123,7 +123,7 @@ function CheckupForm() {
             ...prev,
             name: prefill.patient.name || '',
             age: prefill.patient.age || '',
-            gender: prefill.patient.gender || 'Male',
+            gender: prefill.patient.gender || '',
             mobile: prefill.patient.mobile || '',
           }))
         }
@@ -175,7 +175,7 @@ function CheckupForm() {
       if (result.payload?.id) {
         setFormData(prev => ({ ...prev, patientId: result.payload.id }))
         setShowNewPatientForm(false)
-        setNewPatientData({ name: '', age: '', gender: 'Male', mobile: '', email: '', address: '' })
+        setNewPatientData({ name: '', age: '', gender: '', mobile: '', email: '', address: '' })
         success('Patient created successfully!')
       }
     } catch (err) {
