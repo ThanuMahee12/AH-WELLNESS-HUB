@@ -14,15 +14,6 @@ import { useNotification } from '../context'
 import { EntityForm } from '../components/crud'
 import { usePermission } from '../components/auth/PermissionGate'
 
-// Role options for the role select field (can't be stored in DB — React-specific)
-const ROLE_OPTIONS = [
-  { value: 'user', label: 'User' },
-  { value: 'editor', label: 'Editor' },
-  { value: 'maintainer', label: 'Maintainer' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'superadmin', label: 'Superadmin' },
-];
-
 function UserDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -44,9 +35,7 @@ function UserDetail() {
 
   // Get fields from settings, inject role options, add password for new users
   const fields = useMemo(() => {
-    const entityFields = getEntityFields('users', {
-      role: { options: ROLE_OPTIONS },
-    })
+    const entityFields = getEntityFields('users')
     if (isNew) {
       return [
         ...entityFields,

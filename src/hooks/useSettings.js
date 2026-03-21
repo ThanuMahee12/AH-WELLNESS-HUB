@@ -40,6 +40,7 @@ export function useSettings() {
         if (cfg.colSize != null) result.colSize = cfg.colSize
         if (cfg.placeholder != null) result.placeholder = cfg.placeholder
         if (cfg.rows != null) result.rows = cfg.rows
+        if (cfg.options) result.options = cfg.options
         return result
       })
 
@@ -54,6 +55,7 @@ export function useSettings() {
         colSize: cfg.colSize ?? 6,
         placeholder: cfg.placeholder || '',
         rows: cfg.rows ?? 3,
+        ...(cfg.options ? { options: cfg.options } : {}),
       }))
 
     return [...merged, ...dynamicFields]
@@ -146,6 +148,7 @@ export function useSettings() {
         colSize: cfg.colSize ?? 6,
         placeholder: cfg.placeholder || '',
         rows: cfg.rows ?? 3,
+        ...(cfg.options ? { options: cfg.options } : {}),
         ...(customProps[key] || {}),
       }))
   }, [settings])

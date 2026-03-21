@@ -44,6 +44,7 @@ function PageControlTab() {
   const [saving, setSaving] = useState(false)
   const [expandedField, setExpandedField] = useState(null)
   const [newFieldKey, setNewFieldKey] = useState('')
+  const [newOptionText, setNewOptionText] = useState('')
 
   const pages = settings?.pages || {}
   const permissions = settings?.permissions || {}
@@ -70,6 +71,7 @@ function PageControlTab() {
           required: ff.required || false,
           colSize: ff.colSize || 6,
           placeholder: ff.placeholder || '',
+          options: ff.options || [],
           roles: tc.roles || ff.roles || [...ROLES],
           perms: ff.perms || {},
           searchable: tc.searchable || false,
@@ -298,6 +300,44 @@ function PageControlTab() {
                                   <Form.Check type="checkbox" checked={f.inForm} onChange={() => updateField(item.key, fk, { inForm: !f.inForm })}
                                     label={<span style={{ fontSize: '0.6rem' }}>Show in Form</span>} /></Col>
                               </Row>
+
+                              {/* Select options editor */}
+                              {f.type === 'select' && (
+                                <div className="mt-1 p-1 rounded" style={{ backgroundColor: '#fff', border: '1px solid #e2e8f0' }}>
+                                  <label style={{ fontSize: '0.58rem', color: '#64748b' }}>Options</label>
+                                  <div className="d-flex flex-wrap gap-1 mb-1">
+                                    {(f.options || []).map((opt, idx) => {
+                                      const label = typeof opt === 'object' ? opt.label : opt
+                                      return (
+                                        <span key={idx} className="d-flex align-items-center gap-1 px-1" style={{ fontSize: '0.62rem', backgroundColor: '#f1f5f9', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+                                          {label}
+                                          <button type="button" className="btn p-0" style={{ fontSize: '0.5rem', color: '#dc2626', lineHeight: 1 }}
+                                            onClick={() => { const opts = [...(f.options || [])]; opts.splice(idx, 1); updateField(item.key, fk, { options: opts }) }}>
+                                            <FaTrash size={6} />
+                                          </button>
+                                        </span>
+                                      )
+                                    })}
+                                  </div>
+                                  <div className="d-flex gap-1">
+                                    <Form.Control size="sm" value={expandedField === `${item.key}:${fk}` ? newOptionText : ''}
+                                      onChange={e => setNewOptionText(e.target.value)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter' && newOptionText.trim()) {
+                                          e.preventDefault()
+                                          updateField(item.key, fk, { options: [...(f.options || []), newOptionText.trim()] })
+                                          setNewOptionText('')
+                                        }
+                                      }}
+                                      placeholder="Add option..." style={{ fontSize: '0.65rem', height: 20, maxWidth: 140 }} />
+                                    <button type="button" className="btn btn-sm"
+                                      onClick={() => { if (newOptionText.trim()) { updateField(item.key, fk, { options: [...(f.options || []), newOptionText.trim()] }); setNewOptionText('') } }}
+                                      style={{ fontSize: '0.55rem', padding: '0 5px', backgroundColor: '#0891B2', color: '#fff', borderRadius: 3, height: 20 }}>
+                                      <FaPlus size={7} />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

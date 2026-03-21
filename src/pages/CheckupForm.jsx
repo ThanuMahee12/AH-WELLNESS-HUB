@@ -715,7 +715,7 @@ function CheckupForm() {
                   <small className="fw-bold text-muted d-block mb-2">CHECKUP SUMMARY</small>
                   <table className="table table-sm mb-0" style={{ fontSize: '0.82rem' }}>
                     <tbody>
-                      <tr><td className="text-muted" style={{ width: '40%' }}>Bill No</td><td><strong>{checkup.billNo}</strong></td></tr>
+                      <tr><td className="text-muted" style={{ width: '40%' }}>Bill No</td><td><strong>{checkup?.billNo || 'Auto-generated'}</strong></td></tr>
                       <tr><td className="text-muted">Patient</td><td><strong>{patient?.name}</strong> &middot; {patient?.age}yr &middot; {patient?.gender}</td></tr>
                       <tr><td className="text-muted">Tests</td><td>{formData.tests.length} test{formData.tests.length !== 1 ? 's' : ''}</td></tr>
                       <tr><td className="text-muted">Own Tests</td><td>{formData.ownTests ? 'Yes' : 'No (outside)'}</td></tr>
