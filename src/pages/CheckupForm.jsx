@@ -55,7 +55,7 @@ function CheckupForm() {
   const [newPatientData, setNewPatientData] = useState({
     name: '',
     age: '',
-    gender: 'Male',
+    gender: '',
     mobile: '',
     email: '',
     address: ''
@@ -88,8 +88,8 @@ function CheckupForm() {
     if (checkups.length === 0) dispatch(fetchCheckups())
     if (patients.length === 0) dispatch(fetchPatients())
     if (tests.length === 0) dispatch(fetchTests())
-    if (!isNew) dispatch(fetchMedicines())
-  }, [dispatch, checkups.length, patients.length, tests.length, isNew])
+    if (medicines.length === 0) dispatch(fetchMedicines())
+  }, [dispatch, checkups.length, patients.length, tests.length, medicines.length])
 
   // Load appointment prefill data (from Appointments page approval)
   useEffect(() => {
@@ -509,7 +509,7 @@ function CheckupForm() {
                     <Row>
                       {isFieldVisible('patients', 'name') && <Col md={6}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>{getFieldLabel('patients', 'name', 'Name')} *</Form.Label><Form.Control size="sm" value={newPatientData.name} onChange={(e) => setNewPatientData({ ...newPatientData, name: e.target.value })} required /></Form.Group></Col>}
                       {isFieldVisible('patients', 'age') && <Col md={3}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>{getFieldLabel('patients', 'age', 'Age')} *</Form.Label><Form.Control size="sm" type="number" value={newPatientData.age} onChange={(e) => setNewPatientData({ ...newPatientData, age: e.target.value })} required /></Form.Group></Col>}
-                      {isFieldVisible('patients', 'gender') && <Col md={3}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Gender *</Form.Label><Form.Select size="sm" value={newPatientData.gender} onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}><option>Male</option><option>Female</option><option>Other</option></Form.Select></Form.Group></Col>}
+                      {isFieldVisible('patients', 'gender') && <Col md={3}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>{getFieldLabel('patients', 'gender', 'Gender')} {isFieldRequired('patients', 'gender', true) && '*'}</Form.Label><Form.Select size="sm" value={newPatientData.gender} onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}><option value="">Select...</option>{(settings?.forms?.patients?.fields?.gender?.options || []).map(opt => <option key={typeof opt === 'object' ? opt.value : opt} value={typeof opt === 'object' ? opt.value : opt}>{typeof opt === 'object' ? opt.label : opt}</option>)}</Form.Select></Form.Group></Col>}
                       {isFieldVisible('patients', 'mobile') && <Col md={6}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Mobile *</Form.Label><Form.Control size="sm" type="tel" value={newPatientData.mobile} onChange={(e) => setNewPatientData({ ...newPatientData, mobile: e.target.value })} required /></Form.Group></Col>}
                       {isFieldVisible('patients', 'email') && <Col md={6}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Email</Form.Label><Form.Control size="sm" type="email" value={newPatientData.email} onChange={(e) => setNewPatientData({ ...newPatientData, email: e.target.value })} /></Form.Group></Col>}
                       {isFieldVisible('patients', 'address') && <Col md={12}><Form.Group className="mb-2"><Form.Label style={{ fontSize: '0.78rem' }}>Address</Form.Label><Form.Control size="sm" as="textarea" rows={1} value={newPatientData.address} onChange={(e) => setNewPatientData({ ...newPatientData, address: e.target.value })} /></Form.Group></Col>}
