@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Row, Col, Card, Form, Badge } from 'react-bootstrap'
-import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes, FaAddressCard, FaSignature } from 'react-icons/fa'
+import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes, FaAddressCard, FaSignature, FaPrescriptionBottleAlt } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
@@ -768,6 +768,41 @@ function CheckupSettingsTab() {
                 </Form.Group>
               </Col>
             </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+
+      {/* Prescription Notes (bold lines on prescription PDF) */}
+      <Col xs={12}>
+        <Card className="shadow-sm border-0 mb-3">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2"><FaPrescriptionBottleAlt className="me-2" style={{ fontSize: '0.7rem' }} />PRESCRIPTION NOTES</small>
+            <p className="text-muted mb-2" style={{ fontSize: '0.65rem' }}>Bold notes shown above the validity line on prescriptions (e.g., "Do Not Substitute")</p>
+            {(settings?.checkupPdf?.prescriptionNotes || []).map((note, idx) => (
+              <div key={idx} className="d-flex align-items-center gap-1 mb-1">
+                <Form.Control size="sm" type="text" defaultValue={note}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim()
+                    const notes = [...(settings?.checkupPdf?.prescriptionNotes || [])]
+                    if (val) { notes[idx] = val } else { notes.splice(idx, 1) }
+                    handleUpdate({ checkupPdf: { prescriptionNotes: notes } })
+                  }}
+                  style={{ fontSize: '0.78rem', fontWeight: 600 }} />
+                <button type="button" className="btn p-0" onClick={() => {
+                  const notes = [...(settings?.checkupPdf?.prescriptionNotes || [])]
+                  notes.splice(idx, 1)
+                  handleUpdate({ checkupPdf: { prescriptionNotes: notes } })
+                }} style={{ color: '#dc2626', lineHeight: 1 }}><FaTrash size={10} /></button>
+              </div>
+            ))}
+            <button type="button" className="btn btn-sm d-flex align-items-center gap-1 mt-1"
+              onClick={() => {
+                const notes = [...(settings?.checkupPdf?.prescriptionNotes || []), 'New note']
+                handleUpdate({ checkupPdf: { prescriptionNotes: notes } })
+              }}
+              style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', borderRadius: 4 }}>
+              <FaPlus size={8} /> Add Note
+            </button>
           </Card.Body>
         </Card>
       </Col>
