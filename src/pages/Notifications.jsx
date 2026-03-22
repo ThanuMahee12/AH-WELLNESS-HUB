@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { Badge, Pagination, Card, Form } from 'react-bootstrap'
 import { FaBell, FaCheck, FaCheckDouble, FaTrash } from 'react-icons/fa'
 import { subscribeToNotifications, markAsRead, markAllAsRead } from '../services/notificationService'
-import { collection, query, where, getDocs, deleteDoc, updateDoc, doc } from 'firebase/firestore'
+import { deleteDoc, updateDoc, doc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useNotification } from '../context'
 import { PageHeader, DateRangePicker } from '../components/ui'
@@ -36,24 +36,24 @@ function Notifications() {
     if (!(await confirm('Delete all your notifications? This cannot be undone.', { title: 'Clear Notifications', variant: 'danger', confirmText: 'Clear All' }))) return
     try {
       const promises = []
-      // Delete user-specific notifications
-      const userQ = query(collection(db, 'notifications'), where('recipientId', '==', user.uid))
-      const userSnap = await getDocs(userQ)
-      userSnap.forEach(d => promises.push(deleteDoc(doc(db, 'notifications', d.id))))
-      // Mark all system/broadcast notifications as read (can't delete — other users need them)
-      const sysQ = query(collection(db, 'notifications'), where('recipientId', '==', 'all'))
-      const sysSnap = await getDocs(sysQ)
-      sysSnap.forEach(d => {
-        const data = d.data()
-        const readBy = data.readBy || []
-        if (!readBy.includes(user.uid)) {
-          promises.push(updateDoc(doc(db, 'notifications', d.id), { readBy: [...readBy, user.uid] }))
+      // Use already-loaded notifications instead of re-querying
+      notifications.forEach(n => {
+        if (n.isSystem) {
+          // System/broadcast — mark as read (can't delete, other users need them)
+          if (!n.read) {
+            const readBy = n.readBy || []
+            promises.push(updateDoc(doc(db, 'notifications', n.id), { readBy: [...readBy, user.uid] }))
+          }
+        } else {
+          // User-specific — delete
+          promises.push(deleteDoc(doc(db, 'notifications', n.id)))
         }
       })
       await Promise.all(promises)
       showSuccess('Notifications cleared')
     } catch (err) {
       console.warn('Clear notifications failed:', err)
+      showSuccess('Some notifications could not be cleared')
     }
   }
 
