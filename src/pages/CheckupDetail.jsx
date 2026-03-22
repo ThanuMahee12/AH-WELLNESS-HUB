@@ -118,6 +118,9 @@ function CheckupDetail() {
         {settings?.checkupPdf?.header?.subtitle && (
           <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>{settings.checkupPdf.header.subtitle}</p>
         )}
+        {settings?.checkupPdf?.header?.address && (
+          <p style={{ color: '#94a3b8', fontSize: 'clamp(0.42rem, 1.2vw, 0.55rem)', marginBottom: '0.15rem' }}>{settings.checkupPdf.header.address}</p>
+        )}
         <div style={{ fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)', color: '#64748b', marginBottom: '0.25rem' }}>
           <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
           {' | '}
