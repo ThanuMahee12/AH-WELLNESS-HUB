@@ -36,16 +36,15 @@ function Notifications() {
     if (!(await confirm('Delete all your notifications? This cannot be undone.', { title: 'Clear Notifications', variant: 'danger', confirmText: 'Clear All' }))) return
     try {
       const promises = []
-      // Use already-loaded notifications instead of re-querying
       notifications.forEach(n => {
         if (n.isSystem) {
-          // System/broadcast — mark as read (can't delete, other users need them)
-          if (!n.read) {
-            const readBy = n.readBy || []
-            promises.push(updateDoc(doc(db, 'notifications', n.id), { readBy: [...readBy, user.uid] }))
+          // System/broadcast — add user to dismissedBy so subscription hides it
+          const dismissedBy = n.dismissedBy || []
+          if (!dismissedBy.includes(user.uid)) {
+            promises.push(updateDoc(doc(db, 'notifications', n.id), { dismissedBy: [...dismissedBy, user.uid] }))
           }
         } else {
-          // User-specific — delete
+          // User-specific — delete the doc
           promises.push(deleteDoc(doc(db, 'notifications', n.id)))
         }
       })
@@ -53,7 +52,6 @@ function Notifications() {
       showSuccess('Notifications cleared')
     } catch (err) {
       console.warn('Clear notifications failed:', err)
-      showSuccess('Some notifications could not be cleared')
     }
   }
 
