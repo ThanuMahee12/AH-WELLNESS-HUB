@@ -64,13 +64,17 @@ export const ACTIVITY_TYPES = {
  */
 export const logActivity = async (activityData) => {
   try {
+    // Strip undefined values from metadata — RTDB rejects them
+    const rawMeta = activityData.metadata || {}
+    const metadata = Object.fromEntries(Object.entries(rawMeta).filter(([, v]) => v !== undefined))
+
     const activity = {
       userId: activityData.userId,
       username: activityData.username,
       userRole: activityData.userRole,
       activityType: activityData.activityType,
       description: activityData.description,
-      metadata: activityData.metadata || {},
+      metadata,
       timestamp: Date.now(),
     }
 
