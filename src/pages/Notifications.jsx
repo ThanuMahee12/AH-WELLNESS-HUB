@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { Badge, Pagination, Card, Form } from 'react-bootstrap'
 import { FaBell, FaCheck, FaCheckDouble, FaTrash } from 'react-icons/fa'
 import { subscribeToNotifications, markAsRead, markAllAsRead } from '../services/notificationService'
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { deleteDoc, updateDoc, doc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useNotification } from '../context'
 import { PageHeader, DateRangePicker } from '../components/ui'
@@ -35,13 +35,24 @@ function Notifications() {
   const handleClearAll = async () => {
     if (!(await confirm('Delete all your notifications? This cannot be undone.', { title: 'Clear Notifications', variant: 'danger', confirmText: 'Clear All' }))) return
     try {
-      const userQ = query(collection(db, 'notifications'), where('recipientId', '==', user.uid))
-      const snap = await getDocs(userQ)
       const promises = []
-      snap.forEach(d => promises.push(deleteDoc(doc(db, 'notifications', d.id))))
+      notifications.forEach(n => {
+        if (n.isSystem) {
+          // System/broadcast — add user to dismissedBy so subscription hides it
+          const dismissedBy = n.dismissedBy || []
+          if (!dismissedBy.includes(user.uid)) {
+            promises.push(updateDoc(doc(db, 'notifications', n.id), { dismissedBy: [...dismissedBy, user.uid] }))
+          }
+        } else {
+          // User-specific — delete the doc
+          promises.push(deleteDoc(doc(db, 'notifications', n.id)))
+        }
+      })
       await Promise.all(promises)
       showSuccess('Notifications cleared')
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('Clear notifications failed:', err)
+    }
   }
 
   const icon = (type) => {

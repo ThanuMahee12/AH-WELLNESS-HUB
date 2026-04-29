@@ -77,11 +77,14 @@ export const subscribeToNotifications = (userId, callback) => {
 
     const mergeAndCallback = () => {
       // For system notifications, treat as unread if user hasn't read it
-      const mappedSystem = systemNotifications.map(n => ({
-        ...n,
-        read: Array.isArray(n.readBy) && n.readBy.includes(userId),
-        isSystem: true,
-      }))
+      // Filter out notifications dismissed by this user
+      const mappedSystem = systemNotifications
+        .filter(n => !Array.isArray(n.dismissedBy) || !n.dismissedBy.includes(userId))
+        .map(n => ({
+          ...n,
+          read: Array.isArray(n.readBy) && n.readBy.includes(userId),
+          isSystem: true,
+        }))
       const merged = [...userNotifications, ...mappedSystem]
         .sort((a, b) => {
           const timeA = a.createdAt?.toMillis?.() || 0

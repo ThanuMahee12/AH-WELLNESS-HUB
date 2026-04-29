@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Row, Col, Card, Form, Badge } from 'react-bootstrap'
-import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes, FaAddressCard, FaSignature } from 'react-icons/fa'
+import { FaPlus, FaTrash, FaFilePdf, FaStethoscope, FaVial, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes, FaAddressCard, FaSignature, FaPrescriptionBottleAlt } from 'react-icons/fa'
 import { updateSettings } from '../../store/settingsSlice'
 import { useSettings } from '../../hooks/useSettings'
 import { useNotification } from '../../context'
@@ -678,41 +678,6 @@ function CheckupSettingsTab() {
         </Card>
       </Col>
 
-      {/* Appointment Notifications */}
-      <Col xs={12}>
-        <Card className="shadow-sm border-0 mb-3">
-          <Card.Body className="py-2 px-3">
-            <small className="fw-bold text-muted d-block mb-2">APPOINTMENT NOTIFICATIONS</small>
-            <Row className="g-2">
-              <Col xs={12} md={6}>
-                <div className="p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <small className="fw-semibold" style={{ fontSize: '0.72rem', color: '#16a34a' }}>WhatsApp</small>
-                    <Form.Check type="switch" checked={settings?.checkupPdf?.appointmentNotify?.whatsapp?.enabled || false}
-                      onChange={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { whatsapp: { enabled: e.target.checked } } } })} />
-                  </div>
-                  <Form.Control size="sm" type="tel" defaultValue={settings?.checkupPdf?.appointmentNotify?.whatsapp?.number || ''}
-                    onBlur={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { whatsapp: { number: e.target.value.trim() } } } })}
-                    placeholder="WhatsApp number (e.g., 94771234567)" style={{ fontSize: '0.75rem' }} />
-                </div>
-              </Col>
-              <Col xs={12} md={6}>
-                <div className="p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <small className="fw-semibold" style={{ fontSize: '0.72rem', color: '#0891B2' }}>Email</small>
-                    <Form.Check type="switch" checked={settings?.checkupPdf?.appointmentNotify?.email?.enabled || false}
-                      onChange={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { email: { enabled: e.target.checked } } } })} />
-                  </div>
-                  <Form.Control size="sm" type="email" defaultValue={settings?.checkupPdf?.appointmentNotify?.email?.address || ''}
-                    onBlur={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { email: { address: e.target.value.trim() } } } })}
-                    placeholder="Notification email address" style={{ fontSize: '0.75rem' }} />
-                </div>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-      </Col>
-
       {/* PDF Header Branding */}
       <Col xs={12}>
         <Card className="shadow-sm border-0 mb-3">
@@ -735,12 +700,20 @@ function CheckupSettingsTab() {
                     placeholder="e.g., AH WELLNESS HUB" style={{ fontSize: '0.78rem' }} />
                 </Form.Group>
               </Col>
-              <Col xs={12}>
+              <Col xs={12} md={6}>
                 <Form.Group>
                   <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Subtitle</Form.Label>
                   <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.subtitle || ''}
                     onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { subtitle: val } } }) }}
                     placeholder="e.g., Complete Health Care Solutions" style={{ fontSize: '0.78rem' }} />
+                </Form.Group>
+              </Col>
+              <Col xs={12} md={6}>
+                <Form.Group>
+                  <Form.Label style={{ fontSize: '0.72rem', color: '#64748b' }}>Address</Form.Label>
+                  <Form.Control size="sm" type="text" defaultValue={settings?.checkupPdf?.header?.address || ''}
+                    onBlur={(e) => { const val = e.target.value.trim(); handleUpdate({ checkupPdf: { header: { address: val } } }) }}
+                    placeholder="e.g., No. 123, Main Street, Jaffna" style={{ fontSize: '0.78rem' }} />
                 </Form.Group>
               </Col>
             </Row>
@@ -793,6 +766,76 @@ function CheckupSettingsTab() {
                     onBlur={(e) => { const val = e.target.value.trim(); if (val !== (footerSettings.thankYouPrescription || '')) handleUpdate({ checkupPdf: { footer: { thankYouPrescription: val } } }) }}
                     style={{ fontSize: '0.78rem' }} />
                 </Form.Group>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+
+      {/* Prescription Notes (bold lines on prescription PDF) */}
+      <Col xs={12}>
+        <Card className="shadow-sm border-0 mb-3">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2"><FaPrescriptionBottleAlt className="me-2" style={{ fontSize: '0.7rem' }} />PRESCRIPTION NOTES</small>
+            <p className="text-muted mb-2" style={{ fontSize: '0.65rem' }}>Bold notes shown above the validity line on prescriptions (e.g., "Do Not Substitute")</p>
+            {(settings?.checkupPdf?.prescriptionNotes || []).map((note, idx) => (
+              <div key={idx} className="d-flex align-items-center gap-1 mb-1">
+                <Form.Control size="sm" type="text" defaultValue={note}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim()
+                    const notes = [...(settings?.checkupPdf?.prescriptionNotes || [])]
+                    if (val) { notes[idx] = val } else { notes.splice(idx, 1) }
+                    handleUpdate({ checkupPdf: { prescriptionNotes: notes } })
+                  }}
+                  style={{ fontSize: '0.78rem', fontWeight: 600 }} />
+                <button type="button" className="btn p-0" onClick={() => {
+                  const notes = [...(settings?.checkupPdf?.prescriptionNotes || [])]
+                  notes.splice(idx, 1)
+                  handleUpdate({ checkupPdf: { prescriptionNotes: notes } })
+                }} style={{ color: '#dc2626', lineHeight: 1 }}><FaTrash size={10} /></button>
+              </div>
+            ))}
+            <button type="button" className="btn btn-sm d-flex align-items-center gap-1 mt-1"
+              onClick={() => {
+                const notes = [...(settings?.checkupPdf?.prescriptionNotes || []), 'New note']
+                handleUpdate({ checkupPdf: { prescriptionNotes: notes } })
+              }}
+              style={{ fontSize: '0.65rem', padding: '2px 10px', backgroundColor: '#0891B2', color: '#fff', borderRadius: 4 }}>
+              <FaPlus size={8} /> Add Note
+            </button>
+          </Card.Body>
+        </Card>
+      </Col>
+
+      {/* Appointment Notifications */}
+      <Col xs={12}>
+        <Card className="shadow-sm border-0 mb-3">
+          <Card.Body className="py-2 px-3">
+            <small className="fw-bold text-muted d-block mb-2">APPOINTMENT NOTIFICATIONS</small>
+            <Row className="g-2">
+              <Col xs={12} md={6}>
+                <div className="p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <small className="fw-semibold" style={{ fontSize: '0.72rem', color: '#16a34a' }}>WhatsApp</small>
+                    <Form.Check type="switch" checked={settings?.checkupPdf?.appointmentNotify?.whatsapp?.enabled || false}
+                      onChange={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { whatsapp: { enabled: e.target.checked } } } })} />
+                  </div>
+                  <Form.Control size="sm" type="tel" defaultValue={settings?.checkupPdf?.appointmentNotify?.whatsapp?.number || ''}
+                    onBlur={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { whatsapp: { number: e.target.value.trim() } } } })}
+                    placeholder="WhatsApp number (e.g., 94771234567)" style={{ fontSize: '0.75rem' }} />
+                </div>
+              </Col>
+              <Col xs={12} md={6}>
+                <div className="p-2 rounded" style={{ border: '1px solid #e2e8f0' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <small className="fw-semibold" style={{ fontSize: '0.72rem', color: '#0891B2' }}>Email</small>
+                    <Form.Check type="switch" checked={settings?.checkupPdf?.appointmentNotify?.email?.enabled || false}
+                      onChange={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { email: { enabled: e.target.checked } } } })} />
+                  </div>
+                  <Form.Control size="sm" type="email" defaultValue={settings?.checkupPdf?.appointmentNotify?.email?.address || ''}
+                    onBlur={(e) => handleUpdate({ checkupPdf: { appointmentNotify: { email: { address: e.target.value.trim() } } } })}
+                    placeholder="Notification email address" style={{ fontSize: '0.75rem' }} />
+                </div>
               </Col>
             </Row>
           </Card.Body>

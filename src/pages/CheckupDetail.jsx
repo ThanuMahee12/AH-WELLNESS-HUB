@@ -118,6 +118,9 @@ function CheckupDetail() {
         {settings?.checkupPdf?.header?.subtitle && (
           <p style={{ color: '#64748b', fontSize: 'clamp(0.5rem, 1.5vw, 0.65rem)', marginBottom: '0.15rem' }}>{settings.checkupPdf.header.subtitle}</p>
         )}
+        {settings?.checkupPdf?.header?.address && (
+          <p style={{ color: '#94a3b8', fontSize: 'clamp(0.42rem, 1.2vw, 0.55rem)', marginBottom: '0.15rem' }}>{settings.checkupPdf.header.address}</p>
+        )}
         <div style={{ fontSize: 'clamp(0.45rem, 1.3vw, 0.6rem)', color: '#64748b', marginBottom: '0.25rem' }}>
           <span><strong>Bill #:</strong> {checkup.billNo || checkup.id}</span>
           {' | '}
@@ -1269,13 +1272,18 @@ function CheckupDetail() {
                         <div className="sig-line" style={{ borderTop: '1px solid #64748b', width: 'clamp(80px, 15vw, 120px)', marginBottom: '0.25rem' }} />
                         <p style={{ fontSize: 'clamp(0.55rem, 1.4vw, 0.65rem)', marginBottom: 0 }}>Date</p>
                       </div>
-                      {(checkup.validDays || settings?.checkupPdf?.defaultValidDays) && (
-                        <div style={{ textAlign: 'center' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        {(settings?.checkupPdf?.prescriptionNotes || []).map((note, i) => (
+                          <p key={i} style={{ fontSize: 'clamp(0.5rem, 1.3vw, 0.6rem)', color: '#1e293b', fontWeight: 'bold', marginBottom: '0.1rem' }}>
+                            {note}
+                          </p>
+                        ))}
+                        {(checkup.validDays || settings?.checkupPdf?.defaultValidDays) && (
                           <p style={{ fontSize: 'clamp(0.5rem, 1.3vw, 0.6rem)', color: '#dc2626', fontStyle: 'italic', marginBottom: 0 }}>
                             This prescription is only valid for {checkup.validDays || settings?.checkupPdf?.defaultValidDays || 30} days
                           </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                       <div style={{ textAlign: 'center' }}>
                         {checkup.useESign !== false && settings?.checkupPdf?.eSign && (
                           <img src={settings.checkupPdf.eSign} alt="Signature" className="esign-img" style={{ height: 'clamp(30px, 6vw, 50px)', objectFit: 'contain', marginBottom: '0.15rem', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
