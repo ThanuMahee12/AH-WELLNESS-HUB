@@ -110,10 +110,10 @@ jobs:
 
           if [ -n "$PREV_TAG" ]; then
             echo "Generating notes from ${PREV_TAG} to ${NEW_TAG}"
-            NOTES=$(git log ${PREV_TAG}..HEAD~1 --pretty=format:"- %s" --no-merges | grep -v "chore: bump version")
+            NOTES=$(git log ${PREV_TAG}..HEAD~1 --pretty=format:"- %s" --no-merges | grep -v "chore: bump version" || true)
           else
             echo "No previous tag, using all commits"
-            NOTES=$(git log --pretty=format:"- %s" --no-merges | head -20 | grep -v "chore: bump version")
+            NOTES=$(git log --pretty=format:"- %s" --no-merges | head -20 | grep -v "chore: bump version" || true)
           fi
 
           # Write to file to handle multiline
