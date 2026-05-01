@@ -61,8 +61,34 @@ jobs:
           echo "version=${NEW}" >> $GITHUB_OUTPUT
           echo "bump=${BUMP}" >> $GITHUB_OUTPUT
 
-          # Commit the version bump
-          git add package.json
+          # Generate CHANGELOG.md entry
+          DATE=$(date +%Y-%m-%d)
+          FEATURES=$(echo "$COMMITS" | grep -E "^feat(\(.+\))?:" | sed -E 's/^feat(\([^)]+\))?: /- /' || true)
+          FIXES=$(echo "$COMMITS" | grep -E "^fix(\(.+\))?:" | sed -E 's/^fix(\([^)]+\))?: /- /' || true)
+          REFACTORS=$(echo "$COMMITS" | grep -E "^refactor(\(.+\))?:" | sed -E 's/^refactor(\([^)]+\))?: /- /' || true)
+
+          CL_ENTRY="## [${NEW}] - ${DATE}"
+          if [ -n "$FEATURES" ]; then
+            CL_ENTRY="${CL_ENTRY}"$'\n\n'"### Features"$'\n'"${FEATURES}"
+          fi
+          if [ -n "$FIXES" ]; then
+            CL_ENTRY="${CL_ENTRY}"$'\n\n'"### Bug Fixes"$'\n'"${FIXES}"
+          fi
+          if [ -n "$REFACTORS" ]; then
+            CL_ENTRY="${CL_ENTRY}"$'\n\n'"### Improvements"$'\n'"${REFACTORS}"
+          fi
+
+          if [ -f CHANGELOG.md ]; then
+            TMP=$(mktemp)
+            printf '%s\n\n' "${CL_ENTRY}" > "$TMP"
+            cat CHANGELOG.md >> "$TMP"
+            mv "$TMP" CHANGELOG.md
+          else
+            printf '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n%s\n' "${CL_ENTRY}" > CHANGELOG.md
+          fi
+
+          # Commit the version bump + changelog
+          git add package.json CHANGELOG.md
           git commit -m "chore: bump version to ${NEW} [${BUMP}]"
           git tag "${NEW}"
 
